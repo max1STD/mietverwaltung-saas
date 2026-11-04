@@ -12,7 +12,7 @@ jobs:
       name: beta
       url: https://beta.mietverwaltung.de
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Deploy to Proxmox via SSH
         uses: appleboy/ssh-action@v1
         with:
