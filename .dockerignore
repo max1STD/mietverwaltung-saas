@@ -1,0 +1,20 @@
+# Build context excludes
+.git
+.github
+.husky
+docs
+node_modules
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.coverage
+**/htmlcov
+**/*.egg-info
+**/dist
+**/.vite
+.env
+.env.*
+*.md
+!README.md
+docker-compose*.yml
+Makefile

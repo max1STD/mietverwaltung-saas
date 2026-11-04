@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0D3B70">
+<title>MietVerwaltung — Vermieter- & Mieter-Portal</title>
+<style>
+/* === RESET & TOKENS === */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --navy: #0D3B70;
+  --navy-hover: #2a5a9e;
+  --navy-light: #e8eff8;
+  --bg: #f5f5f7;
+  --card: #ffffff;
+  --text: #1d1d1f;
+  --text2: #6e6e73;
+  --border: #e2e2e7;
+  --green: #34c759;
+  --green-bg: #e8f5e9;
+  --orange: #ff9500;
+  --orange-bg: #fff3e0;
+  --red: #ff3b30;
+  --red-bg: #ffebee;
+  --blue: #007aff;
+  --blue-bg: #e3f2fd;
+  --radius-xl: 24px;
+  --radius-lg: 18px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+  --radius-xs: 10px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-float: 0 12px 40px rgba(0,0,0,0.14);
+  --transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+html.dark {
+  --navy: #1f6feb;
+  --navy-hover: #58a6ff;
+  --navy-light: rgba(31,111,235,0.12);
+  --bg: #0d1117;
+  --card: #161b22;
+  --text: #e6edf3;
+  --text2: #7d8597;
+  --border: #30363d;
+  --green: #3fb950;
+  --green-bg: rgba(63,185,80,0.15);
+  --orange: #ff9500;
+  --orange-bg: rgba(255,149,0,0.15);
+  --red: #ff453a;
+  --red-bg: rgba(255,69,58,0.15);
+  --blue: #58a6ff;
+  --blue-bg: rgba(88,166,255,0.15);
+}
+html, body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  font-size: 15px;
+  line-height: 1.5;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+input, select, textarea { font-size: 16px; }
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+a { color: var(--navy); text-decoration: none; }
+
+/* === LAYOUT === */
+.app-shell { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 270px; background: var(--card); border-right: 1px solid var(--border);
+  display: none; flex-direction: column; position: fixed; inset: 0 auto 0 0; z-index: 50;
+  padding: 24px 18px calc(24px + var(--safe-bottom)) 18px;
+}
+.main {
+  flex: 1; margin-left: 0; min-height: 100vh; display: flex; flex-direction: column;
+  padding-bottom: calc(84px + var(--safe-bottom));
+}
+.content { flex: 1; padding: 20px; max-width: 1400px; width: 100%; margin: 0 auto; }
+.topbar {
+  height: 60px; background: rgba(255,255,255,0.85); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border); display: flex; align-items: center;
+  justify-content: space-between; padding: 0 18px; position: sticky; top: 0; z-index: 40;
+  transition: var(--transition);
+}
+html.dark .topbar { background: rgba(22,27,34,0.85); }
+.topbar-title { font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
+.topbar-actions { display: flex; align-items: center; gap: 8px; }
+
+body.auth-view .sidebar { display: none !important; }
+body.auth-view .main { margin-left: 0 !important; }
+body.auth-view .mobile-tabbar { display: none !important; }
+body.auth-view .fab { display: none !important; }
+body.auth-view .ai-bubble { display: none !important; }
+body.tenant-view .sidebar { display: none !important; }
+body.tenant-view .main { margin-left: 0 !important; }
+
+@media (min-width: 1024px) {
+  .sidebar { display: flex; }
+  .main { margin-left: 270px; padding-bottom: 0; }
+  .content { padding: 32px; }
+  .topbar { display: none; }
+  .mobile-tabbar { display: none !important; }
+}
+
+/* === NAVIGATION === */
+.brand { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; padding: 0 10px; }
+.brand-icon { width: 34px; height: 34px; background: var(--navy); border-radius: 10px; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 16px; }
+.brand-text { font-weight: 700; font-size: 19px; letter-spacing: -0.02em; }
+.nav-list { list-style: none; flex: 1; overflow-y: auto; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius-sm);
+  color: var(--text2); font-size: 14px; font-weight: 500; cursor: pointer; margin-bottom: 4px;
+  min-height: 44px; transition: var(--transition);
+}
+.nav-item:hover { background: var(--navy-light); color: var(--text); }
+.nav-item.active { background: var(--navy-light); color: var(--navy); font-weight: 600; }
+.nav-item svg { width: 22px; height: 22px; flex-shrink: 0; }
+.nav-footer { padding: 18px 10px 0; border-top: 1px solid var(--border); margin-top: auto; font-size: 12px; color: var(--text2); }
+
+/* === MOBILE BOTTOM TABBAR === */
+.mobile-tabbar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: calc(68px + var(--safe-bottom)); padding-bottom: var(--safe-bottom);
+  background: rgba(255,255,255,0.94); backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border); display: flex; justify-content: space-around; align-items: center; z-index: 100;
+  transition: var(--transition);
+}
+html.dark .mobile-tabbar { background: rgba(22,27,34,0.94); }
+.tabbar-item {
+  flex: 1; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; font-size: 10px; font-weight: 500; color: var(--text2); cursor: pointer; transition: var(--transition);
+}
+.tabbar-item svg { width: 22px; height: 22px; }
+.tabbar-item.active { color: var(--navy); }
+
+/* === FAB & SPEED DIAL === */
+.fab {
+  position: fixed; bottom: calc(88px + var(--safe-bottom)); right: 20px; width: 58px; height: 58px;
+  border-radius: 50%; background: var(--navy); color: #fff; display: grid; place-items: center;
+  box-shadow: var(--shadow-float); z-index: 110; cursor: pointer; transition: var(--transition);
+}
+.fab:hover { transform: scale(1.05); }
+.fab:active { transform: scale(0.95); }
+.speed-dial {
+  position: fixed; bottom: calc(156px + var(--safe-bottom)); right: 20px; display: none; flex-direction: column; gap: 12px; z-index: 109;
+}
+.speed-dial.open { display: flex; }
+.speed-item { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
+.speed-label { background: var(--card); padding: 7px 12px; border-radius: var(--radius-sm); font-size: 12px; box-shadow: var(--shadow); font-weight: 500; }
+.speed-btn { width: 46px; height: 46px; border-radius: 50%; background: var(--navy); color: #fff; display: grid; place-items: center; cursor: pointer; transition: var(--transition); }
+.speed-btn:hover { transform: scale(1.08); }
+@media (min-width: 1024px) { .fab, .speed-dial { bottom: 32px; right: 32px; } .speed-dial { bottom: 100px; } }
+
+/* === TYPOGRAPHY === */
+h1, h2, h3, h4 { font-weight: 700; letter-spacing: -0.02em; }
+h1 { font-size: 30px; } h2 { font-size: 24px; } h3 { font-size: 18px; } h4 { font-size: 15px; }
+.subtitle { color: var(--text2); font-size: 15px; margin-top: 4px; }
+.label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text2); margin-bottom: 6px; }
+
+/* === CARDS === */
+.card {
+  background: var(--card); border-radius: var(--radius-md); box-shadow: var(--shadow);
+  padding: 20px; transition: var(--transition);
+}
+.card-hover:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.card-xl { border-radius: var(--radius-lg); padding: 24px; }
+.card-hero {
+  border-radius: var(--radius-lg); padding: 28px;
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-hover) 100%); color: #fff;
+}
+html.dark .card-hero { background: linear-gradient(135deg, #0d419d 0%, #1f6feb 100%); }
+.card-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+.card-sub { font-size: 14px; color: var(--text2); line-height: 1.4; }
+
+/* === GRIDS === */
+.grid-2 { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (min-width: 640px) {
+  .grid-2 { grid-template-columns: repeat(2,1fr); gap: 20px; }
+  .grid-3 { grid-template-columns: repeat(2,1fr); gap: 20px; }
+  .grid-4 { grid-template-columns: repeat(4,1fr); gap: 16px; }
+}
+@media (min-width: 1024px) {
+  .grid-3 { grid-template-columns: repeat(3,1fr); gap: 24px; }
+}
+
+/* === BUTTONS === */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 0 18px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600;
+  border: 1px solid transparent; cursor: pointer; transition: var(--transition);
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--navy); color: #fff; }
+.btn-primary:hover { background: var(--navy-hover); }
+.btn-secondary { background: var(--card); color: var(--navy); border-color: var(--border); }
+.btn-secondary:hover { background: var(--navy-light); }
+.btn-ghost { background: transparent; color: var(--text2); }
+.btn-danger { background: var(--red); color: #fff; }
+.btn-lg { min-height: 52px; padding: 0 24px; font-size: 15px; border-radius: var(--radius-lg); width: 100%; }
+.btn-sm { min-height: 34px; padding: 0 12px; font-size: 13px; }
+.btn-block { width: 100%; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* === FORMS === */
+.form-group { margin-bottom: 20px; }
+.form-label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.form-input, .form-select, .form-textarea {
+  width: 100%; min-height: 48px; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius-xs);
+  background: var(--card); color: var(--text); font-size: 16px; transition: var(--transition);
+}
+.form-select { padding: 0 14px; }
+.form-textarea { padding: 14px 16px; min-height: 110px; resize: vertical; }
+.form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px var(--navy-light); }
+.form-input::placeholder { color: var(--text2); opacity: 0.7; }
+.checkbox-row { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--text2); min-height: 44px; }
+.checkbox-row input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--navy); }
+
+/* === BADGES === */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.01em;
+}
+.badge-open { background: var(--orange-bg); color: #bf6f00; }
+html.dark .badge-open { background: var(--orange-bg); color: var(--orange); }
+.badge-progress { background: var(--blue-bg); color: #0059b3; }
+html.dark .badge-progress { background: var(--blue-bg); color: var(--blue); }
+.badge-done { background: var(--green-bg); color: #237a32; }
+html.dark .badge-done { background: var(--green-bg); color: var(--green); }
+.badge-closed { background: rgba(0,0,0,0.05); color: var(--text2); }
+html.dark .badge-closed { background: rgba(255,255,255,0.08); color: var(--text2); }
+.badge-pro { background: var(--navy); color: #fff; }
+.badge-lock { background: rgba(0,0,0,0.05); color: var(--text2); }
+.badge-ai { background: var(--navy-light); color: var(--navy); text-transform: none; letter-spacing: 0; font-weight: 500; }
+.badge-ok { background: var(--green-bg); color: #237a32; text-transform: none; letter-spacing: 0; }
+
+/* === LISTS === */
+.list { display: flex; flex-direction: column; gap: 12px; }
+.list-item {
+  background: var(--card); border-radius: var(--radius-sm); box-shadow: var(--shadow); padding: 16px;
+  display: flex; align-items: center; gap: 14px; cursor: pointer; min-height: 52px; transition: var(--transition);
+}
+.list-item:hover { transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+.list-item.selected { border: 2px solid var(--navy); }
+.list-avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--navy); color: #fff; display: grid; place-items: center; font-weight: 600; flex-shrink: 0; font-size: 14px; }
+.list-content { flex: 1; }
+.list-title { font-weight: 600; font-size: 15px; }
+.list-meta { font-size: 13px; color: var(--text2); margin-top: 2px; }
+
+/* === PROGRESS === */
+.progress-bar { height: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; overflow: hidden; }
+html.dark .progress-bar { background: rgba(255,255,255,0.08); }
+.progress-fill { height: 100%; background: var(--navy); border-radius: 4px; transition: width 0.5s cubic-bezier(0.4,0,0.2,1); }
+
+/* === SKELETON / SHIMMER === */
+.skeleton {
+  background: linear-gradient(90deg, rgba(0,0,0,0.06) 25%, rgba(0,0,0,0.02) 50%, rgba(0,0,0,0.06) 75%);
+  background-size: 200% 100%; animation: shimmer 1.4s infinite;
+  border-radius: var(--radius-sm);
+}
+html.dark .skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.08) 25%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0.08) 75%); background-size: 200% 100%; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* === MODALS & BOTTOM SHEETS === */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.35); backdrop-filter: blur(3px);
+  z-index: 200; display: none; align-items: center; justify-content: center; padding: 16px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--card); border-radius: var(--radius-lg); width: 100%; max-width: 560px;
+  max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-float); animation: modalIn 0.25s ease;
+}
+.bottom-sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; background: var(--card);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0; max-height: 94vh; overflow-y: auto;
+  padding: 22px 22px calc(22px + var(--safe-bottom)) 22px; z-index: 210;
+  transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.25,1,0.5,1);
+}
+.bottom-sheet.open { transform: translateY(0); }
+.sheet-handle { width: 40px; height: 5px; background: var(--border); border-radius: 3px; margin: 0 auto 18px; cursor: pointer; }
+@keyframes modalIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 22px; border-bottom: 1px solid var(--border); }
+.modal-body { padding: 22px; }
+.modal-footer { padding: 16px 22px 22px; display: flex; gap: 12px; }
+
+/* === TOAST === */
+.toast {
+  position: fixed; bottom: calc(96px + var(--safe-bottom)); left: 50%; transform: translateX(-50%) translateY(20px);
+  background: rgba(29,29,31,0.94); color: #fff; padding: 13px 20px; border-radius: 26px; font-size: 14px; font-weight: 500;
+  box-shadow: var(--shadow-float); opacity: 0; transition: opacity 0.3s, transform 0.3s; z-index: 260; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* === AI BUBBLE / CHAT === */
+.ai-bubble {
+  position: fixed; bottom: calc(160px + var(--safe-bottom)); right: 20px; z-index: 120;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+}
+@media (min-width: 1024px) { .ai-bubble { bottom: 100px; right: 32px; } }
+.ai-fab {
+  width: 56px; height: 56px; border-radius: 50%; background: var(--navy); color: #fff;
+  display: grid; place-items: center; box-shadow: var(--shadow-float); cursor: pointer; transition: var(--transition);
+  font-weight: 700; font-size: 13px;
+}
+.ai-fab:hover { transform: scale(1.06); }
+.ai-fab:active { transform: scale(0.95); }
+.ai-card {
+  width: 340px; max-width: calc(100vw - 40px); background: var(--card); border-radius: var(--radius-lg); padding: 18px;
+  box-shadow: var(--shadow-float); font-size: 14px; display: none;
+}
+.ai-card.open { display: block; }
+.ai-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.ai-title { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.ai-close { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: var(--text2); cursor: pointer; transition: var(--transition); }
+.ai-close:hover { background: var(--navy-light); color: var(--navy); }
+.ai-msg { color: var(--text2); line-height: 1.45; margin-bottom: 14px; }
+.ai-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ai-actions .btn { padding: 0 8px; font-size: 13px; }
+.ai-input { display: flex; gap: 8px; margin-top: 12px; }
+.ai-input input { flex: 1; min-height: 40px; padding: 0 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+
+/* === AUTH === */
+.auth-page {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
+  background: linear-gradient(180deg, var(--bg) 0%, #eef1f5 100%);
+}
+html.dark .auth-page { background: linear-gradient(180deg, var(--bg) 0%, #010409 100%); }
+.auth-card { background: var(--card); border-radius: var(--radius-lg); padding: 32px; width: 100%; max-width: 420px; box-shadow: var(--shadow-lg); }
+.auth-logo { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 28px; }
+.auth-head { text-align: center; margin-bottom: 24px; }
+.auth-foot { text-align: center; margin-top: 22px; font-size: 14px; color: var(--text2); }
+.social-btn { width: 100%; min-height: 48px; border: 1px solid var(--border); background: var(--card); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; cursor: pointer; transition: var(--transition); font-weight: 500; }
+.social-btn:hover { background: var(--navy-light); }
+.code-row { display: flex; gap: 10px; justify-content: center; }
+.code-input { width: 48px; height: 58px; text-align: center; font-size: 24px; font-weight: 700; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--card); color: var(--text); transition: var(--transition); }
+.code-input:focus { border-color: var(--navy); box-shadow: 0 0 0 3px var(--navy-light); outline: none; }
+
+/* === DASHBOARD SPECIFICS === */
+.kpi-value { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+.kpi-label { font-size: 13px; color: var(--text2); font-weight: 500; }
+.kpi-delta { font-size: 12px; font-weight: 600; margin-top: 4px; }
+.insight-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.insight-item:last-child { border-bottom: none; }
+.insight-icon { width: 32px; height: 32px; border-radius: 50%; background: var(--navy-light); color: var(--navy); display: grid; place-items: center; font-size: 15px; flex-shrink: 0; }
+.insight-icon.red { background: var(--red-bg); color: var(--red); }
+.insight-icon.green { background: var(--green-bg); color: var(--green); }
+.quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (min-width: 640px) { .quick-actions { grid-template-columns: repeat(4,1fr); } }
+
+/* === PROPERTY / UNITS === */
+.property-img { width: 100%; height: 160px; object-fit: cover; border-radius: var(--radius-sm); background: #ddd; }
+.unit-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; background: var(--navy-light); color: var(--navy); margin-right: 6px; margin-bottom: 6px; }
+
+/* === TABS === */
+.tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--border); margin-bottom: 18px; overflow-x: auto; }
+.tab { padding: 12px 16px; font-size: 14px; font-weight: 600; color: var(--text2); cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; min-height: 44px; transition: var(--transition); }
+.tab.active { color: var(--navy); border-bottom-color: var(--navy); }
+
+/* === WIZARD STEPPER === */
+.wizard-stepper { display: flex; gap: 8px; margin-bottom: 20px; }
+.wizard-dot { flex: 1; height: 4px; border-radius: 2px; background: var(--border); transition: var(--transition); }
+.wizard-dot.active { background: var(--navy); }
+.wizard-dot.completed { background: var(--green); }
+
+/* === CALENDAR === */
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 6px; }
+.cal-day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%; font-size: 13px; font-weight: 500; cursor: pointer; transition: var(--transition); }
+.cal-day:hover { background: var(--navy-light); }
+.cal-day.today { background: var(--navy); color: #fff; }
+.cal-day.due-red { background: var(--red-bg); color: var(--red); }
+.cal-day.due-yellow { background: var(--orange-bg); color: var(--orange); }
+
+/* === UPLOAD === */
+.upload-zone {
+  border: 2px dashed var(--border); border-radius: var(--radius-md); padding: 32px; text-align: center;
+  color: var(--text2); transition: var(--transition); cursor: pointer; background: var(--bg);
+}
+.upload-zone:hover { border-color: var(--navy); background: var(--navy-light); }
+
+/* === SCAN FRAME === */
+.scan-preview { position: relative; border-radius: var(--radius-md); overflow: hidden; }
+.scan-frame { position: absolute; inset: 10%; border: 2px solid var(--navy); border-radius: var(--radius-md); box-shadow: 0 0 0 9999px rgba(0,0,0,0.45); }
+
+/* === UTILITIES === */
+.hidden { display: none !important; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.mt-1 { margin-top: 4px; } .mt-2 { margin-top: 8px; } .mt-3 { margin-top: 16px; } .mt-4 { margin-top: 24px; }
+.mb-1 { margin-bottom: 4px; } .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 16px; }
+.flex { display: flex; } .items-center { align-items: center; } .justify-between { justify-content: space-between; } .gap-2 { gap: 8px; } .gap-3 { gap: 16px; }
+.flex-1 { flex: 1; }
+.w-full { width: 100%; }
+.page-enter { animation: pageEnter 0.3s ease; }
+@keyframes pageEnter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+</style>
+</head>
+<body>
+<div id="app" class="app-shell">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-icon">M</div>
+      <div class="brand-text">MietVerwaltung</div>
+    </div>
+    <ul class="nav-list" id="nav-list"></ul>
+    <div class="nav-footer">
+      <div class="flex items-center gap-2 mb-2"><span class="badge badge-done">Trial</span> <span>3 WE</span></div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">
+        <a href="investor.html" style="color:var(--text2);text-decoration:none;">Investor</a> · 
+        <a href="pricing.html" style="color:var(--text2);text-decoration:none;">Preise</a> · 
+        <a href="admin.html" style="color:var(--text2);text-decoration:none;">Admin</a>
+      </div>
+      <div style="font-size:11px;">© 2026 MietVerwaltung GbR · Demo mit Beispieldaten</div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <header class="topbar" id="topbar">
+      <div class="topbar-title" id="topbar-title">MietVerwaltung</div>
+      <div class="topbar-actions">
+        <button class="btn btn-sm btn-ghost" id="theme-toggle-mobile" aria-label="Dark Mode"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button>
+        <button class="btn btn-sm btn-ghost" id="mobile-menu-btn" aria-label="Menü" onclick="app.openMoreSheet()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
+      </div>
+    </header>
+
+    <div class="content" id="content"></div>
+  </main>
+
+  <!-- Mobile Tabbar -->
+  <nav class="mobile-tabbar" id="mobile-tabbar"></nav>
+
+  <!-- FAB & Speed Dial -->
+  <div class="fab" id="fab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
+  <div class="speed-dial" id="speed-dial"></div>
+
+  <!-- AI Bubble -->
+  <div class="ai-bubble" id="ai-bubble">
+    <div class="ai-card" id="ai-card">
+      <div class="ai-header"><div class="ai-title"><span style="font-size:18px;">✨</span> Max</div><div class="ai-close" onclick="app.closeAI()">✕</div></div>
+      <div class="ai-msg" id="ai-msg">Hi! Ich bin Max. Ich helfe dir bei der Verwaltung. Was möchtest du tun?</div>
+      <div class="ai-actions" id="ai-actions">
+        <button class="btn btn-secondary" onclick="app.navTo('property-create'); app.closeAI()">Objekt anlegen</button>
+        <button class="btn btn-secondary" onclick="app.navTo('tenant-create'); app.closeAI()">Mieter erfassen</button>
+        <button class="btn btn-secondary" onclick="app.openSettlementWizard(); app.closeAI()">Abrechnung erstellen</button>
+        <button class="btn btn-secondary" onclick="app.askMax()">Frage stellen</button>
+      </div>
+      <div class="ai-input"><input type="text" id="ai-ask" placeholder="Frage stellen…"/><button class="btn btn-primary btn-sm" onclick="app.askMax()">→</button></div>
+    </div>
+    <div class="ai-fab" id="ai-fab" onclick="app.toggleAI()">Max</div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" id="modal"></div>
+  </div>
+
+  <!-- Bottom Sheet -->
+  <div class="bottom-sheet" id="bottom-sheet">
+    <div class="sheet-handle" onclick="app.closeSheet()"></div>
+    <div id="sheet-content"></div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+(function() {
+'use strict';
+
+const SVG_ICONS = {
+  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>',
+  building: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l8-4 8 4v14M9 21v-6h2v6M13 21v-6h2v6"/></svg>',
+  users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  tool: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+  euro: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10h12M4 14h9M19 16.5A6.5 6.5 0 0 0 12.5 10a6.5 6.5 0 0 0-6.5 6.5c0 3.59 2.91 6.5 6.5 6.5a6.5 6.5 0 0 0 6.5-6.5"/></svg>',
+  file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>',
+  calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+  settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+  more: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>',
+  ticket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16l-4-4-4 4-4-4L4 20V4z"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>',
+  close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>'
+};
+
+const state = {
+  view: 'login',
+  role: 'landlord',
+  user: { name: 'Max', email: 'max@mustermann.de' },
+  dark: false,
+  setup: [
+    { id:'profile', label:'Profil', done:true },
+    { id:'2fa', label:'2FA', done:true },
+    { id:'objekt', label:'Objekt', done:false },
+    { id:'einheit', label:'Einheit', done:false },
+    { id:'mieter', label:'Mieter', done:false }
+  ],
+  selectedProperty: null,
+  selectedUnit: null,
+  selectedTenant: null,
+  selectedTicket: null,
+  selectedCost: null,
+  selectedDoc: null,
+  showSetup: true,
+  aiOpen: false,
+  replySent: false,
+  ticketFilter: 'all',
+  docFilter: 'all'
+};
+
+const data = {
+  properties: [
+    { id:1, name:'Berliner Straße 12', address:'Berliner Straße 12, 10115 Berlin', type:'MFH', total:3, rented:1, img:'', status:'teilweise vermietet' },
+    { id:2, name:'Hauptplatz 5', address:'Hauptplatz 5, 80331 München', type:'EFH', total:1, rented:1, img:'', status:'vermietet' },
+    { id:3, name:'Düsseldorfer Allee 8', address:'Düsseldorfer Allee 8, 40210 Düsseldorf', type:'MFH', total:1, rented:1, img:'', status:'vermietet' }
+  ],
+  units: [
+    { id:1, propertyId:1, name:'Wohnung 1 — EG links', qm:65, rooms:3, rent:950, status:'vermietet', amenities:['Bad','Küche','Heizung','Laminat','Balkon'], floor:'EG', available:'01.05.2023', energy:'C', heating:'Gas 1995', floorDetail:'Laminat 2019', lastReno:'2019', tenantId:1, history:[{name:'Hans Peters', from:'2018', to:'2023', rent:900, reason:'Umzug'}] },
+    { id:2, propertyId:1, name:'Wohnung 2 — 1. OG rechts', qm:72, rooms:3, rent:1050, status:'frei', amenities:['Bad','Küche','Heizung','Fliesen','Garage'], floor:'1. OG', available:'01.07.2022', energy:'B', heating:'Gas 1995', floorDetail:'Fliesen 2020', lastReno:'2020', tenantId:null, history:[{name:'Maria Schulz', from:'2019', to:'2022', rent:980, reason:'Jobwechsel'}] },
+    { id:3, propertyId:1, name:'Wohnung 3 — DG', qm:45, rooms:2, rent:720, status:'frei', amenities:['Bad','Küche','Heizung','Dielen','Balkon'], floor:'DG', available:'ab sofort', energy:'D', heating:'Gas 1995', floorDetail:'Dielen 2021', lastReno:'2021', tenantId:null, history:[{name:'Sandra Klein', from:'2019', to:'2024', rent:680, reason:'Eigenbedarf'}] },
+    { id:4, propertyId:2, name:'Hauptplatz 5 — Haus', qm:145, rooms:5, rent:1850, status:'vermietet', amenities:['Bad','Küche','Heizung','Parkett','Garage'], floor:'Einfamilienhaus', available:'01.09.2021', energy:'A', heating:'Wärmepumpe 2020', floorDetail:'Parkett 2020', lastReno:'2020', tenantId:3, history:[] },
+    { id:5, propertyId:3, name:'Düsseldorfer Allee 8 — 2. OG', qm:58, rooms:2, rent:880, status:'vermietet', amenities:['Bad','Küche','Heizung','Laminat','Balkon'], floor:'2. OG', available:'01.03.2024', energy:'C', heating:'Fernwärme 2010', floorDetail:'Laminat 2022', lastReno:'2022', tenantId:4, history:[] }
+  ],
+  tenants: [
+    { id:1, first:'Anna', last:'Müller', unitId:1, status:'aktiv', phone:'0151 23456789', email:'anna@email.de', since:'01.05.2023', deposit:2850, nk:180 },
+    { id:2, first:'Tom', last:'Berger', unitId:null, appliedUnitId:3, status:'Bewerbung', phone:'0176 9876543', email:'tom@bewerber.de', since:'–', deposit:0, nk:0 },
+    { id:3, first:'Klaus', last:'Weber', unitId:4, status:'aktiv', phone:'089 123456', email:'klaus@weber.de', since:'01.09.2021', deposit:5550, nk:220 },
+    { id:4, first:'Lisa', last:'Schmidt', unitId:5, status:'aktiv', phone:'0211 654321', email:'lisa@schmidt.de', since:'01.03.2024', deposit:2640, nk:160 }
+  ],
+  tickets: [
+    { id:1, title:'Wasserhahn tropft im Bad', unit:'Wohnung 1 — EG links', tenant:'Anna Müller', status:'offen', priority:'normal', date:'Heute, 09:14', messages:[{from:'tenant', text:'Seit gestern tropft der Wasserhahn im Badezimmer.', time:'09:14'}] },
+    { id:2, title:'Heizkörper im Wohnzimmer wird nicht warm', unit:'Wohnung 2 — 1. OG rechts', tenant:'Tom Berger', status:'in_bearbeitung', priority:'dringend', date:'Gestern, 18:30', messages:[{from:'tenant', text:'Heizung im Wohnzimmer bleibt kalt.', time:'18:30'},{from:'landlord', text:'Ich organisiere einen Handwerker.', time:'19:05'}] }
+  ],
+  costs: [
+    { id:1, propertyId:1, category:'Strom', amount:1240.50, date:'15.02.2026', umlage:true, supplier:'Stadtwerke Berlin', scanned:true },
+    { id:2, propertyId:1, category:'Gas', amount:2180.00, date:'12.01.2026', umlage:true, supplier:'Gasag', scanned:true },
+    { id:3, propertyId:2, category:'Wasser', amount:890.20, date:'20.02.2026', umlage:true, supplier:'Münchner Wasser', scanned:false }
+  ],
+  settlements: [
+    { id:1, year:2024, propertyId:1, total:4310.70, distributed:4, status:'erstellt', date:'28.02.2026' }
+  ],
+  documents: [
+    { id:1, title:'Mietvertrag Anna Müller', category:'Vertrag', date:'01.05.2023', size:'1.2 MB' },
+    { id:2, title:'Übergabeprotokoll Wohnung 1', category:'Protokoll', date:'01.05.2023', size:'0.8 MB' },
+    { id:3, title:'NK-Abrechnung 2024', category:'Abrechnung', date:'28.02.2026', size:'2.4 MB' },
+    { id:4, title:'Bewerbung Tom Berger', category:'Bewerbung', date:'14.10.2026', size:'0.6 MB' },
+    { id:5, title:'Bewerbung Lisa Schmidt', category:'Bewerbung', date:'15.02.2024', size:'0.6 MB' },
+    { id:6, title:'Rechnung Heizungswartung', category:'Beleg', date:'15.02.2026', size:'0.5 MB' }
+  ],
+  deadlines: [
+    { day:3, title:'Miete fällig — Weber', level:'green' },
+    { day:5, title:'Kündigungsfrist läuft ab', level:'yellow' },
+    { day:12, title:'Miete überfällig — Müller', level:'red' },
+    { day:25, title:'Heizungswartung planen', level:'yellow' }
+  ],
+  plans: [
+    { name:'Pro-WE', price:9.75, we:5, features:['1-5 WE','9,75 €/WE','KI-Beleg-Scan','Antwort-Entwürfe','Smart Insights'], popular:true },
+    { name:'Pro-WE', price:7.50, we:25, features:['6-25 WE','7,50 €/WE','KI-Mahnungen','Custom Branding','Fristen-Warner'] },
+    { name:'Pro-WE', price:5.90, we:49, features:['26-49 WE','5,90 €/WE','Alle Features','Priority Support'] },
+    { name:'Enterprise', price:0, we:999, features:['50+ WE','Custom Pricing','API','Team-Nutzer','Dedizierter Support'] }
+  ]
+};
+
+function $(sel){ return document.querySelector(sel); }
+function escapeHtml(str){ return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
+function navTo(view){ state.view=view; render(); }
+function setRole(role){ state.role=role; render(); }
+function setupProgress(){ const done=state.setup.filter(s=>s.done).length; return {done, total:state.setup.length, pct:Math.round(done/state.setup.length*100)}; }
+function statusBadge(status){
+  const map={offen:['badge-open','Offen'],in_bearbeitung:['badge-progress','In Bearbeitung'],erledigt:['badge-done','Erledigt'],geschlossen:['badge-closed','Geschlossen'],frei:['badge-closed','Frei'],vermietet:['badge-done','Vermietet'],Bewerbung:['badge-open','Bewerbung'],aktiv:['badge-done','Aktiv'],'teilweise vermietet':['badge-progress','Teilweise']};
+  const [cls,label]=map[status]||['badge-closed',status];
+  return '<span class="badge '+cls+'">'+label+'</span>';
+}
+function icon(name){ return SVG_ICONS[name]||''; }
+function avatar(name){ const initials=name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase(); return '<div class="list-avatar">'+initials+'</div>'; }
+function formatMoney(n){ return n.toLocaleString('de-DE',{style:'currency',currency:'EUR'}); }
+function propertyImg(prop){
+  const bg = prop.img ? 'background:url('+prop.img+') center/cover' : 'background:linear-gradient(135deg,var(--navy) 0%,var(--navy-hover) 100%)';
+  return '<div class="property-img" style="'+bg+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:32px;position:relative;">🏠<button class="btn btn-sm btn-secondary" style="position:absolute;bottom:10px;right:10px;background:rgba(255,255,255,0.95);border:none;" onclick="event.stopPropagation();app.toast(\'Foto-Upload (Demo)\')">📷</button></div>';
+}
+
+function renderNav(){
+  const list=$('#nav-list');
+  if(state.role==='tenant'){ list.innerHTML=''; return; }
+  const items=[
+    {id:'dashboard',label:'Dashboard',icon:'home'},
+    {id:'properties',label:'Objekte',icon:'building'},
+    {id:'tenants',label:'Mieter',icon:'users'},
+    {id:'tickets',label:'Tickets',icon:'ticket'},
+    {id:'costs',label:'Kosten',icon:'euro'},
+    {id:'settlements',label:'Abrechnungen',icon:'file'},
+    {id:'documents',label:'Dokumente',icon:'file'},
+    {id:'deadlines',label:'Fristen',icon:'calendar'},
+    {id:'settings',label:'Einstellungen',icon:'settings'}
+  ];
+  list.innerHTML=items.map(it=>{
+    const active=state.view===it.id?'active':'';
+    return `<li class="nav-item ${active}" onclick="app.navTo('${it.id}')">${icon(it.icon)}<span class="nav-label">${it.label}</span></li>`;
+  }).join('');
+}
+
+function renderMobileTabbar(){
+  const bar=$('#mobile-tabbar');
+  if(isAuthView()){ bar.style.display='none'; $('#fab').style.display='none'; $('#ai-bubble').style.display='none'; return; }
+  bar.style.display='flex'; $('#fab').style.display='grid'; $('#ai-bubble').style.display='flex';
+  if(state.role==='tenant'){
+    const tabs=[{id:'tenant-start',label:'Start',icon:'home'},{id:'tenant-tickets',label:'Tickets',icon:'ticket'},{id:'tenant-docs',label:'Dokumente',icon:'file'}];
+    bar.innerHTML=tabs.map(t=>{
+      const active=state.view===t.id?'active':'';
+      return `<div class="tabbar-item ${active}" onclick="app.navTo('${t.id}')">${icon(t.icon)}<span>${t.label}</span></div>`;
+    }).join('');
+  } else {
+    const tabs=[{id:'dashboard',label:'Dashboard',icon:'home'},{id:'properties',label:'Objekte',icon:'building'},{id:'tickets',label:'Tickets',icon:'ticket'},{id:'more',label:'Mehr',icon:'more'}];
+    const activeMore=['costs','settlements','documents','deadlines','settings','tenants'].includes(state.view);
+    bar.innerHTML=tabs.map(t=>{
+      let active=state.view===t.id?'active':'';
+      if(t.id==='more' && activeMore) active='active';
+      return `<div class="tabbar-item ${active}" onclick="${t.id==='more'?'app.openMoreSheet()':`app.navTo('${t.id}')`}">${icon(t.icon)}<span>${t.label}</span></div>`;
+    }).join('');
+  }
+}
+
+function renderSpeedDial(){
+  const dial=$('#speed-dial');
+  const actions=state.role==='tenant'
+    ? [{label:'Ticket',icon:'ticket',view:'tenant-ticket-create'}]
+    : [{label:'Ticket',icon:'ticket',view:'tickets'},{label:'Kosten',icon:'euro',view:'costs'},{label:'Beleg',icon:'file',view:'costs'},{label:'Mieter',icon:'users',view:'tenant-create'},{label:'Dokument',icon:'file',view:'documents'}];
+  dial.innerHTML=actions.map(a=>`<div class="speed-item"><span class="speed-label">${a.label}</span><div class="speed-btn" onclick="app.speedClick('${a.view}')">${icon(a.icon)}</div></div>`).join('');
+}
+
+function openMoreSheet(){
+  const items=[
+    {id:'tenants',label:'Mieter',icon:'users'},
+    {id:'costs',label:'Kosten',icon:'euro'},
+    {id:'settlements',label:'Abrechnungen',icon:'file'},
+    {id:'documents',label:'Dokumente',icon:'file'},
+    {id:'deadlines',label:'Fristen',icon:'calendar'},
+    {id:'settings',label:'Einstellungen',icon:'settings'}
+  ];
+  openSheet(`<h3 style="margin-bottom:16px;font-size:20px;">Mehr</h3><div class="list">${items.map(i=>`<div class="list-item" onclick="app.closeSheet();app.navTo('${i.id}')">${icon(i.icon)}<div class="list-content"><div class="list-title">${i.label}</div></div></div>`).join('')}</div>`);
+}
+
+function openModal(html){ $('#modal').innerHTML=html; $('#modal-overlay').classList.add('open'); }
+function closeModal(){ $('#modal-overlay').classList.remove('open'); }
+function openSheet(html){ $('#sheet-content').innerHTML=html; $('#bottom-sheet').classList.add('open'); }
+function closeSheet(){ $('#bottom-sheet').classList.remove('open'); }
+
+function isAuthView(){ return ['login','register','2fa-setup','2fa-verify','welcome'].includes(state.view); }
+
+function render(){
+  renderNav();
+  renderMobileTabbar();
+  renderSpeedDial();
+  updateTheme();
+  document.body.classList.toggle('auth-view', isAuthView());
+  document.body.classList.toggle('tenant-view', state.role==='tenant' && !isAuthView());
+  $('#topbar-title').textContent=pageTitle();
+  const viewFn=views[state.view] || views.dashboard;
+  $('#content').innerHTML='<div class="page-enter">'+viewFn()+'</div>';
+  attachHandlers();
+}
+
+function pageTitle(){
+  const titles={
+    login:'Anmelden', register:'Registrieren', '2fa-setup':'Sicherheit einrichten', '2fa-verify':'Code eingeben',
+    welcome:'Willkommen', dashboard:'Dashboard', properties:'Objekte', 'property-detail':'Objekt-Detail',
+    'property-create':'Objekt anlegen', units:'Einheiten', 'unit-detail':'Wohnung-Detail', 'unit-create':'Wohnung hinzufügen',
+    tenants:'Mieter', 'tenant-detail':'Mieter-Detail', 'tenant-create':'Mieter anlegen',
+    'tenant-apply':'Bewerber prüfen', leases:'Mietverträge', tickets:'Tickets', 'ticket-detail':'Ticket',
+    costs:'Kosten', settlements:'Abrechnungen', documents:'Dokumente', deadlines:'Fristen', settings:'Einstellungen',
+    'tenant-start':'Start', 'tenant-tickets':'Meine Tickets', 'tenant-docs':'Dokumente'
+  };
+  return titles[state.view] || 'MietVerwaltung';
+}
+
+function attachHandlers(){
+  const fab=$('#fab'); if(fab){ fab.onclick=()=>{ $('#speed-dial').classList.toggle('open'); }; }
+  const mo=$('#modal-overlay'); if(mo){ mo.onclick=(e)=>{ if(e.target===mo) closeModal(); }; }
+  const tm=$('#theme-toggle-mobile'); if(tm){ tm.onclick=toggleTheme; }
+  const ts=$('#theme-toggle-settings'); if(ts){ ts.onclick=toggleTheme; }
+}
+
+function toggleTheme(){ state.dark=!state.dark; state.themeManual=true; document.documentElement.classList.toggle('dark', state.dark); toast(state.dark?'Dark Mode aktiviert':'Light Mode aktiviert'); }
+function updateTheme(){ document.documentElement.classList.toggle('dark', state.themeManual?state.dark:window.matchMedia('(prefers-color-scheme: dark)').matches); }
+
+function speedClick(view){ $('#speed-dial').classList.remove('open'); if(view==='tickets') openTicketCreate(); else if(view==='tenant-create') navTo('tenant-create'); else if(view==='costs') openCostScan(); else navTo(view); }
+
+function toggleAI(){ state.aiOpen=!state.aiOpen; $('#ai-card').classList.toggle('open', state.aiOpen); }
+function closeAI(){ state.aiOpen=false; $('#ai-card').classList.remove('open'); }
+function askMax(){ const q=$('#ai-ask'); if(q && q.value.trim()){ $('#ai-msg').textContent='Gute Frage! Ich kann dir dabei helfen. Schau mal unter "Einstellungen" oder starte ein Objekt.'; q.value=''; } else { $('#ai-msg').textContent='Frage mich zu Objekten, Mietern oder Abrechnungen.'; } }
+
+function setupChecklistHtml(){
+  const p=setupProgress();
+  const rows=state.setup.map(s=>{
+    const icon=s.done?'<span style="color:var(--navy);font-weight:700;">✓</span>':'<span style="color:var(--text2);">○</span>';
+    return '<div class="flex items-center gap-2" style="font-size:14px;padding:5px 0;color:'+(s.done?'var(--text2)':'var(--text)')+'">'+icon+' '+s.label+'</div>';
+  }).join('');
+  return '<div class="card card-xl mb-3"><div class="flex justify-between items-center mb-2"><div><div class="card-title">Setup-Checkliste</div><div class="card-sub">'+p.pct+' % erledigt</div></div>'+(p.pct<100?'<button class="btn btn-sm btn-ghost" onclick="app.dismissSetup()">×</button>':'')+'</div><div class="progress-bar mb-3"><div class="progress-fill" style="width:'+p.pct+'%"></div></div>'+rows+'</div>';
+}
+
+function dismissSetup(){ state.showSetup=false; render(); }
+
+const views = {
+
+login: function(){
+  return `<div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-logo"><div class="brand-icon" style="width:44px;height:44px;font-size:22px;">M</div><div class="brand-text" style="font-size:22px;">MietVerwaltung</div></div>
+      <div class="auth-head"><h2>Anmelden</h2><p class="subtitle">Ihre Vermieter-Arbeit. 80 % automatisch.</p></div>
+      <div class="form-group"><label class="form-label">E-Mail-Adresse</label><input type="email" class="form-input" placeholder="max@mustermann.de" value="max@mustermann.de"/></div>
+      <div class="form-group"><label class="form-label">Passwort</label><input type="password" class="form-input" placeholder="••••••••" value="password123"/></div>
+      <div class="flex justify-between items-center mb-3" style="font-size:13px;"><label class="checkbox-row"><input type="checkbox" checked/><span>Angemeldet bleiben</span></label><a href="#" style="color:var(--navy);font-weight:500;">Passwort vergessen?</a></div>
+      <button class="btn btn-primary btn-lg" onclick="app.login()">Anmelden</button>
+      <div class="auth-foot"><div style="margin:18px 0;border-top:1px solid var(--border);"></div>
+        <div style="font-size:13px;margin-bottom:10px;color:var(--text2);">Oder schnell mit</div>
+        <button class="social-btn" onclick="app.toast('Apple Login (Demo)')"><span style="font-size:16px;">🍎</span> Mit Apple anmelden</button>
+        <button class="social-btn" onclick="app.toast('Google Login (Demo)')"><span style="font-size:16px;font-weight:700;">G</span> Mit Google anmelden</button>
+      </div>
+      <div class="auth-foot">Noch kein Konto? <a href="#" onclick="app.navTo('register')" style="color:var(--navy);font-weight:600;">Jetzt registrieren</a></div>
+    </div>
+  </div>`;
+},
+
+register: function(){
+  return `<div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-logo"><div class="brand-icon" style="width:44px;height:44px;font-size:22px;">M</div><div class="brand-text" style="font-size:22px;">MietVerwaltung</div></div>
+      <div class="auth-head"><h2>Jetzt registrieren</h2><p class="subtitle">14 Tage kostenlos testen. Kreditkarte erforderlich. Jederzeit kündbar.</p></div>
+      <div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" placeholder="Max Mustermann" value="Max Mustermann"/></div>
+      <div class="form-group"><label class="form-label">E-Mail-Adresse</label><input type="email" class="form-input" placeholder="max@mustermann.de"/></div>
+      <div class="form-group"><label class="form-label">Passwort</label><input type="password" class="form-input" placeholder="Min. 12 Zeichen"/></div>
+      <div class="form-group">
+        <label class="checkbox-row"><input type="checkbox"/><span>Ich stimme den <a href="#">AGB</a> und der <a href="#">Datenschutzerklärung</a> zu.</span></label>
+      </div>
+      <button class="btn btn-primary btn-lg" onclick="app.navTo('2fa-setup')">Account erstellen & 14 Tage testen</button>
+      <div class="auth-foot">Bereits registriert? <a href="#" onclick="app.navTo('login')" style="color:var(--navy);font-weight:600;">Anmelden</a></div>
+    </div>
+  </div>`;
+},
+
+'2fa-setup': function(){
+  return `<div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-logo"><div class="brand-icon" style="width:44px;height:44px;font-size:22px;">🔐</div><div class="brand-text" style="font-size:22px;">2FA einrichten</div></div>
+      <div class="auth-head"><h2>Einmaliger Sicherheits-Check</h2><p class="subtitle">Ihre Mieter- und Finanzdaten verdienen Banksicherheit.</p></div>
+      <div class="card" style="text-align:center;margin-bottom:18px;padding:24px;">
+        <div style="width:170px;height:170px;background:#fff;margin:0 auto;border-radius:10px;display:grid;place-items:center;box-shadow:var(--shadow);border:1px solid var(--border);">
+          <div style="font-size:12px;color:var(--text2);">[QR-Code]</div>
+        </div>
+        <div class="mt-2" style="font-size:12px;color:var(--text2);font-family:monospace;">ZXCV-ASDF-QWER-1234</div>
+      </div>
+      <div class="form-group"><label class="form-label">6-stelliger Code aus der App</label><input type="text" class="form-input" placeholder="123456" maxlength="6"/></div>
+      <button class="btn btn-primary btn-lg" onclick="app.navTo('2fa-verify')">Sicherheit aktivieren</button>
+      <button class="btn btn-ghost btn-block mt-2" onclick="app.navTo('welcome')">E-Mail-Code als Alternative nutzen</button>
+    </div>
+  </div>`;
+},
+
+'2fa-verify': function(){
+  return `<div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-logo"><div class="brand-icon" style="width:44px;height:44px;font-size:22px;">🔢</div><div class="brand-text" style="font-size:22px;">Code bestätigen</div></div>
+      <div class="auth-head"><h2>Bestätigen Sie den Code</h2><p class="subtitle">Geben Sie den 6-stelligen Code aus Ihrem Authenticator ein.</p></div>
+      <div class="code-row mb-3">
+        <input class="code-input" maxlength="1" value="1"/><input class="code-input" maxlength="1" value="2"/><input class="code-input" maxlength="1" value="3"/>
+        <input class="code-input" maxlength="1" value="4"/><input class="code-input" maxlength="1" value="5"/><input class="code-input" maxlength="1" value="6"/>
+      </div>
+      <button class="btn btn-primary btn-lg" onclick="app.navTo('welcome')">Code prüfen</button>
+      <div class="auth-foot"><a href="#" style="color:var(--navy);font-weight:500;">Code erneut senden (00:58)</a></div>
+    </div>
+  </div>`;
+},
+
+welcome: function(){
+  return (state.showSetup?app.setupChecklistHtml():'')+`
+  <div class="card card-hero mb-3">
+    <div class="flex items-center gap-3 mb-2"><div class="list-avatar" style="background:#fff;color:var(--navy);font-size:18px;">${app.state.user.name[0]}</div><div><div class="card-title" style="font-size:24px;">Willkommen, ${app.state.user.name}!</div><div class="card-sub" style="color:rgba(255,255,255,0.85);">Lass uns dein Portfolio einrichten.</div></div></div>
+  </div>
+  <div class="grid-2 mb-3">
+    <div class="card card-xl card-hover" onclick="app.navTo('property-create')">
+      <div style="width:56px;height:56px;border-radius:14px;background:#fff;display:grid;place-items:center;color:var(--navy);font-size:26px;margin-bottom:16px;">🏠+</div>
+      <div class="card-title">Erstes Objekt anlegen</div>
+      <div class="card-sub">Legen Sie Ihr Haus oder Ihre Wohnung an. Wir füllen alles Weitere voraus.</div>
+      <button class="btn btn-primary mt-3" style="width:100%;">Los geht's</button>
+    </div>
+    <div class="card card-xl card-hover" onclick="app.login()">
+      <div style="width:56px;height:56px;border-radius:14px;background:var(--navy-light);display:grid;place-items:center;color:var(--navy);font-size:26px;margin-bottom:16px;">📊</div>
+      <div class="card-title">Demo-Daten erkunden</div>
+      <div class="card-sub">Sehen Sie sofort, wie MietVerwaltung mit Beispieldaten aussieht.</div>
+      <button class="btn btn-secondary mt-3" style="width:100%;">Demo öffnen</button>
+    </div>
+  </div>`;
+},
+
+
+dashboard: function(){
+  const kpis=[
+    {label:'Wohnungen vermietet',value:'3/5',sub:'2 WE frei',color:'var(--navy)'},
+    {label:'Mieteinnahmen/Monat',value:app.formatMoney(3680),sub:'inkl. Bewerber',color:'var(--green)'},
+    {label:'Offene Tickets',value:'2',sub:'1 dringend',color:'var(--orange)'},
+    {label:'Fällige Mieten',value:'1',sub:'Müller',color:'var(--red)'}
+  ];
+  return (state.showSetup?app.setupChecklistHtml():'')+`
+  <div class="grid-2 mb-3">
+    <div class="card card-hero">
+      <div class="card-title" style="font-size:26px;margin-bottom:8px;">Alles auf einen Blick</div>
+      <div class="card-sub" style="color:rgba(255,255,255,0.9);font-size:15px;">Guten Tag, ${app.state.user.name}. Sie haben 1 offene Frist und 2 offene Tickets.</div>
+      <div class="flex gap-2 mt-4" style="flex-wrap:wrap;">
+        <div style="background:rgba(255,255,255,0.16);padding:12px 16px;border-radius:12px;"><div style="font-size:22px;font-weight:700;">3</div><div style="font-size:12px;opacity:0.9;">Objekte</div></div>
+        <div style="background:rgba(255,255,255,0.16);padding:12px 16px;border-radius:12px;"><div style="font-size:22px;font-weight:700;">4</div><div style="font-size:12px;opacity:0.9;">Mieter</div></div>
+        <div style="background:rgba(255,255,255,0.16);padding:12px 16px;border-radius:12px;"><div style="font-size:22px;font-weight:700;">1</div><div style="font-size:12px;opacity:0.9;">Leerstand</div></div>
+      </div>
+    </div>
+    <div class="card card-xl">
+      <div class="card-title mb-2">✨ Smart Insights</div>
+      <div class="insight-item"><div class="insight-icon red">!</div><div><div style="font-size:14px;font-weight:600;">Miete überfällig</div><div class="card-sub">Müller — Mahnung prüfen.</div></div></div>
+      <div class="insight-item"><div class="insight-icon">✨</div><div><div style="font-size:14px;font-weight:600;">✨ Empfehlung</div><div class="card-sub">Wohnung 2 — 1. OG rechts ist seit 14 Tagen leer — Mietverlust: 1.050 €/Monat</div></div></div>
+      <div class="insight-item"><div class="insight-icon">✨</div><div><div style="font-size:14px;font-weight:600;">✨ NK-Abrechnung 2024</div><div class="card-sub">Für Objekt 1 steht die Abrechnung an.</div></div></div>
+      <div class="insight-item"><div class="insight-icon">✨</div><div><div style="font-size:14px;font-weight:600;">✨ Kaution</div><div class="card-sub">Tom Berger hat die Kaution noch nicht hinterlegt.</div></div></div>
+    </div>
+  </div>
+  <div class="grid-4 mb-3">${kpis.map(k=>`<div class="card card-hover"><div class="kpi-value" style="color:${k.color};">${k.value}</div><div class="kpi-label">${k.label}</div><div class="kpi-delta" style="color:${k.color==='var(--red)'?'var(--red)':'var(--green)'};">${k.sub}</div></div>`).join('')}</div>
+  <div class="grid-2 mb-3">
+    <div class="card card-xl">
+      <div class="card-title mb-3">Objekt-Übersicht</div>
+      ${app.data.properties.map(prop=>`<div class="mb-4" style="cursor:pointer;" onclick="app.navTo('property-detail');app.state.selectedProperty=${prop.id};app.render();">
+        <div class="flex justify-between items-start"><div><div class="list-title">${prop.name}</div><div class="card-sub">${prop.address}</div></div>${app.statusBadge(prop.status)}</div>
+        <div class="progress-bar mt-3"><div class="progress-fill" style="width:${prop.rented/prop.total*100}%;background:${prop.rented===prop.total?'var(--green)':'var(--navy)'};"></div></div>
+        <div class="card-sub mt-1">${prop.rented}/${prop.total} WE vermietet</div>
+      </div>`).join('')}
+    </div>
+    <div class="card card-xl">
+      <div class="card-title mb-3">Tickets & Insights</div>
+      ${app.data.tickets.slice(0,3).map(t=>`<div class="list-item" onclick="app.navTo('ticket-detail');app.state.selectedTicket=${t.id};app.render();">
+        <div class="list-content"><div class="list-title">${t.title}</div><div class="list-meta">${t.unit} • ${t.date}</div></div>
+        ${app.statusBadge(t.status)}
+      </div>`).join('')}
+      <button class="btn btn-ghost btn-block mt-3" onclick="app.navTo('tickets')">Alle Tickets anzeigen</button>
+    </div>
+  </div>
+  <div class="card card-xl mb-3">
+    <div class="card-title mb-3">Finanzen</div>
+    <div class="grid-4">
+      <div><div class="kpi-value">${app.formatMoney(54720)}</div><div class="kpi-label">Mieteinnahmen/Jahr</div></div>
+      <div><div class="kpi-value" style="color:var(--red);">${app.formatMoney(4310)}</div><div class="kpi-label">Kosten/Jahr</div></div>
+      <div><div class="kpi-value" style="color:var(--green);">${app.formatMoney(4250)}</div><div class="kpi-label">Netto/Monat</div></div>
+      <div><div class="kpi-value">1 WE</div><div class="kpi-label">Leerstand</div></div>
+    </div>
+  </div>
+  <div class="card card-xl">
+    <div class="card-title mb-3">Schnellaktionen</div>
+    <div class="quick-actions">
+      <button class="btn btn-secondary" onclick="app.navTo('property-create')">+ Objekt</button>
+      <button class="btn btn-secondary" onclick="app.navTo('tenant-create')">+ Mieter</button>
+      <button class="btn btn-secondary" onclick="app.openTicketCreate()">+ Ticket</button>
+      <button class="btn btn-secondary" onclick="app.openCostScan()">+ Beleg</button>
+    </div>
+  </div>`;
+},
+
+properties: function(){
+  return `<div class="flex justify-between items-center mb-3"><h2>Ihre Objekte</h2><button class="btn btn-primary" onclick="app.navTo('property-create')">+ Objekt</button></div>
+  <div class="grid-2">${app.data.properties.map(prop=>`<div class="card card-xl card-hover" onclick="app.navTo('property-detail');app.state.selectedProperty=${prop.id};app.render();">
+    ${app.propertyImg(prop)}
+    <div class="flex justify-between items-start mt-3"><div><div class="card-title">${prop.name}</div><div class="card-sub">${prop.address}</div></div>${app.statusBadge(prop.status)}</div>
+    <div class="progress-bar mt-3"><div class="progress-fill" style="width:${prop.rented/prop.total*100}%;background:${prop.rented===prop.total?'var(--green)':'var(--navy)'};"></div></div>
+    <div class="card-sub mt-1">${prop.rented}/${prop.total} WE vermietet</div>
+  </div>`).join('')}</div>`;
+},
+
+'property-detail': function(){
+  const prop=app.data.properties.find(p=>p.id===app.state.selectedProperty) || app.data.properties[0];
+  const units=app.data.units.filter(u=>u.propertyId===prop.id);
+  return `<button class="btn btn-ghost btn-sm mb-2" onclick="app.navTo('properties')">← Zurück</button>
+  ${app.propertyImg(prop)}
+  <div class="flex justify-between items-start mt-3 mb-4"><div><h2>${prop.name}</h2><div class="card-sub">${prop.address}</div></div>${app.statusBadge(prop.status)}</div>
+  <div class="tabs">
+    <div class="tab active">Einheiten</div>
+    <div class="tab" onclick="app.toast('In der Vollversion verfügbar')">Mieter</div>
+    <div class="tab" onclick="app.toast('In der Vollversion verfügbar')">Kennzahlen</div>
+  </div>
+  <div class="list">${units.map(u=>`<div class="list-item" onclick="app.navTo('unit-detail');app.state.selectedUnit=${u.id};app.render();">
+    <div class="list-content"><div class="list-title">${u.name}</div><div class="list-meta">${u.qm} m² • ${u.rooms} Zimmer • ${app.formatMoney(u.rent)}/Monat</div></div>
+    ${app.statusBadge(u.status)}
+  </div>`).join('')}</div>
+  <button class="btn btn-primary btn-block mt-3" onclick="app.navTo('unit-create')">+ Einheit hinzufügen</button>`;
+},
+
+'property-create': function(){
+  return `<div class="auth-page" style="align-items:flex-start;padding-top:40px;">
+    <div class="auth-card" style="max-width:520px;">
+      <div class="auth-head"><h2>Schritt 1 von 4: Objekt anlegen</h2><div class="progress-bar mb-3" style="max-width:300px;margin:0 auto;"><div class="progress-fill" style="width:25%"></div></div></div>
+      <div class="form-group"><label class="form-label">Objektbezeichnung</label><input type="text" class="form-input" placeholder="Mehrfamilienhaus Berlin"/></div>
+      <div class="form-group"><label class="form-label">Adresse</label><input type="text" class="form-input" placeholder="Straße, PLZ, Ort"/></div>
+      <div class="form-group"><label class="form-label">Baujahr (optional)</label><input type="number" class="form-input" placeholder="z. B. 1995"/></div>
+      <div class="flex gap-2"><button class="btn btn-ghost" onclick="app.navTo('welcome')">Überspringen</button><button class="btn btn-primary flex-1" onclick="app.toast('Objekt gespeichert');app.navTo('unit-create')">Objekt speichern & weiter</button></div>
+    </div>
+  </div>`;
+},
+
+units: function(){
+  return `<div class="flex justify-between items-center mb-3"><h2>Einheiten</h2><button class="btn btn-primary" onclick="app.navTo('unit-create')">+ Einheit</button></div>
+  <div class="list">${app.data.units.map(u=>`<div class="list-item" onclick="app.navTo('unit-detail');app.state.selectedUnit=${u.id};app.render();">
+    <div class="list-content"><div class="list-title">${u.name}</div><div class="list-meta">${u.qm} m² • ${u.rooms} Zimmer • ${app.formatMoney(u.rent)}/Monat</div></div>
+    ${app.statusBadge(u.status)}
+  </div>`).join('')}</div>`;
+},
+
+'unit-create': function(){
+  return `<div class="auth-page" style="align-items:flex-start;padding-top:40px;">
+    <div class="auth-card" style="max-width:520px;">
+      <div class="auth-head"><h2>Schritt 2 von 4: Wohnung hinzufügen</h2><div class="progress-bar mb-3" style="max-width:300px;margin:0 auto;"><div class="progress-fill" style="width:50%"></div></div></div>
+      <div class="form-group"><label class="form-label">Einheit / Wohnungsnummer</label><input type="text" class="form-input" placeholder="Wohnung 1"/></div>
+      <div class="grid-2">
+        <div class="form-group"><label class="form-label">Wohnfläche m²</label><input type="number" class="form-input" placeholder="65"/></div>
+        <div class="form-group"><label class="form-label">Zimmer</label><input type="number" class="form-input" placeholder="3"/></div>
+      </div>
+      <div class="form-group"><label class="form-label">Kaltmiete (€/Monat, optional)</label><input type="number" class="form-input" placeholder="950"/></div>
+      <div class="form-group"><label class="form-label">Umlageschlüssel</label><select class="form-select"><option>Nach Quadratmeter</option><option>Nach Personen</option><option>Nach Verbrauch</option></select></div>
+      <div class="flex gap-2"><button class="btn btn-ghost" onclick="app.navTo('welcome')">Später</button><button class="btn btn-primary flex-1" onclick="app.toast('Wohnung hinzugefügt');app.navTo('tenant-create')">Wohnung speichern & weiter</button></div>
+    </div>
+  </div>`;
+},
+
+'unit-detail': function(){
+  const u=app.data.units.find(x=>x.id===app.state.selectedUnit) || app.data.units[0];
+  const tenant=u.tenantId ? app.data.tenants.find(t=>t.id===u.tenantId) : null;
+  return `<button class="btn btn-ghost btn-sm mb-2" onclick="app.navTo('property-detail')">← Zurück</button>
+  <div class="card card-xl">
+    <div class="flex justify-between items-start"><div><h2>${u.name}</h2><div class="card-sub">${u.qm} m² • ${u.rooms} Zimmer • ${u.floor}</div></div>${app.statusBadge(u.status)}</div>
+    <div class="mt-4">${u.amenities.map(a=>'<span class="unit-badge">'+a+'</span>').join('')}</div>
+    <div class="grid-2 mt-4">
+      <div><div class="card-sub">Boden</div><div style="font-weight:500;">${u.floorDetail}</div></div>
+      <div><div class="card-sub">Heizung + Baujahr</div><div style="font-weight:500;">${u.heating}</div></div>
+      <div><div class="card-sub">Letzte Renovierung</div><div style="font-weight:500;">${u.lastReno}</div></div>
+      <div><div class="card-sub">Energieklasse</div><div style="font-weight:500;">${u.energy}</div></div>
+      <div><div class="card-sub">Stockwerk</div><div style="font-weight:500;">${u.floor}</div></div>
+      <div><div class="card-sub">Verfügbarkeit</div><div style="font-weight:500;">${u.available}</div></div>
+    </div>
+  </div>
+  <div class="card card-xl mt-3">
+    <div class="card-title mb-3">Aktueller Mieter</div>
+    ${tenant ? `<div class="list-item" onclick="app.navTo('tenant-detail');app.state.selectedTenant=${tenant.id};app.render();">
+      ${app.avatar(tenant.first+' '+tenant.last)}
+      <div class="list-content"><div class="list-title">${tenant.first} ${tenant.last}</div><div class="list-meta">Seit ${tenant.since} • ${app.formatMoney(u.rent)}</div></div>
+    </div>` : `<div class="text-center py-4"><div class="card-sub">Frei — Mieter anlegen</div><button class="btn btn-primary mt-3" onclick="app.navTo('tenant-create')">+ Mieter zuweisen</button></div>`}
+  </div>
+  <div class="card card-xl mt-3">
+    <div class="card-title mb-3">Mieter-Historie</div>
+    ${u.history.length ? u.history.map(h=>`<div class="insight-item">
+      <div class="insight-icon">👤</div>
+      <div class="flex-1"><div style="font-size:14px;font-weight:600;">${h.name}</div><div class="card-sub">${h.from}–${h.to} • ${app.formatMoney(h.rent)} • Auszugsgrund: ${h.reason}</div></div>
+    </div>`).join('') : '<div class="card-sub">Keine vergangenen Mieter.</div>'}
+  </div>
+  <div class="card card-xl mt-3">
+    <div class="card-title mb-3">Dokumente</div>
+    <div class="upload-zone" onclick="app.toast('Dokument-Upload (Demo)')">
+      <div style="font-size:32px;">📤</div>
+      <div class="mt-1">Dokument hierher ziehen oder klicken</div>
+    </div>
+  </div>`;
+},
+
+
+tenants: function(){
+  return `<div class="flex justify-between items-center mb-3"><h2>Mieter</h2><button class="btn btn-primary" onclick="app.navTo('tenant-create')">+ Mieter</button></div>
+  <div class="list">${app.data.tenants.map(t=>{
+    const u = app.data.units.find(u=>u.tenantId===t.id);
+    const applied = t.appliedUnitId ? app.data.units.find(u=>u.id===t.appliedUnitId) : null;
+    const unitLabel = u ? u.name : (applied ? `Bewerbung: ${applied.name}` : '-');
+    return `<div class="list-item" onclick="app.state.selectedTenant=${t.id};app.navTo('${t.status==='Bewerbung'?'tenant-apply':'tenant-detail'}');app.render();">
+    ${app.avatar(t.first+' '+t.last)}
+    <div class="list-content"><div class="list-title">${t.first} ${t.last}</div><div class="list-meta">${unitLabel} • ${t.email}</div></div>
+    ${app.statusBadge(t.status)}
+  </div>`;
+  }).join('')}</div>`;
+},
+
+'tenant-detail': function(){
+  const t=app.data.tenants.find(x=>x.id===app.state.selectedTenant) || app.data.tenants[0];
+  const u=app.data.units.find(x=>x.tenantId===t.id);
+  return `<button class="btn btn-ghost btn-sm mb-2" onclick="app.navTo('tenants')">← Zurück</button>
+  <div class="card card-xl">
+    <div class="flex items-center gap-3">${app.avatar(t.first+' '+t.last)}<div><h2>${t.first} ${t.last}</h2><div class="card-sub">${t.email} • ${t.phone}</div></div></div>
+    <div class="grid-2 mt-4">
+      <div><div class="card-sub">Status</div><div>${app.statusBadge(t.status)}</div></div>
+      <div><div class="card-sub">Wohnung</div><div style="font-weight:500;">${u?.name||'-'}</div></div>
+      <div><div class="card-sub">Mietbeginn</div><div style="font-weight:500;">${t.since}</div></div>
+      <div><div class="card-sub">Kaution</div><div style="font-weight:500;">${app.formatMoney(t.deposit)}</div></div>
+    </div>
+  </div>
+  <div class="tabs mt-3">
+    <div class="tab active">Tickets</div>
+    <div class="tab" onclick="app.toast('In der Vollversion verfügbar')">Abrechnungen</div>
+    <div class="tab" onclick="app.toast('In der Vollversion verfügbar')">Dokumente</div>
+    <div class="tab" onclick="app.toast('In der Vollversion verfügbar')">Historie</div>
+  </div>
+  <div class="card card-xl">
+    <div class="list">${app.data.tickets.filter(x=>x.tenant===t.first+' '+t.last).map(tk=>`<div class="list-item" onclick="app.navTo('ticket-detail');app.state.selectedTicket=${tk.id};app.render();">
+      <div class="list-content"><div class="list-title">${tk.title}</div><div class="list-meta">${tk.date}</div></div>
+      ${app.statusBadge(tk.status)}
+    </div>`).join('')||'<div class="card-sub text-center py-4">Keine Tickets.</div>'}
+    </div>
+  </div>`;
+},
+
+'tenant-create': function(){
+  const free=app.data.units.filter(u=>!u.tenantId && u.id!==3);
+  const applied=app.data.units.find(u=>u.id===3);
+  return `<button class="btn btn-ghost btn-sm mb-2" onclick="app.navTo('tenants')">← Zurück</button>
+  <h2 class="mb-3">Mieter anlegen</h2>
+  <div class="card card-xl">
+    <div class="form-group"><label class="form-label">Vorname</label><input type="text" class="form-input" placeholder="Tom"/></div>
+    <div class="form-group"><label class="form-label">Nachname</label><input type="text" class="form-input" placeholder="Berger"/></div>
+    <div class="form-group"><label class="form-label">E-Mail</label><input type="email" class="form-input" placeholder="tom@bewerber.de"/></div>
+    <div class="form-group"><label class="form-label">Telefon</label><input type="tel" class="form-input" placeholder="0176 9876543"/></div>
+  </div>
+  <div class="card card-xl mt-3">
+    <div class="card-title mb-2">Wohnung zuweisen</div>
+    <div class="card-sub mb-2">Beworbene Wohnung</div>
+    ${applied ? `<div class="list-item selected">
+      <div class="list-content"><div class="list-title">✓ ${applied.name}</div><div class="list-meta">${applied.qm} m² • ${app.formatMoney(applied.rent)}</div></div>
+      ${app.statusBadge('frei')}
+    </div>` : ''}
+    <div class="card-sub mb-2 mt-3">Weitere freie Wohnungen</div>
+    ${free.map(u=>`<div class="list-item">
+      <div class="list-content"><div class="list-title">${u.name}</div><div class="list-meta">${u.qm} m² • ${app.formatMoney(u.rent)}</div></div>
+      ${app.statusBadge('frei')}
+    </div>`).join('')}
+  </div>
+  <button class="btn btn-primary btn-block btn-lg mt-3" onclick="app.toast('Mieter gespeichert');app.navTo('tenants')">Mieter speichern</button>`;
+},
+
+'tenant-apply': function(){
+  return `<button class="btn btn-ghost btn-sm mb-2" onclick="app.navTo('tenants')">← Zurück</button>
+  <h2 class="mb-3">Bewerber prüfen: Tom Berger</h2>
+  <div class="card card-xl">
+    ${app.avatar('Tom Berger')}
+    <div class="mt-2"><div class="list-title">Tom Berger</div><div class="card-sub">tom@bewerber.de • 0176 9876543</div></div>
+    <div class="mt-3">${['Ausweis','Lohnabrechnung','Schufa-Auskunft'].map(d=>`<div class="upload-zone mb-2" style="padding:18px;"><div>📄 ${d} hochladen</div></div>`).join('')}</div>
+  </div>
+  <div class="card card-xl mt-3">
+    <div class="card-title mb-2">Profil</div>
+    <div class="grid-2">
+      <div><div class="card-sub">Nettoeinkommen</div><div style="font-weight:500;">3.200 €/Monat</div></div>
+      <div><div class="card-sub">Beschäftigt seit</div><div style="font-weight:500;">3 Jahren</div></div>
+    </div>
+  </div>
+  <div class="flex gap-2 mt-3"><button class="btn btn-danger flex-1" onclick="app.toast('Bewerbung abgelehnt');app.navTo('tenants')">Ablehnen</button><button class="btn btn-primary flex-1" onclick="app.toast('Mieter angenommen');app.navTo('tenants')">Annehmen</button></div>`;
+},
+
+leases: function(){
+  const leases=app.data.tenants.filter(t=>t.status==='aktiv').map(t=>{ const u=app.data.units.find(x=>x.tenantId===t.id); return {t,u}; });
+  return `<div class="flex justify-between items-center mb-3"><h2>Mietverträge</h2><button class="btn btn-primary" onclick="app.toast('Vertrag anlegen (Demo)')">+ Vertrag</button></div>
+  <div class="list">${leases.map(l=>`<div class="list-item" onclick="app.toast('Vertrag-Detail (Demo)')">
+    ${app.avatar(l.t.first+' '+l.t.last)}
+    <div class="list-content"><div class="list-title">${l.t.first} ${l.t.last}</div><div class="list-meta">${l.u?.name||'-'} • Seit ${l.t.since} • ${app.formatMoney(l.u?.rent||0)}</div></div>
+    ${app.statusBadge('aktiv')}
+  </div>`).join('')}
+</div>`;
+},
+
+tickets: function(){
+  const filter=state.ticketFilter||'all';
+  const filtered=filter==='all'?app.data.tickets:app.data.tickets.filter(t=>t.status===filter);
+  return `<div class="flex justify-between items-center mb-3"><h2>Tickets</h2><button class="btn btn-primary" onclick="app.openTicketCreate()">+ Ticket</button></div>
+  <div class="tabs mb-2">
+    <div class="tab ${filter==='all'?'active':''}" onclick="app.state.ticketFilter='all';app.render();">Alle</div>
+    <div class="tab ${filter==='offen'?'active':''}" onclick="app.state.ticketFilter='offen';app.render();">Offen</div>
+    <div class="tab ${filter==='in_bearbeitung'?'active':''}" onclick="app.state.ticketFilter='in_bearbeitung';app.render();">In Bearbeitung</div>
+    <div class="tab ${filter==='erledigt'?'active':''}" onclick="app.state.ticketFilter='erledigt';app.render();">Erledigt</div>
+  </div>
+  <div class="list">${filtered.map(t=>`<div class="list-item" onclick="app.navTo('ticket-detail');app.state.selectedTicket=${t.id};app.render();">
+    <div class="list-content"><div class="list-title">${t.title}</div><div class="list-meta">${t.unit} • ${t.tenant} • ${t.date}</div></div>
+    ${app.statusBadge(t.status)}
+  </div>`).join('')}
+  </div>`;
+},
+
+'ticket-detail': function(){
+  const t=app.data.tickets.find(x=>x.id===app.state.selectedTicket) || app.data.tickets[0];
+  return `<button class="btn btn-ghost btn-sm mb-2" onclick="app.navTo('tickets')">← Zurück</button>
+  <div class="card card-xl">
+    <div class="flex justify-between items-start"><div><h2>${t.title}</h2><div class="card-sub">${t.unit} • ${t.tenant} • ${t.date}</div></div>${app.statusBadge(t.status)}</div>
+  </div>
+  <div class="card card-xl mt-3">
+    ${t.messages.map(m=>{
+      const isLandlord=m.from==='landlord';
+      const align=isLandlord?'text-align:right;':'';
+      const bg=isLandlord?'var(--navy)':'var(--card)';
+      const color=isLandlord?'#fff':'var(--text)';
+      return `<div class="mb-3" style="${align}">
+      <div style="display:inline-block;max-width:80%;background:${bg};color:${color};padding:14px 16px;border-radius:18px;box-shadow:var(--shadow);">
+        <div>${m.text}</div>
+        <div style="font-size:11px;opacity:0.7;margin-top:4px;">${m.time}</div>
+      </div>
+    </div>`;
+    }).join('')}
+    ${state.replySent?'<div class="badge badge-done mb-3">✨ Antwort gesendet</div>':''}
+  </div>
+  <div class="card card-xl mt-3">
+    <button class="btn btn-secondary btn-block" onclick="app.suggestReply()" style="margin-bottom:8px;">✨ Antwort vorschlagen</button>
+    <div id="reply-suggestion" class="hidden">
+      <textarea class="form-textarea" id="reply-text">Hallo Frau Schmidt,
+
+danke für Ihre Meldung. Ich habe Ihr Ticket an den Hausmeister weitergeleitet und melde mich bis morgen mit einem Termin.
+
+Mit freundlichen Grüßen
+${app.state.user.name}</textarea>
+      <div class="flex gap-2 mt-2"><button class="btn btn-ghost flex-1" onclick="document.getElementById('reply-suggestion').classList.add('hidden')">Abbrechen</button><button class="btn btn-primary flex-1" onclick="app.toast('Antwort gesendet');state.replySent=true;document.getElementById('reply-suggestion').classList.add('hidden');app.render();">Senden</button></div>
+    </div>
+    <div class="flex gap-2 mt-3">
+      <button class="btn btn-secondary flex-1" onclick="app.toast('Status: In Bearbeitung')">In Bearbeitung</button>
+      <button class="btn btn-primary flex-1" onclick="app.toast('Status: Erledigt')">Erledigt</button>
+    </div>
+  </div>`;
+},
+
+costs: function(){
+  return `<div class="flex justify-between items-center mb-3"><h2>Kosten</h2><button class="btn btn-primary" onclick="app.openCostScan()">+ Beleg erfassen</button></div>
+  <div class="grid-2">${app.data.costs.map(c=>`<div class="card card-xl card-hover">
+    <div class="flex justify-between items-start"><div class="card-title">${c.category}</div>${c.scanned?'<span class="badge badge-ai">✨ automatisch</span>':''}</div>
+    <div class="kpi-value mt-2" style="${c.amount>2000?'color:var(--red);':''}">${app.formatMoney(c.amount)}</div>
+    <div class="card-sub">${c.date} • ${c.supplier}</div>
+    <div class="card-sub mt-1">${c.umlage?'Umlagefähig ✓':'Nicht umlagefähig'}</div>
+  </div>`).join('')}</div>
+  <div class="card card-xl mt-3">
+    <div class="card-title mb-3">Kosten erfassen</div>
+    <div class="grid-2">
+      <div class="form-group"><label class="form-label">Kategorie</label><select class="form-select"><option>Strom</option><option>Gas</option><option>Wasser</option><option>Müll</option><option>Versicherung</option></select></div>
+      <div class="form-group"><label class="form-label">Betrag</label><input type="number" class="form-input" placeholder="0,00"/></div>
+      <div class="form-group"><label class="form-label">Datum</label><input type="date" class="form-input"/></div>
+      <div class="form-group"><label class="form-label">Umlagefähig</label><select class="form-select"><option>Ja</option><option>Nein</option></select></div>
+    </div>
+    <button class="btn btn-primary btn-block mt-2" onclick="app.toast('Kosten gespeichert')">Kosten speichern</button>
+  </div>`;
+},
+
+
+settlements: function(){
+  return `<div class="flex justify-between items-center mb-3"><h2>Nebenkostenabrechnungen</h2><button class="btn btn-primary" onclick="app.openSettlementWizard()">+ Abrechnung</button></div>
+  <div class="list">${app.data.settlements.map(s=>`<div class="list-item" onclick="app.toast('Abrechnungs-Detail (Demo)')">
+    <div class="list-content"><div class="list-title">NK-Abrechnung ${s.year}</div><div class="list-meta">${app.data.properties.find(p=>p.id===s.propertyId)?.name} • ${s.date} • ${s.distributed} WE</div></div>
+    <div class="text-right"><div style="font-weight:700;">${app.formatMoney(s.total)}</div>${app.statusBadge(s.status)}</div>
+  </div>`).join('')}
+</div>`;
+},
+
+documents: function(){
+  const filter=state.docFilter||'all';
+  const filtered=filter==='all'?app.data.documents:app.data.documents.filter(d=>d.category===filter);
+  return `<div class="flex justify-between items-center mb-3"><h2>Dokumente</h2><button class="btn btn-primary" onclick="app.openDocCreate()">+ Dokument</button></div>
+  <div class="tabs mb-2">
+    <div class="tab ${filter==='all'?'active':''}" onclick="app.state.docFilter='all';app.render();">Alle</div>
+    <div class="tab ${filter==='Vertrag'?'active':''}" onclick="app.state.docFilter='Vertrag';app.render();">Verträge</div>
+    <div class="tab ${filter==='Protokoll'?'active':''}" onclick="app.state.docFilter='Protokoll';app.render();">Protokolle</div>
+    <div class="tab ${filter==='Abrechnung'?'active':''}" onclick="app.state.docFilter='Abrechnung';app.render();">Abrechnungen</div>
+    <div class="tab ${filter==='Bewerbung'?'active':''}" onclick="app.state.docFilter='Bewerbung';app.render();">Bewerbungen</div>
+    <div class="tab ${filter==='Beleg'?'active':''}" onclick="app.state.docFilter='Beleg';app.render();">Belege</div>
+  </div>
+  <div class="grid-2">${filtered.map(d=>`<div class="card card-xl card-hover">
+    <div style="width:100%;height:130px;background:linear-gradient(135deg,var(--navy-light) 0%,var(--card) 100%);border-radius:10px;display:grid;place-items:center;font-size:40px;">📄</div>
+    <div class="card-title mt-2">${d.title}</div>
+    <div class="card-sub">${d.category} • ${d.date} • ${d.size}</div>
+  </div>`).join('')}
+</div>
+  <div class="upload-zone mt-3" onclick="app.toast('Dokument-Upload (Demo)')"><div style="font-size:32px;">📤</div><div class="mt-1">Dokument hierher ziehen oder klicken</div></div>`;
+},
+
+deadlines: function(){
+  const days=['Mo','Di','Mi','Do','Fr','Sa','So'];
+  return `<h2 class="mb-3">Fristen</h2>
+  <div class="card card-xl">
+    <div class="flex justify-between items-center mb-3"><button class="btn btn-ghost btn-sm">←</button><div style="font-weight:700;">Oktober 2026</div><button class="btn btn-ghost btn-sm">→</button></div>
+    <div class="cal-grid mb-2">${days.map(d=>`<div class="text-center" style="font-size:12px;font-weight:600;color:var(--text2);">${d}</div>`).join('')}</div>
+    <div class="cal-grid">${Array.from({length:31},(_,i)=>i+1).map(d=>{
+      const ev=app.data.deadlines.find(x=>x.day===d);
+      let cls=''; if(d===28) cls='today'; else if(ev?.level==='red') cls='due-red'; else if(ev?.level==='yellow') cls='due-yellow';
+      return `<div class="cal-day ${cls}" title="${ev?.title||''}">${d}${ev?'<div style="width:4px;height:4px;border-radius:50%;background:'+(ev.level==='red'?'var(--red)':ev.level==='yellow'?'var(--orange)':'var(--green)')+';margin-top:2px;"></div>':''}</div>`;
+    }).join('')}
+    </div>
+  </div>
+  <div class="card card-xl mt-3">
+    <div class="card-title mb-2">Anstehende Fristen</div>
+    ${app.data.deadlines.map(d=>`<div class="insight-item">
+      <div class="insight-icon" style="background:${d.level==='red'?'var(--red-bg)':d.level==='yellow'?'var(--orange-bg)':'var(--green-bg)'};color:${d.level==='red'?'var(--red)':d.level==='yellow'?'var(--orange)':'var(--green)'}">${d.level==='red'?'!':d.level==='yellow'?'⚑':'✓'}</div>
+      <div class="flex-1"><div style="font-size:14px;font-weight:600;">${d.title}</div><div class="card-sub">${d.day}. Oktober 2026</div></div>
+    </div>`).join('')}
+  </div>`;
+},
+
+settings: function(){
+  const used=2, limit=2;
+  return `<h2 class="mb-3">Einstellungen</h2>
+  <div class="grid-2">
+    <div class="card card-xl">
+      <div class="card-title">Profil</div>
+      <div class="form-group mt-2"><label class="form-label">Name</label><input type="text" class="form-input" value="Max Mustermann"/></div>
+      <div class="form-group"><label class="form-label">E-Mail</label><input type="email" class="form-input" value="max@mustermann.de"/></div>
+      <button class="btn btn-secondary btn-block" onclick="app.toast('Profil gespeichert')">Speichern</button>
+    </div>
+    <div class="card card-xl">
+      <div class="card-title">Aktueller Plan</div>
+      <div class="badge badge-done mb-2">Pro-WE</div>
+      <div class="card-sub mb-3">3 WE · 29,25 EUR/Monat</div>
+      <div class="card-sub mb-3">14-Tage Trial · Jederzeit kündbar</div>
+      <button class="btn btn-primary btn-block" onclick="app.openUpgradeModal()">Upgrade für mehr Wohnungen</button>
+      <hr style="border:0;border-top:1px solid var(--border);margin:18px 0;"/>
+      <button class="btn btn-secondary btn-block" onclick="app.setRole('tenant');app.navTo('tenant-start')">🔑 Als Mieter ansehen</button>
+    </div>
+    <div class="card card-xl">
+      <div class="card-title">Erscheinungsbild</div>
+      <div class="form-group mt-2"><label class="form-label">Dark Mode</label><button class="btn btn-secondary btn-block" id="theme-toggle-settings" onclick="app.toggleTheme()">🌙 / ☀️ Dark Mode umschalten</button></div>
+      <div class="form-group"><label class="form-label">Briefkopf-Logo</label><div class="upload-zone" onclick="app.toast('Logo-Upload (Demo)')" style="padding:20px;">📷 Logo hochladen</div></div>
+    </div>
+    <div class="card card-xl">
+      <div class="card-title">DSGVO & Daten</div>
+      <button class="btn btn-secondary btn-block mt-2" onclick="app.toast('Datenexport gestartet')">Meine Daten exportieren</button>
+      <button class="btn btn-danger btn-block mt-2" onclick="app.toast('Löschung beantragt')">Account löschen</button>
+    </div>
+  </div>`;
+},
+
+// === MIETER PORTAL ===
+'tenant-start': function(){
+  return `<div class="card card-hero mb-3">
+    <div class="card-title" style="font-size:24px;margin-bottom:6px;">Hallo, Anna! 👋</div>
+    <div class="card-sub" style="color:rgba(255,255,255,0.9);">Ihr Mieter-Portal für Berliner Straße 12, Wohnung 1.</div>
+  </div>
+  <button class="btn btn-ghost btn-block mb-3" style="background:var(--card);" onclick="app.setRole('landlord');app.navTo('dashboard')">← Zurück zum Vermieter-Portal</button>
+  <div class="grid-2 mb-3">
+    <div class="card card-xl"><div class="kpi-value">1</div><div class="kpi-label">Offenes Ticket</div></div>
+    <div class="card card-xl"><div class="kpi-value">3</div><div class="kpi-label">Dokumente</div></div>
+  </div>
+  <div class="card card-xl mb-3">
+    <div class="card-title mb-3">Meine Daten</div>
+    <div class="grid-2">
+      <div><div class="card-sub">Kaltmiete</div><div style="font-weight:700;">950,00 €</div></div>
+      <div><div class="card-sub">Nebenkostenvorauszahlung</div><div style="font-weight:700;">180,00 €</div></div>
+      <div><div class="card-sub">Nächste Zahlung</div><div style="font-weight:700;">03.11.2026</div></div>
+      <div><div class="card-sub">Kaution</div><div style="font-weight:700;">2.850,00 €</div></div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <button class="btn btn-primary btn-lg" onclick="app.openTenantTicketModal()">+ Neues Ticket</button>
+    <button class="btn btn-secondary btn-lg" onclick="app.navTo('tenant-docs')">Dokumente</button>
+  </div>
+  <div class="card card-xl mt-3">
+    <div class="card-title mb-2">Letzte Abrechnung</div>
+    <div class="list-item">
+      <div class="list-content"><div class="list-title">NK-Abrechnung 2024</div><div class="list-meta">28.02.2026 • 2,4 MB</div></div>
+      <button class="btn btn-sm btn-secondary">Öffnen</button>
+    </div>
+  </div>`;
+},
+
+'tenant-tickets': function(){
+  const myTickets=app.data.tickets.filter(t=>t.tenant==='Anna Müller');
+  return `<div class="flex justify-between items-center mb-3"><h2>Meine Tickets</h2><button class="btn btn-primary" onclick="app.openTenantTicketModal()">+ Ticket</button></div>
+  <div class="list">${myTickets.map(t=>`<div class="list-item">
+    <div class="list-content"><div class="list-title">${t.title}</div><div class="list-meta">${t.date}</div></div>
+    ${app.statusBadge(t.status)}
+  </div>`).join('')||'<div class="card card-xl text-center py-5"><div class="card-sub">Noch keine Tickets. Erstellen Sie bei einem Defekt direkt eines.</div></div>'}
+  </div>`;
+},
+
+'tenant-docs': function(){
+  const docs=app.data.documents.filter(d=>['Vertrag','Protokoll','Abrechnung'].includes(d.category));
+  return `<h2 class="mb-3">Meine Dokumente</h2>
+  <div class="tabs mb-2">
+    <div class="tab active">Verträge / Protokolle</div><div class="tab" onclick="app.toast('In der Vollversion verfügbar')">NK-Abrechnungen</div>
+  </div>
+  <div class="grid-2">${docs.map(d=>`<div class="card card-xl card-hover">
+    <div style="width:100%;height:130px;background:linear-gradient(135deg,var(--navy-light) 0%,var(--card) 100%);border-radius:10px;display:grid;place-items:center;font-size:40px;">📄</div>
+    <div class="card-title mt-2">${d.title}</div>
+    <div class="card-sub">${d.category} • ${d.date} • ${d.size}</div>
+  </div>`).join('')}
+</div>`;
+},
+
+};
+
+function openTicketCreate(){
+  openSheet(`<h3>Neues Ticket</h3>
+  <div class="form-group"><label class="form-label">Titel</label><input type="text" class="form-input" placeholder="Kurzbeschreibung"/></div>
+  <div class="form-group"><label class="form-label">Kategorie</label><select class="form-select"><option>Wasser</option><option>Heizung</option><option>Elektro</option><option>Schimmel</option><option>Sonstiges</option></select></div>
+  <div class="form-group"><label class="form-label">Priorität</label><select class="form-select"><option>Normal</option><option>Dringend</option><option>Niedrig</option></select></div>
+  <div class="form-group"><label class="form-label">Beschreibung</label><textarea class="form-textarea" placeholder="Was ist passiert?"></textarea></div>
+  <div class="upload-zone" style="padding:24px;" onclick="app.toast('Foto-Upload (Demo)')"><div style="font-size:32px;">📷</div><div class="mt-1">Foto anhängen</div></div>
+  <button class="btn btn-primary btn-block btn-lg mt-3" onclick="app.closeSheet();app.toast('Ticket erstellt')">Ticket senden</button>`);
+}
+
+function openCostScan(){
+  openSheet(`<h3>Beleg scannen</h3>
+  <div class="scan-preview" style="height:240px;background:#222;">
+    <div class="scan-frame"></div>
+    <div style="position:absolute;bottom:18%;left:0;right:0;text-align:center;color:#fff;font-size:14px;">Beleg vollständig ins Rechteck halten</div>
+  </div>
+  <button class="btn btn-primary btn-block btn-lg mt-3" onclick="app.runScan()">Foto aufnehmen & scannen</button>`);
+}
+
+function runScan(){
+  const s=$('#sheet-content');
+  s.innerHTML=`<h3>Beleg wird gelesen…</h3>
+  <div class="scan-preview" style="height:180px;background:#ddd;border-radius:10px;display:grid;place-items:center;color:#666;">[Beleg-Vorschau]</div>
+  <div class="progress-bar mt-3"><div class="progress-fill" style="width:60%"></div></div>
+  <div class="mt-2" style="text-align:center;color:var(--text2);font-size:14px;">Wir erkennen Betrag, Datum und Anbieter…</div>
+  <div class="mt-3">
+    <div class="skeleton" style="height:52px;margin-bottom:12px;border-radius:10px;"></div>
+    <div class="skeleton" style="height:52px;margin-bottom:12px;border-radius:10px;"></div>
+    <div class="skeleton" style="height:52px;border-radius:10px;"></div>
+  </div>`;
+  setTimeout(()=>{
+    s.innerHTML=`<h3>Erkannt: Heizungswartung</h3>
+    <div class="form-group"><label class="form-label">Händler</label><input type="text" class="form-input" value="Heizungsbau Schmidt GmbH" style="border-color:var(--green);"/></div>
+    <div class="form-group"><label class="form-label">Datum</label><input type="text" class="form-input" value="14.03.2026" style="border-color:var(--green);"/></div>
+    <div class="form-group"><label class="form-label">Betrag</label><input type="text" class="form-input" value="249,80 €" style="border-color:var(--green);"/></div>
+    <div class="form-group"><label class="form-label">Kategorie</label><select class="form-select"><option selected>Heizung / Wartung</option><option>Strom</option><option>Sonstiges</option></select></div>
+    <div class="badge badge-ok mb-2">✓ Sehr sicher</div>
+    <div class="flex gap-2"><button class="btn btn-ghost flex-1" onclick="app.closeSheet()">Abbrechen</button><button class="btn btn-primary flex-1" onclick="app.closeSheet();app.toast('Kosten übernommen')">Übernehmen</button></div>`;
+  },2000);
+}
+
+function openSettlementWizard(){
+  openModal(`
+<div class="modal-header"><div><h3>Abrechnung erstellen</h3></div><button class="btn btn-ghost btn-sm" onclick="app.closeModal()">${app.icon('close')}</button></div>
+<div class="modal-body">
+  <div class="wizard-stepper mb-3"><div class="wizard-dot active"></div><div class="wizard-dot"></div><div class="wizard-dot"></div><div class="wizard-dot"></div></div>
+  <div class="form-group"><label class="form-label">Jahr wählen</label><select class="form-select"><option>2024</option><option>2023</option></select></div>
+  <div class="form-group"><label class="form-label">Objekt</label><select class="form-select"><option>Berliner Straße 12</option><option>Hauptplatz 5</option><option>Düsseldorfer Allee 8</option></select></div>
+  <div class="card card-xl" style="background:var(--navy-light);">
+    <div class="badge badge-ai">✨ Automatisch</div>
+    <div class="mt-1" style="font-size:14px;">Die KI sortiert anschließend alle Belege und prüft die Vollständigkeit.</div>
+  </div>
+</div>
+<div class="modal-footer"><button class="btn btn-ghost" onclick="app.closeModal()">Abbrechen</button><button class="btn btn-primary" onclick="app.runSettlementStep2()">Weiter</button></div>`);
+}
+
+function runSettlementStep2(){
+  $('#modal').innerHTML=`
+<div class="modal-header"><div><h3>Belege zuordnen</h3></div><button class="btn btn-ghost btn-sm" onclick="app.closeModal()">${app.icon('close')}</button></div>
+<div class="modal-body">
+  <div class="wizard-stepper mb-3"><div class="wizard-dot completed"></div><div class="wizard-dot active"></div><div class="wizard-dot"></div><div class="wizard-dot"></div></div>
+  <div style="font-size:14px;margin-bottom:14px;">✨ KI hat 8 von 10 Belegen zugeordnet.</div>
+  ${app.data.costs.slice(0,3).map(c=>`<div class="card card-xl mb-2">
+    <div class="flex justify-between"><div class="card-title">${c.category}</div><span class="badge badge-ai">✓ zugeordnet</span></div>
+    <div class="card-sub">${app.formatMoney(c.amount)} • ${c.supplier}</div>
+  </div>`).join('')}
+  <div class="card card-xl mb-2" style="border:1px solid var(--orange);">
+    <div class="flex justify-between"><div class="card-title">Dachreparatur</div><span class="badge badge-open">Unsicher — bitte prüfen</span></div>
+    <div class="card-sub">1.800,00 € • Keine klare Zuordnung</div>
+    <select class="form-select mt-2"><option>Kategorie wählen</option><option>Instanthaltung</option><option>Nicht umlagefähig</option></select>
+  </div>
+</div>
+<div class="modal-footer"><button class="btn btn-ghost" onclick="app.closeModal()">Abbrechen</button><button class="btn btn-primary" onclick="app.runSettlementStep3()">Vorschau</button></div>`;
+}
+
+function runSettlementStep3(){
+  $('#modal').innerHTML=`
+<div class="modal-header"><div><h3>Vorschau</h3></div><button class="btn btn-ghost btn-sm" onclick="app.closeModal()">${app.icon('close')}</button></div>
+<div class="modal-body">
+  <div class="wizard-stepper mb-3"><div class="wizard-dot completed"></div><div class="wizard-dot completed"></div><div class="wizard-dot active"></div><div class="wizard-dot"></div></div>
+  <div class="card card-xl" style="background:var(--bg);padding:24px;font-family:serif;line-height:1.6;">
+    <p><strong>Nebenkostenabrechnung 2024</strong></p>
+    <p>Berliner Straße 12</p>
+    <p>Gesamtkosten: 4.310,70 €</p>
+    <p>Verteilung nach Quadratmeter: 120 m² Gesamtfläche</p>
+    <p>Ihr Anteil (65 m²): 2.335,13 €</p>
+  </div>
+</div>
+<div class="modal-footer"><button class="btn btn-ghost" onclick="app.closeModal()">Zurück</button><button class="btn btn-primary" onclick="app.closeModal();app.toast('Abrechnung erstellt & PDF generiert')">Bestätigen & PDF erstellen</button></div>`;
+}
+
+function openDocCreate(){
+  openModal(`
+<div class="modal-header"><div><h3>Dokument generieren</h3></div><button class="btn btn-ghost btn-sm" onclick="app.closeModal()">${app.icon('close')}</button></div>
+<div class="modal-body">
+  <div class="grid-2">${['Mietvertrag','Kündigung','Mieterhöhung','Einzugsbestätigung'].map(t=>`<div class="card card-xl card-hover text-center" onclick="app.runDocFill('${t}')">
+    <div style="font-size:36px;">📄</div>
+    <div class="card-title mt-2">${t}</div>
+  </div>`).join('')}
+  </div>
+</div>`);
+}
+
+function runDocFill(type){
+  $('#modal').innerHTML=`
+<div class="modal-header"><div><h3>${type} vorausfüllen</h3></div><button class="btn btn-ghost btn-sm" onclick="app.closeModal()">${app.icon('close')}</button></div>
+<div class="modal-body">
+  <div class="skeleton mb-2" style="height:170px;"></div>
+  <div class="badge badge-ai mb-2">✨ 18 von 20 Feldern automatisch ausgefüllt</div>
+  <div class="form-group"><label class="form-label">Mieter</label><input type="text" class="form-input" value="Anna Müller"/></div>
+  <div class="form-group"><label class="form-label">Objekt</label><input type="text" class="form-input" value="Berliner Straße 12"/></div>
+  <div class="form-group"><label class="form-label">Mietbeginn</label><input type="date" class="form-input" value="2023-05-01"/></div>
+  <div style="font-size:12px;color:var(--text2);">⚠️ Dies ist ein unterstützender Entwurf. Bitte prüfen Sie alle Angaben.</div>
+</div>
+<div class="modal-footer"><button class="btn btn-ghost" onclick="app.closeModal()">Abbrechen</button><button class="btn btn-primary" onclick="app.closeModal();app.toast('Dokument erstellt')">PDF erstellen</button></div>`;
+}
+
+function openUpgradeModal(){
+  openModal(`
+<div class="modal-header"><div><h3>Mehr Wohnungen verwalten?</h3></div><button class="btn btn-ghost btn-sm" onclick="app.closeModal()">${app.icon('close')}</button></div>
+<div class="modal-body">
+  <p style="font-size:14px;color:var(--text2);margin-bottom:16px;">Ihr Abo: Pro-WE · 3 Wohnungen · 29,25 €/Monat. Jede weitere WE nur 9,75 €/Monat.</p>
+  <div class="card card-xl" style="background:var(--navy-light);">
+    <div style="font-weight:700;margin-bottom:10px;font-size:17px;">Pro-WE — Preis pro Wohnung</div>
+    <ul style="list-style:none;font-size:14px;line-height:1.9;">
+      <li>✓ 1-5 WE: 9,75 €/WE/Monat</li>
+      <li>✓ 6-25 WE: 7,50 €/WE/Monat</li>
+      <li>✓ 26-49 WE: 5,90 €/WE/Monat</li>
+      <li>✓ 50+ WE: Custom Pricing</li>
+      <li>✓ KI-Beleg-Scan & Antwort-Entwürfe</li>
+      <li>✓ Smart Insights & Fristen-Warner</li>
+      <li>✓ PDF-Export mit Briefkopf</li>
+      <li>✓ 14 Tage kostenlos testen (mit KK)</li>
+    </ul>
+  </div>
+  <div style="text-align:center;margin-top:20px;">
+    <div style="font-size:32px;font-weight:700;">29,25 €</div>
+    <div class="card-sub">/Monat · 3 WE × 9,75 € · Jährlich 292,50 € (2 Monate geschenkt)</div>
+  </div>
+  <div class="mt-3"><span class="badge badge-lock">Nur 32 Cent/Tag pro Wohnung</span></div>
+</div>
+<div class="modal-footer">
+  <button class="btn btn-ghost" onclick="app.closeModal()">Später</button>
+  <button class="btn btn-primary" onclick="app.closeModal();app.toast('14 Tage Trial gestartet')">14 Tage kostenlos testen</button>
+</div>`);
+}
+
+function openTenantTicketModal(){
+  openSheet(`<h3>Neues Ticket erstellen</h3>
+  <div class="form-group"><label class="form-label">Titel</label><input type="text" class="form-input" placeholder="Was ist passiert?"/></div>
+  <div class="form-group"><label class="form-label">Kategorie</label><select class="form-select"><option>Wasser</option><option>Heizung</option><option>Elektro</option><option>Sonstiges</option></select></div>
+  <div class="form-group"><label class="form-label">Priorität</label><select class="form-select"><option>Normal</option><option>Dringend</option></select></div>
+  <div class="form-group"><label class="form-label">Beschreibung</label><textarea class="form-textarea" placeholder="Beschreiben Sie das Problem..."></textarea></div>
+  <div class="upload-zone" style="padding:24px;" onclick="app.toast('Foto-Upload (Demo)')"><div style="font-size:32px;">📷</div><div class="mt-1">Foto anhängen</div></div>
+  <button class="btn btn-primary btn-block btn-lg mt-3" onclick="app.closeSheet();app.toast('Ticket an Vermieter gesendet')">An Vermieter senden</button>`);
+}
+
+function suggestReply(){ document.getElementById('reply-suggestion').classList.remove('hidden'); }
+function login(){ app.setRole('landlord'); app.navTo('dashboard'); app.toast('Willkommen zurück!'); }
+
+window.app = {
+  state, data, views, navTo, setRole, login, logout:function(){ navTo('login'); },
+  toast, formatMoney, statusBadge, setupProgress, setupChecklistHtml, dismissSetup,
+  render, renderNav, renderMobileTabbar, openModal, closeModal, openSheet, closeSheet,
+  openMoreSheet, openTicketCreate, openCostScan, runScan, openSettlementWizard, runSettlementStep2, runSettlementStep3,
+  openDocCreate, runDocFill, openUpgradeModal, openTenantTicketModal, suggestReply,
+  toggleTheme, speedClick, icon, avatar, propertyImg, toggleAI, closeAI, askMax
+};
+
+render();
+})();
+</script>
+</body>
+</html>

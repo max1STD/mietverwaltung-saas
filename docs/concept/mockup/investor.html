@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="MietVerwaltung - Die erste KI-gestuetzte Mietverwaltung fuer Kleinvermieter in DACH. 80% der Vermieter-Arbeit automatisch erledigt.">
+<meta property="og:title" content="MietVerwaltung - Investor Demo">
+<meta property="og:description" content="KI-gestuetzte SaaS fuer private Kleinvermieter. TAM 1,14 Mrd EUR.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0D3B70">
+<title>MietVerwaltung — Investor Demo</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy: #0D3B70;
+  --navy-hover: #2a5a9e;
+  --navy-light: #e8eff8;
+  --bg: #f5f5f7;
+  --card: #ffffff;
+  --text: #1d1d1f;
+  --text2: #6e6e73;
+  --border: #e2e2e7;
+  --green: #34c759;
+  --orange: #ff9500;
+  --red: #ff3b30;
+  --radius: 20px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
+  --transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+html { scroll-behavior: smooth; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg); color: var(--text);
+  -webkit-font-smoothing: antialiased; line-height: 1.6;
+}
+a { color: var(--navy); text-decoration: none; }
+
+/* NAV */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: 56px; background: rgba(255,255,255,0.82); backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
+}
+.nav-logo { font-weight: 800; font-size: 18px; letter-spacing: -0.02em; color: var(--navy); }
+.nav-links { display: flex; gap: 28px; }
+.nav-links a { font-size: 14px; font-weight: 500; color: var(--text2); transition: var(--transition); }
+.nav-links a:hover { color: var(--navy); }
+.nav-hamburger {
+  display: none; flex-direction: column; justify-content: center; gap: 5px;
+  width: 32px; height: 32px; cursor: pointer; background: none; border: none; padding: 0;
+}
+.nav-hamburger span {
+  display: block; height: 2px; width: 24px; background: var(--navy); border-radius: 1px;
+  transition: var(--transition);
+}
+.nav-links.open {
+  position: absolute; top: 56px; left: 0; right: 0;
+  background: rgba(255,255,255,0.96); backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--border); flex-direction: column; gap: 0; padding: 8px 0;
+  box-shadow: var(--shadow-lg);
+}
+.nav-links.open a { display: block; padding: 12px 24px; color: var(--text); }
+.nav-links.open a:hover { background: var(--navy-light); color: var(--navy); }
+.nav-cta {
+  background: var(--navy); color: #fff; padding: 8px 18px; border-radius: 100px;
+  font-size: 14px; font-weight: 600; transition: var(--transition);
+}
+.nav-cta:hover { background: var(--navy-hover); transform: scale(1.03); }
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+  .nav-hamburger { display: flex; }
+  .nav-links.open { display: flex; }
+  .nav-cta { display: none; }
+}
+
+/* HERO */
+.hero {
+  min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 80px 24px 40px; position: relative; overflow: hidden;
+  background: linear-gradient(180deg, var(--navy-light) 0%, var(--bg) 100%);
+}
+.hero::before {
+  content: ''; position: absolute; top: -50%; left: -10%; width: 120%; height: 120%;
+  background: radial-gradient(ellipse at center, rgba(13,59,112,0.06) 0%, transparent 60%);
+  pointer-events: none;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 100px;
+  padding: 8px 16px; font-size: 13px; font-weight: 600; color: var(--navy);
+  box-shadow: var(--shadow); margin-bottom: 28px; position: relative;
+}
+.hero-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+.hero h1 {
+  font-size: clamp(2.4rem, 6vw, 4.2rem); font-weight: 800; letter-spacing: -0.03em;
+  max-width: 900px; line-height: 1.08; margin-bottom: 20px; position: relative;
+}
+.hero h1 .gradient { background: linear-gradient(135deg, var(--navy) 0%, #2a5a9e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.hero p.subtitle {
+  font-size: clamp(1.1rem, 2.5vw, 1.5rem); color: var(--text2); max-width: 640px;
+  margin-bottom: 36px; position: relative;
+}
+.hero-actions { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; position: relative; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; padding: 14px 28px;
+  border-radius: 100px; font-size: 16px; font-weight: 600; transition: var(--transition);
+  cursor: pointer; border: none; font-family: inherit;
+}
+.btn-primary { background: var(--navy); color: #fff; box-shadow: 0 4px 14px rgba(13,59,112,0.25); }
+.btn-primary:hover { background: var(--navy-hover); transform: scale(1.03); box-shadow: 0 6px 20px rgba(13,59,112,0.35); }
+.btn-secondary { background: var(--card); color: var(--navy); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--navy); transform: scale(1.03); }
+.hero-stats {
+  display: flex; gap: 48px; margin-top: 56px; flex-wrap: wrap; justify-content: center; position: relative;
+}
+.hero-stat { text-align: center; }
+.hero-stat .num { font-size: 2.2rem; font-weight: 800; color: var(--navy); letter-spacing: -0.02em; }
+.hero-stat .label { font-size: 13px; color: var(--text2); margin-top: 2px; }
+
+/* SECTIONS */
+section { padding: 100px 24px; max-width: 1100px; margin: 0 auto; }
+.section-label {
+  font-size: 13px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 12px;
+}
+.section-title {
+  font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800; letter-spacing: -0.02em;
+  margin-bottom: 16px; line-height: 1.15; max-width: 700px;
+}
+.section-sub { font-size: 1.15rem; color: var(--text2); max-width: 600px; margin-bottom: 48px; }
+
+/* PROBLEM CARDS */
+.problem-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+.problem-card {
+  background: var(--card); border-radius: var(--radius); padding: 32px; box-shadow: var(--shadow);
+  transition: var(--transition); border: 1px solid transparent;
+}
+.problem-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-4px); border-color: var(--border); }
+.problem-card .icon { font-size: 32px; margin-bottom: 16px; }
+.problem-card h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; }
+.problem-card p { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+/* SOLUTION */
+.solution-feature {
+  display: flex; align-items: center; gap: 48px; margin-bottom: 64px;
+}
+.solution-feature:nth-child(even) { flex-direction: row-reverse; }
+.solution-feature .visual {
+  flex: 1; background: var(--card); border-radius: var(--radius); padding: 32px;
+  box-shadow: var(--shadow-lg); min-height: 260px; display: flex; flex-direction: column; justify-content: center;
+}
+.solution-feature .text { flex: 1; }
+.solution-feature .text .num { font-size: 3rem; font-weight: 800; color: var(--navy); opacity: 0.15; }
+.solution-feature .text h3 { font-size: 1.5rem; font-weight: 700; margin-bottom: 12px; }
+.solution-feature .text p { font-size: 1rem; color: var(--text2); }
+@media (max-width: 768px) {
+  .solution-feature, .solution-feature:nth-child(even) { flex-direction: column; gap: 24px; }
+}
+
+/* DEMO CTA */
+.demo-cta {
+  background: var(--navy); border-radius: 32px; padding: 64px 48px; text-align: center;
+  color: #fff; margin: 0 auto; max-width: 1100px;
+}
+.demo-cta h2 { font-size: 2rem; font-weight: 800; margin-bottom: 16px; }
+.demo-cta p { font-size: 1.1rem; opacity: 0.8; margin-bottom: 32px; }
+.demo-cta .btn { font-size: 18px; padding: 16px 36px; }
+.demo-cta .btn-primary { background: #fff; color: var(--navy); }
+.demo-cta .btn-primary:hover { background: #f0f0f0; }
+
+/* MARKET */
+.market-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 32px; }
+@media (max-width: 768px) { .market-grid { grid-template-columns: 1fr; } }
+.market-card {
+  background: var(--card); border-radius: var(--radius); padding: 32px; text-align: center; box-shadow: var(--shadow);
+  transition: var(--transition);
+}
+.market-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-4px); }
+.market-card .tier { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text2); }
+.market-card .value { font-size: 2.4rem; font-weight: 800; color: var(--navy); margin: 12px 0 4px; }
+.market-card .desc { font-size: 13px; color: var(--text2); }
+.market-card .bar { height: 6px; border-radius: 3px; background: var(--navy-light); margin-top: 20px; overflow: hidden; }
+.market-card .bar-fill { height: 100%; border-radius: 3px; background: var(--navy); }
+
+/* PRICING PREVIEW */
+.pricing-preview {
+  background: var(--card); border-radius: var(--radius); padding: 48px; box-shadow: var(--shadow-lg);
+}
+.pricing-staffel { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+@media (max-width: 768px) { .pricing-staffel { grid-template-columns: 1fr; } }
+.staffel-card {
+  border: 2px solid var(--border); border-radius: 16px; padding: 24px; text-align: center; transition: var(--transition);
+}
+.staffel-card:hover { border-color: var(--navy); }
+.staffel-card.featured { border-color: var(--navy); background: var(--navy-light); }
+.staffel-card .we { font-size: 13px; color: var(--text2); font-weight: 600; }
+.staffel-card .price { font-size: 1.8rem; font-weight: 800; color: var(--navy); margin: 8px 0; }
+.staffel-card .per { font-size: 12px; color: var(--text2); }
+.staffel-card .badge { display: inline-block; background: var(--navy); color: #fff; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 100px; margin-bottom: 8px; }
+
+/* COMPETITION */
+.comp-table { width: 100%; border-collapse: collapse; }
+.comp-table th, .comp-table td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
+.comp-table th { font-weight: 700; color: var(--text2); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+.comp-table .check { color: var(--green); font-weight: 700; }
+.comp-table .cross { color: var(--text2); }
+.comp-table .our-row { background: var(--navy-light); font-weight: 600; }
+@media (max-width: 768px) { .comp-table { font-size: 12px; } .comp-table th, .comp-table td { padding: 10px 8px; } }
+
+/* ROADMAP */
+.roadmap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+@media (max-width: 768px) { .roadmap { grid-template-columns: 1fr; } }
+.roadmap-card {
+  background: var(--card); border-radius: var(--radius); padding: 32px; box-shadow: var(--shadow);
+  position: relative; overflow: hidden;
+}
+.roadmap-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--navy);
+}
+.roadmap-card .phase { font-size: 12px; font-weight: 700; color: var(--navy); text-transform: uppercase; }
+.roadmap-card h3 { font-size: 1.3rem; font-weight: 700; margin: 8px 0 16px; }
+.roadmap-card ul { list-style: none; }
+.roadmap-card li { font-size: 14px; color: var(--text2); padding: 6px 0; padding-left: 20px; position: relative; }
+.roadmap-card li::before { content: '✓'; position: absolute; left: 0; color: var(--green); font-weight: 700; }
+
+/* FOOTER */
+footer { background: var(--navy); color: rgba(255,255,255,0.7); padding: 48px 24px; text-align: center; }
+footer .logo { color: #fff; font-weight: 800; font-size: 20px; margin-bottom: 8px; }
+footer p { font-size: 13px; }
+footer .links { margin-top: 20px; display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; }
+footer .links a { color: rgba(255,255,255,0.7); font-size: 14px; transition: var(--transition); }
+footer .links a:hover { color: #fff; }
+
+/* SCROLL ANIMATIONS */
+.reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease, transform 0.8s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; } }
+
+/* DEVICE FRAME */
+.device-frame {
+  background: var(--card); border-radius: 16px; padding: 16px; box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+}
+.device-frame .screen {
+  background: var(--bg); border-radius: 12px; padding: 24px; min-height: 200px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.mock-line { height: 10px; border-radius: 5px; background: var(--border); }
+.mock-line.w1 { width: 60%; } .mock-line.w2 { width: 80%; } .mock-line.w3 { width: 40%; }
+.mock-line.accent { background: var(--navy); opacity: 0.15; }
+.mock-box { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.mock-box .title { font-size: 12px; font-weight: 700; color: var(--text2); margin-bottom: 8px; }
+.mock-box .val { font-size: 1.4rem; font-weight: 800; color: var(--navy); }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo">MietVerwaltung</div>
+  <div class="nav-links" id="navLinks">
+    <a href="#problem" onclick="closeNav()">Problem</a>
+    <a href="#loesung" onclick="closeNav()">Lösung</a>
+    <a href="#markt" onclick="closeNav()">Markt</a>
+    <a href="#business" onclick="closeNav()">Business Model</a>
+    <a href="#wettbewerb" onclick="closeNav()">Wettbewerb</a>
+    <a href="#roadmap" onclick="closeNav()">Roadmap</a>
+  </div>
+  <a href="index.html" class="nav-cta">Live Demo →</a>
+  <button class="nav-hamburger" id="navToggle" aria-label="Menü" aria-expanded="false">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge"><span class="dot"></span> Investor Demo · November 2026</div>
+  <h1>Die erste <span class="gradient">KI-gestützte</span> Mietverwaltung für Kleinvermieter</h1>
+  <p class="subtitle">80% der Vermieter-Arbeit automatisch erledigt — Dokumente scannen, Abrechnungen erstellen, Tickets kategorisieren, Mahnungen schreiben. Der Vermieter entscheidet, die KI macht den Rest.</p>
+  <div class="hero-actions">
+    <a href="index.html" class="btn btn-primary">🚀 Interaktive Demo ausprobieren</a>
+    <a href="#markt" class="btn btn-secondary">Marktchance ansehen</a>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="num">6,35 Mio</div><div class="label">Vermieter in DACH</div></div>
+    <div class="hero-stat"><div class="num">1,14 Mrd €</div><div class="label">Marktvolumen (TAM)</div></div>
+    <div class="hero-stat"><div class="num">9,75 €</div><div class="label">Preis pro Wohnung / Monat</div></div>
+    <div class="hero-stat"><div class="num">~1 €</div><div class="label">Kosten pro User / Monat</div></div>
+  </div>
+</div>
+
+<!-- PROBLEM -->
+<section id="problem" class="reveal">
+  <div class="section-label">Das Problem</div>
+  <h2 class="section-title">Vermieten ist unbequem — die Tools auch</h2>
+  <p class="section-sub">6,35 Millionen private Kleinvermieter in DACH verwalten ihre Wohnungen mit Excel, Papierordnern und veralteter Windows-Software. Niemand löst das Problem richtig.</p>
+  <div class="problem-grid">
+    <div class="problem-card">
+      <div class="icon">📊</div>
+      <h3>Excel-Chaos</h3>
+      <p>Mietverträge, Nebenkosten, Fristen — alles in unübersichtlichen Tabellen. Fehler beim Umlageschlüssel, vergessene Abrechnungsfristen, Kautionen auf dem falschen Konto.</p>
+    </div>
+    <div class="problem-card">
+      <div class="icon">🖥️</div>
+      <h3>Veraltete Software</h3>
+      <p>WISO, Lexware, INtex — Windows-Desktop-Tools aus den 2000ern. Keine Cloud, kein Mobile, keine KI. 60-200€ einmalig, dann ist man allein.</p>
+    </div>
+    <div class="problem-card">
+      <div class="icon">🎫</div>
+      <h3>Kein Ticket-System</h3>
+      <p>"Heizung kaputt" kommt per WhatsApp, Zettel, Anruf. Kein Nachverfolgen, keine Historie, keine Dokumentation. Streit vor Gericht = Wort gegen Wort.</p>
+    </div>
+    <div class="problem-card">
+      <div class="icon">📄</div>
+      <h3>Abrechnung = Albtraum</h3>
+      <p>BetrKV, HeizkostenV, Umlageschlüssel nach qm/Personen/Verbrauch. Jährlich Stunden Arbeit. Fehlerquellen überall. Mieter fordert Aufschlüsselung → Stress.</p>
+    </div>
+    <div class="problem-card">
+      <div class="icon">🔒</div>
+      <h3>DSGVO? Kaum.</h3>
+      <p>Mieterdaten in Google Drive, Ausweise als Foto auf dem Handy. Keine Einwilligung, kein Audit-Log, keine Löschkonzepte. Bußgeldrisiko real.</p>
+    </div>
+    <div class="problem-card">
+      <div class="icon">📱</div>
+      <h3>Nicht mobil</h3>
+      <p>Vermieter wollen unterwegs checken: Miete erhalten? Ticket neu? Abrechnung fertig? Bestehende Tools funktionieren nicht auf dem iPhone.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SOLUTION -->
+<section id="loesung" class="reveal">
+  <div class="section-label">Die Lösung</div>
+  <h2 class="section-title">KI übernimmt 80% — der Vermieter entscheidet</h2>
+  <p class="section-sub">Drei-Schicht-Architektur: Lokale Verarbeitung (OCR, Mathematik, Templates) → KI-API (anonymisiert) → Lokale Nachbereitung (PDF, E-Mail, DB). DSGVO-konform by design.</p>
+
+  <div class="solution-feature">
+    <div class="text">
+      <div class="num">01</div>
+      <h3>Beleg-Scan mit KI</h3>
+      <p>Foto der Heizkostenrechnung hochladen → Tesseract OCR extrahiert Text → Presidio anonymiert Personendaten → GLM 5.2 erkennt Betrag, Kategorie, Umlagefähigkeit → Eintrag in Kostenliste mit Confidence-Score. Vermieter prüft nur noch.</p>
+    </div>
+    <div class="visual">
+      <div class="mock-box">
+        <div class="title">📄 Heizkostenrechnung.jpg</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;">
+          <span style="background:var(--navy-light);color:var(--navy);padding:4px 12px;border-radius:100px;font-size:12px;font-weight:600;">✨ 18/20 Felder auto</span>
+          <span style="background:#e8f5e9;color:var(--green);padding:4px 12px;border-radius:100px;font-size:12px;font-weight:600;">Sehr sicher (94%)</span>
+        </div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.8;">
+          Betrag: <strong style="color:var(--text)">1.247,83 €</strong><br>
+          Kategorie: <strong style="color:var(--text)">Heizung</strong><br>
+          Umlagefähig: <strong style="color:var(--green)">Ja</strong> · nach qm<br>
+          Zeitraum: <strong style="color:var(--text)">01.01.-31.12.2025</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="solution-feature">
+    <div class="text">
+      <div class="num">02</div>
+      <h3>Nebenkostenabrechnung automatisch</h3>
+      <p>BetrKV-Katalog (adaptiert von Open-Source), HeizkostenV, Umlageschlüssel nach qm/Personen/Verbrauch. System erstellt Abrechnung mit einzelnen Positionen, Plausibilitätsprüfung, Vollständigkeits-Check — plus KI-generierter Erklärungstext. PDF mit Briefkopf per Klick.</p>
+    </div>
+    <div class="visual">
+      <div class="mock-box">
+        <div class="title">Nebenkostenabrechnung 2025</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;">
+          <div><div style="font-size:11px;color:var(--text2)">Vorschuss</div><div style="font-weight:700">2.160 €</div></div>
+          <div><div style="font-size:11px;color:var(--text2)">Kosten</div><div style="font-weight:700">1.890 €</div></div>
+          <div><div style="font-size:11px;color:var(--text2)">Erstattung</div><div style="font-weight:700;color:var(--green)">+270 €</div></div>
+        </div>
+        <div style="margin-top:12px;font-size:12px;color:var(--text2);">12 Positionen · 3 Kategorien · ✅ Plausibel · ✅ Vollständig</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="solution-feature">
+    <div class="text">
+      <div class="num">03</div>
+      <h3>Ticket-System wie Zammad</h3>
+      <p>Mieter meldet "Heizung kaputt" → Keyword-Classifier kategorisiert (60% ohne KI) → GLM schlägt Antwort vor → Vermieter editiert → senden. Vollständiger Verlauf, SLA mit Geschäftszeiten, Eskalation. Beweissicher bei Streit.</p>
+    </div>
+    <div class="visual">
+      <div class="mock-box">
+        <div class="title">🎫 TKT-2026-003 · Heizung</div>
+        <div style="display:flex;gap:8px;margin:8px 0;">
+          <span style="background:var(--navy-light);color:var(--navy);padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;">Dringend</span>
+          <span style="background:#fff3e0;color:var(--orange);padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;">Offen</span>
+        </div>
+        <div style="font-size:13px;color:var(--text2);border-left:3px solid var(--navy);padding-left:12px;margin:12px 0;">
+          <strong>✨ KI-Vorschlag:</strong> "Sehr geehrte Frau Müller, vielen Dank für Ihre Meldung. Ich habe einen Termin beim Installateur für..."
+        </div>
+        <div style="font-size:12px;color:var(--text2);">✏️ Editierbar · 👤 Human-in-the-loop</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="solution-feature">
+    <div class="text">
+      <div class="num">04</div>
+      <h3>Dashboard mit echten Kennzahlen</h3>
+      <p>Bruttomietrendite, Nettomietrendite, Eigenkapitalrendite, Cash-on-Cash, DSCR, LTV — mit Finanzierung. Smart Insights täglich per KI: Leerstand erkannt, Abrechnung fällig, Kaution nicht hinterlegt. Alles auf einen Blick.</p>
+    </div>
+    <div class="visual">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="mock-box"><div class="title">Bruttomietrendite</div><div class="val">5,2%</div></div>
+        <div class="mock-box"><div class="title">Nettomietrendite</div><div class="val">3,8%</div></div>
+        <div class="mock-box"><div class="title">Cash-on-Cash</div><div class="val">7,1%</div></div>
+        <div class="mock-box"><div class="title">DSCR</div><div class="val">1,42</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO CTA -->
+<section id="demo" class="reveal" style="padding:40px 24px;">
+  <div class="demo-cta">
+    <h2>Überzeugen Sie sich selbst</h2>
+    <p>Klicken Sie sich durch die komplette App — Vermieter-Portal, Mieter-Portal, KI-Assistent, Ticket-System, Abrechnungen. Alles interaktiv.</p>
+    <a href="index.html" class="btn btn-primary">🚀 App-Demo öffnen</a>
+    <div style="margin-top:24px;display:flex;gap:24px;justify-content:center;flex-wrap:wrap;">
+      <a href="pricing.html" style="color:rgba(255,255,255,0.8);font-size:14px;">→ Pricing-Seite ansehen</a>
+      <a href="Markt-Kennzahlen-Dashboard.html" style="color:rgba(255,255,255,0.8);font-size:14px;">→ Markt-Dashboard ansehen</a>
+      <a href="admin.html" style="color:rgba(255,255,255,0.8);font-size:14px;">→ Admin-Center ansehen</a>
+    </div>
+  </div>
+</section>
+
+<!-- MARKET -->
+<section id="markt" class="reveal">
+  <div class="section-label">Marktchance</div>
+  <h2 class="section-title">1,14 Milliarden € Marktvolumen in DACH</h2>
+  <p class="section-sub">6,35 Millionen private Vermieter in Deutschland, Österreich und Schweiz. Davon verwaltet die Mehrheit mit Excel oder gar nicht. Der Markt wartet auf eine moderne Lösung.</p>
+  <div class="market-grid">
+    <div class="market-card">
+      <div class="tier">TAM · Total Addressable</div>
+      <div class="value">1,14 Mrd €</div>
+      <div class="desc">6,35 Mio Vermieter in DACH</div>
+      <div class="bar"><div class="bar-fill" style="width:100%"></div></div>
+    </div>
+    <div class="market-card">
+      <div class="tier">SAM · Serviceable</div>
+      <div class="value">340 Mio €</div>
+      <div class="desc">1,9 Mio online-affine Vermieter</div>
+      <div class="bar"><div class="bar-fill" style="width:30%"></div></div>
+    </div>
+    <div class="market-card">
+      <div class="tier">SOM · Obtainable (5J)</div>
+      <div class="value">23 Mio €</div>
+      <div class="desc">125.000 Vermieter in 5 Jahren</div>
+      <div class="bar"><div class="bar-fill" style="width:6%"></div></div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:16px;">
+    <a href="Markt-Kennzahlen-Dashboard.html" class="btn btn-secondary">📊 Vollständiges Markt-Dashboard →</a>
+  </div>
+</section>
+
+<!-- BUSINESS MODEL -->
+<section id="business" class="reveal">
+  <div class="section-label">Business Model</div>
+  <h2 class="section-title">Preis pro Wohnung — nicht pro Plan</h2>
+  <p class="section-sub">Kein Free-Plan. Keine festen Pakete. Staffelpreise pro Wohneinheit (WE). Je mehr Wohnungen, desto günstiger pro WE. Ab 50 WE Custom Pricing mit manuellem Approval.</p>
+  <div class="pricing-preview">
+    <div class="pricing-staffel">
+      <div class="staffel-card">
+        <div class="we">1-5 WE</div>
+        <div class="price">9,75 €</div>
+        <div class="per">pro WE / Monat</div>
+      </div>
+      <div class="staffel-card featured">
+        <div class="badge">Beliebteste Wahl</div>
+        <div class="we">6-25 WE</div>
+        <div class="price">7,50 €</div>
+        <div class="per">pro WE / Monat</div>
+      </div>
+      <div class="staffel-card">
+        <div class="we">26-49 WE</div>
+        <div class="price">5,90 €</div>
+        <div class="per">pro WE / Monat</div>
+      </div>
+      <div class="staffel-card">
+        <div class="we">50+ WE</div>
+        <div class="price">Custom</div>
+        <div class="per">individuelles Angebot</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:32px;">
+      <div style="text-align:center;">
+        <div style="font-size:2rem;font-weight:800;color:var(--navy);">~1 €</div>
+        <div style="font-size:13px;color:var(--text2);">Kosten pro User/Monat<br>(KI + Hosting + E-Mail + DB)</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:2rem;font-weight:800;color:var(--navy);">87%</div>
+        <div style="font-size:13px;color:var(--text2);">Brutto-Marge<br>(bei 7,50 €/WE Staffel)</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:2rem;font-weight:800;color:var(--navy);">14 Tage</div>
+        <div style="font-size:13px;color:var(--text2);">Trial mit Kreditkarte<br>(Netflix-Modell)</div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:24px;">
+      <a href="pricing.html" class="btn btn-secondary">→ Pricing-Seite mit interaktivem Slider</a>
+    </div>
+  </div>
+</section>
+
+<!-- COMPETITION -->
+<section id="wettbewerb" class="reveal">
+  <div class="section-label">Wettbewerbsvorteil</div>
+  <h2 class="section-title">Niemand hat das alles</h2>
+  <p class="section-sub">8 Konkurrenten analysiert. Desktop-Software aus den 2000ern, Cloud-Tools ohne KI, oder teure gewerbliche ERPs. Unser Vorteil: KI + Tickets + DSGVO + eID + Mobile — in einem Produkt.</p>
+  <div style="overflow-x:auto;">
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>MietVerwaltung</th>
+          <th>immocloud</th>
+          <th>rentably</th>
+          <th>objego</th>
+          <th>WISO</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="our-row">
+          <td>KI-Automatisierung (OCR, Text, Insights)</td>
+          <td class="check">✓</td>
+          <td class="cross">Nur OCR</td>
+          <td class="cross">Extern (MCP)</td>
+          <td class="cross">—</td>
+          <td class="cross">—</td>
+        </tr>
+        <tr class="our-row">
+          <td>Ticket-System (beweissicher)</td>
+          <td class="check">✓</td>
+          <td class="cross">—</td>
+          <td class="cross">—</td>
+          <td class="cross">—</td>
+          <td class="cross">—</td>
+        </tr>
+        <tr class="our-row">
+          <td>DSGVO-konforme KI (Presidio)</td>
+          <td class="check">✓</td>
+          <td class="cross">—</td>
+          <td class="cross">—</td>
+          <td class="cross">—</td>
+          <td class="cross">—</td>
+        </tr>
+        <tr class="our-row">
+          <td>Mobile / PWA</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+          <td class="cross">Nur Desktop</td>
+        </tr>
+        <tr class="our-row">
+          <td>2FA + Session-Management</td>
+          <td class="check">✓</td>
+          <td class="cross">—</td>
+          <td class="cross">—</td>
+          <td class="cross">—</td>
+          <td class="cross">—</td>
+        </tr>
+        <tr class="our-row">
+          <td>eID-Integration</td>
+          <td class="check">✓ (Phase 2)</td>
+          <td class="cross">—</td>
+          <td class="cross">—</td>
+          <td class="cross">—</td>
+          <td class="cross">—</td>
+        </tr>
+        <tr class="our-row">
+          <td>Preis ab</td>
+          <td><strong>ab 9,75 €/WE<br><span style="font-size:12px;font-weight:500;color:var(--text2);">14T Trial Einstieg</span></strong></td>
+          <td>9,99 €</td>
+          <td>0 € (Free)</td>
+          <td>0 € (Free)</td>
+          <td>60-200€ einmalig</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section id="roadmap" class="reveal">
+  <div class="section-label">Roadmap</div>
+  <h2 class="section-title">In 14 Tagen zum MVP</h2>
+  <p class="section-sub">Closed Beta auf Proxmox (0€ Hosting) für max. 10 bekannte Tester. Dann Hetzner 2-Server-Split für Go-Live. ~97 Personentage Gesamtumfang.</p>
+  <div class="roadmap">
+    <div class="roadmap-card">
+      <div class="phase">Phase 1 · MVP</div>
+      <h3>Closed Beta</h3>
+      <ul>
+        <li>Objekt- & Einheitenverwaltung</li>
+        <li>Mieter-Logins mit 2FA</li>
+        <li>Ticket-System mit KI-Kategorisierung</li>
+        <li>Nebenkostenabrechnung (BetrKV)</li>
+        <li>Beleg-Scan (OCR + KI)</li>
+        <li>Dashboard mit Rendite-Kennzahlen</li>
+        <li>PDF-Export (10 statische + 8 KI-Dokumente)</li>
+        <li>E-Mail-Benachrichtigungen + Mahnwesen</li>
+      </ul>
+    </div>
+    <div class="roadmap-card">
+      <div class="phase">Phase 2 · Growth</div>
+      <h3>Go-Live & Skalierung</h3>
+      <ul>
+        <li>Hetzner 2-Server-Split (CX22+CX32)</li>
+        <li>Stripe Payments (KK, SEPA, PayPal)</li>
+        <li>14-Tage Trial mit Kreditkarte</li>
+        <li>Öffentliche Website + Lead-Gen</li>
+        <li>eID via AusweisIDent</li>
+        <li>DATEV-Export / Anlage V</li>
+        <li>DACH-IP-Blocking (GeoIP)</li>
+        <li>Monitoring (Prometheus + Grafana)</li>
+      </ul>
+    </div>
+    <div class="roadmap-card">
+      <div class="phase">Phase 3 · Scale</div>
+      <h3>Großvermieter & Enterprise</h3>
+      <ul>
+        <li>Handwerker-Verwaltung mit eigenen Logins</li>
+        <li>Bank-Anbindung (automatischer Cashflow)</li>
+        <li>Steuer-Berechnung</li>
+        <li>Portfolio-Vergleich über Objekte</li>
+        <li>KI: Marktmietanalyse, Immobilienwert-Schätzung</li>
+        <li>Predictive Maintenance</li>
+        <li>Hetzner Managed PostgreSQL (HA)</li>
+        <li>Custom Pricing für 50+ WE</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- TECH STACK -->
+<section id="tech" class="reveal" style="padding:60px 24px;">
+  <div style="max-width:900px;margin:0 auto;text-align:center;">
+    <div class="section-label">Tech Stack</div>
+    <h2 class="section-title" style="margin:0 auto 24px;">Modern, skalierbar, EU-hosted</h2>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;">
+      <span style="background:var(--card);border:1px solid var(--border);border-radius:100px;padding:10px 20px;font-size:14px;font-weight:600;box-shadow:var(--shadow);">⚡ FastAPI</span>
+      <span style="background:var(--card);border:1px solid var(--border);border-radius:100px;padding:10px 20px;font-size:14px;font-weight:600;box-shadow:var(--shadow);">💚 Vue.js 3</span>
+      <span style="background:var(--card);border:1px solid var(--border);border-radius:100px;padding:10px 20px;font-size:14px;font-weight:600;box-shadow:var(--shadow);">🐘 PostgreSQL 17 (RLS)</span>
+      <span style="background:var(--card);border:1px solid var(--border);border-radius:100px;padding:10px 20px;font-size:14px;font-weight:600;box-shadow:var(--shadow);">🔴 Redis</span>
+      <span style="background:var(--card);border:1px solid var(--border);border-radius:100px;padding:10px 20px;font-size:14px;font-weight:600;box-shadow:var(--shadow);">🤖 Ollama Cloud (GLM 5.2 + Kimi K2.6)</span>
+      <span style="background:var(--card);border:1px solid var(--border);border-radius:100px;padding:10px 20px;font-size:14px;font-weight:600;box-shadow:var(--shadow);">🔒 Presidio (DSGVO-KI)</span>
+      <span style="background:var(--card);border:1px solid var(--border);border-radius:100px;padding:10px 20px;font-size:14px;font-weight:600;box-shadow:var(--shadow);">📄 WeasyPrint + Jinja2</span>
+      <span style="background:var(--card);border:1px solid var(--border);border-radius:100px;padding:10px 20px;font-size:14px;font-weight:600;box-shadow:var(--shadow);">🐳 Docker</span>
+      <span style="background:var(--card);border:1px solid var(--border);border-radius:100px;padding:10px 20px;font-size:14px;font-weight:600;box-shadow:var(--shadow);">☁️ Hetzner (EU)</span>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="logo">MietVerwaltung</div>
+  <p>Die erste KI-gestützte Mietverwaltung für Kleinvermieter in DACH</p>
+  <div class="links">
+    <a href="index.html">App-Demo</a>
+    <a href="pricing.html">Preise</a>
+    <a href="Markt-Kennzahlen-Dashboard.html">Markt-Dashboard</a>
+    <a href="admin.html">Admin-Center</a>
+  </div>
+  <p style="margin-top:24px;font-size:12px;opacity:0.5;">© 2026 MietVerwaltung GbR · Investor Demo · Alle Daten sind Beispieldaten</p>
+</footer>
+
+<script>
+// Mobile navigation toggle
+const navLinks = document.getElementById('navLinks');
+const navToggle = document.getElementById('navToggle');
+function toggleNav() {
+  const isOpen = navLinks.classList.toggle('open');
+  navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+}
+function closeNav() {
+  navLinks.classList.remove('open');
+  navToggle.setAttribute('aria-expanded', 'false');
+}
+if (navToggle && navLinks) {
+  navToggle.addEventListener('click', toggleNav);
+}
+
+// Scroll reveal animations
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+
+<noscript><style>.reveal{opacity:1;transform:none;}</style></noscript>
+
+</body>
+</html>

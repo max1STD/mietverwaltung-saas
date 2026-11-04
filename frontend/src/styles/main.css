@@ -1,0 +1,25 @@
+/* MietVerwaltung SaaS — Global Styles */
+:root {
+  --navy: #0D3B70;
+  --navy-hover: #2a5a9e;
+  --navy-light: #8BB8E8;
+  --bg: #f5f5f7;
+  --white: #ffffff;
+  --text: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --radius: 12px;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, 'SF Pro Display', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}

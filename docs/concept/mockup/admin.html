@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0D3B70">
+<title>MietVerwaltung — Admin-Center</title>
+<style>
+/* === RESET & TOKENS === */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --navy: #0D3B70;
+  --navy-hover: #2a5a9e;
+  --navy-light: #e8eff8;
+  --bg: #f5f5f7;
+  --card: #ffffff;
+  --text: #1d1d1f;
+  --text2: #6e6e73;
+  --border: #e2e2e7;
+  --green: #34c759;
+  --green-bg: #e8f5e9;
+  --orange: #ff9500;
+  --orange-bg: #fff3e0;
+  --red: #ff3b30;
+  --red-bg: #ffebee;
+  --blue: #007aff;
+  --blue-bg: #e3f2fd;
+  --radius-xl: 24px;
+  --radius-lg: 18px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+  --radius-xs: 10px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-float: 0 12px 40px rgba(0,0,0,0.14);
+  --transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+html.dark {
+  --navy: #1f6feb;
+  --navy-hover: #58a6ff;
+  --navy-light: rgba(31,111,235,0.12);
+  --bg: #0d1117;
+  --card: #161b22;
+  --text: #e6edf3;
+  --text2: #7d8597;
+  --border: #30363d;
+  --green: #3fb950;
+  --green-bg: rgba(63,185,80,0.15);
+  --orange: #ff9500;
+  --orange-bg: rgba(255,149,0,0.15);
+  --red: #ff453a;
+  --red-bg: rgba(255,69,58,0.15);
+  --blue: #58a6ff;
+  --blue-bg: rgba(88,166,255,0.15);
+}
+html, body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  font-size: 15px;
+  line-height: 1.5;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+input, select, textarea, button { font-family: inherit; font-size: 15px; }
+button { cursor: pointer; border: none; background: none; }
+a { color: var(--navy); text-decoration: none; }
+
+/* === LAYOUT === */
+.app-shell { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 260px; background: var(--card); border-right: 1px solid var(--border);
+  display: none; flex-direction: column; position: fixed; inset: 0 auto 0 0; z-index: 50;
+  padding: 20px 16px calc(20px + var(--safe-bottom)) 16px;
+  box-shadow: var(--shadow-lg);
+}
+.sidebar.open { display: flex; }
+.main {
+  flex: 1; margin-left: 0; min-height: 100vh; display: flex; flex-direction: column;
+  padding-bottom: calc(84px + var(--safe-bottom));
+}
+.content { flex: 1; padding: 20px; max-width: 1400px; width: 100%; margin: 0 auto; }
+.topbar {
+  height: 60px; background: rgba(255,255,255,0.85); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border); display: flex; align-items: center;
+  justify-content: space-between; padding: 0 16px; position: sticky; top: 0; z-index: 40;
+  transition: var(--transition);
+}
+html.dark .topbar { background: rgba(22,27,34,0.85); }
+.topbar-title { font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
+.topbar-actions { display: flex; align-items: center; gap: 10px; }
+
+@media (min-width: 1024px) {
+  .sidebar { display: flex; position: static; box-shadow: none; }
+  .main { margin-left: 0; padding-bottom: 0; }
+  .menu-toggle { display: none; }
+}
+
+/* === SIDEBAR === */
+.sidebar-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; padding: 0 4px; }
+.logo-icon {
+  width: 36px; height: 36px; background: var(--navy); color: #fff; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.logo-text { font-weight: 700; font-size: 18px; letter-spacing: -0.02em; }
+.sidebar-nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.sidebar-nav a {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius-sm);
+  color: var(--text2); font-weight: 500; font-size: 14px; transition: var(--transition);
+}
+.sidebar-nav a:hover { background: var(--navy-light); color: var(--navy); }
+.sidebar-nav a.active { background: var(--navy); color: #fff; }
+.sidebar-nav a .icon { width: 20px; text-align: center; }
+.sidebar-footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text2); }
+.admin-badge { display: inline-block; background: var(--navy); color: #fff; padding: 2px 8px; border-radius: 20px; font-weight: 600; font-size: 11px; margin-bottom: 6px; }
+
+/* === BUTTONS === */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 16px; border-radius: var(--radius-sm); font-weight: 600; font-size: 14px;
+  transition: var(--transition); white-space: nowrap;
+}
+.btn-primary { background: var(--navy); color: #fff; }
+.btn-primary:hover { background: var(--navy-hover); }
+.btn-secondary { background: var(--navy-light); color: var(--navy); }
+.btn-secondary:hover { background: #d6e3f5; }
+.btn-danger { background: var(--red-bg); color: var(--red); }
+.btn-danger:hover { background: #ffdcd9; }
+.btn-success { background: var(--green-bg); color: #1b5e20; }
+.btn-success:hover { background: #c8e6c9; }
+.btn-sm { padding: 6px 12px; font-size: 13px; }
+.btn-icon { width: 36px; height: 36px; padding: 0; border-radius: 50%; }
+
+/* === CARDS === */
+.card {
+  background: var(--card); border-radius: var(--radius-md); box-shadow: var(--shadow);
+  padding: 20px; margin-bottom: 16px; border: 1px solid var(--border);
+}
+.card-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; letter-spacing: -0.01em; }
+.card-subtitle { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
+
+/* === KPI GRID === */
+.kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+@media (min-width: 768px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; } }
+.kpi-card {
+  background: var(--card); border-radius: var(--radius-md); padding: 16px;
+  box-shadow: var(--shadow); border: 1px solid var(--border); position: relative;
+}
+.kpi-icon {
+  width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  font-size: 18px; margin-bottom: 12px;
+}
+.kpi-icon.green { background: var(--green-bg); }
+.kpi-icon.blue { background: var(--blue-bg); }
+.kpi-icon.orange { background: var(--orange-bg); }
+.kpi-icon.red { background: var(--red-bg); }
+.kpi-value { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+.kpi-label { font-size: 13px; color: var(--text2); font-weight: 500; }
+.kpi-change { font-size: 12px; font-weight: 600; margin-top: 6px; }
+.kpi-change.up { color: var(--green); }
+.kpi-change.down { color: var(--red); }
+
+/* === CHARTS === */
+.chart-row { display: grid; gap: 16px; margin-bottom: 16px; }
+@media (min-width: 768px) { .chart-row { grid-template-columns: 1fr 1fr; } }
+.chart-wrapper { height: 160px; position: relative; }
+.chart-canvas { width: 100%; height: 100%; }
+
+/* === TABLES === */
+.table-wrap { overflow-x: auto; margin: 0 -20px; padding: 0 20px; }
+@media (min-width: 768px) { .table-wrap { margin: 0; padding: 0; } }
+table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 680px; }
+th { text-align: left; padding: 12px 10px; color: var(--text2); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.02em; border-bottom: 1px solid var(--border); }
+td { padding: 14px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+.row-actions { display: flex; gap: 6px; }
+
+/* === BADGES === */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 600;
+}
+.badge-green { background: var(--green-bg); color: #1b5e20; }
+.badge-red { background: var(--red-bg); color: #b71c1c; }
+.badge-orange { background: var(--orange-bg); color: #e65100; }
+.badge-blue { background: var(--blue-bg); color: #0d47a1; }
+.badge-gray { background: var(--bg); color: var(--text2); }
+
+/* === FILTERS === */
+.filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.filters input, .filters select {
+  padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+  background: var(--card); color: var(--text); min-width: 160px; flex: 1;
+}
+.filters input:focus, .filters select:focus { outline: none; border-color: var(--navy); }
+
+/* === MODALS === */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100;
+  display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-backdrop.open { display: flex; }
+.modal {
+  background: var(--card); border-radius: var(--radius-xl); width: 100%; max-width: 420px;
+  box-shadow: var(--shadow-float); overflow: hidden; max-height: 90vh; overflow-y: auto;
+}
+.modal-header { padding: 20px 20px 12px; }
+.modal-title { font-size: 18px; font-weight: 700; }
+.modal-body { padding: 0 20px 20px; color: var(--text2); font-size: 14px; }
+.modal-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+.modal-footer .btn { flex: 1; }
+
+/* === MOBILE TABBAR === */
+.mobile-tabbar {
+  position: fixed; bottom: 0; left: 0; right: 0; height: calc(64px + var(--safe-bottom));
+  background: var(--card); border-top: 1px solid var(--border); display: flex; justify-content: space-around;
+  align-items: center; padding-bottom: var(--safe-bottom); z-index: 45;
+}
+.mobile-tabbar a {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; font-size: 11px; color: var(--text2); height: 100%;
+}
+.mobile-tabbar a.active { color: var(--navy); }
+.mobile-tabbar a .icon { font-size: 20px; }
+@media (min-width: 1024px) { .mobile-tabbar { display: none; } }
+
+/* === DARK MODE TOGGLE === */
+.theme-toggle {
+  width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: var(--navy-light); color: var(--navy); font-size: 18px;
+}
+
+/* === HIDDEN SCREENS === */
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* === TOAST === */
+.toast {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(100px);
+  background: var(--text); color: #fff; padding: 12px 20px; border-radius: 24px;
+  font-size: 14px; font-weight: 500; z-index: 110; opacity: 0; transition: all 0.3s ease;
+}
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+/* === LOG VIEWER === */
+.log-entry {
+  font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, monospace; font-size: 12px;
+  padding: 10px; border-bottom: 1px solid var(--border); color: var(--text2);
+}
+.log-entry:last-child { border-bottom: none; }
+.log-time { color: var(--navy); font-weight: 600; }
+.log-level { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; margin-right: 6px; }
+.log-level.info { background: var(--blue-bg); color: var(--blue); }
+.log-level.warn { background: var(--orange-bg); color: var(--orange); }
+.log-level.error { background: var(--red-bg); color: var(--red); }
+/* === TABS === */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.tab { padding: 10px 14px; font-size: 14px; font-weight: 600; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; transition: var(--transition); }
+.tab:hover { color: var(--navy); }
+.tab.active { color: var(--navy); border-bottom-color: var(--navy); }
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* === FORMS === */
+.form-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.form-row label { font-size: 13px; font-weight: 600; color: var(--text2); }
+.form-row input, .form-row select, .form-row textarea {
+  padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+  background: var(--bg); color: var(--text); outline: none; transition: var(--transition);
+}
+.form-row input:focus, .form-row select:focus, .form-row textarea:focus { border-color: var(--navy); background: var(--card); }
+.form-grid { display: grid; gap: 14px; }
+.form-grid.two-col { grid-template-columns: 1fr 1fr; }
+@media (max-width: 480px) { .form-grid.two-col { grid-template-columns: 1fr; } }
+
+/* === LIVE CALC === */
+.live-calc { background: var(--navy-light); border-radius: var(--radius-sm); padding: 14px; }
+.calc-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 14px; color: var(--text2); border-bottom: 1px dashed rgba(13,59,112,0.12); }
+.calc-row:last-child { border-bottom: none; }
+.calc-row strong { color: var(--text); font-weight: 700; }
+.calc-row .green { color: var(--green); }
+
+/* === STAMMDATEN GRID === */
+.stamm-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+@media (min-width: 768px) { .stamm-grid { grid-template-columns: repeat(4, 1fr); } }
+.stamm-item { background: var(--bg); border-radius: var(--radius-sm); padding: 12px; }
+.stamm-item span { display: block; font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+.stamm-item strong { font-size: 14px; color: var(--text); }
+
+/* === PDF PREVIEW === */
+.pdf-preview { background: #fff; color: #1d1d1f; border-radius: var(--radius-sm); padding: 24px; box-shadow: var(--shadow); min-height: 360px; }
+.pdf-page { max-width: 600px; margin: 0 auto; }
+.pdf-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+.pdf-logo { font-weight: 800; font-size: 18px; color: var(--navy); }
+.pdf-address { margin-bottom: 24px; font-size: 13px; line-height: 1.6; }
+.pdf-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 16px; }
+.pdf-table th, .pdf-table td { padding: 8px; border-bottom: 1px solid #e2e2e7; text-align: left; }
+.pdf-table th { background: #f5f5f7; font-weight: 600; }
+.pdf-totals { width: 100%; max-width: 260px; margin-left: auto; font-size: 13px; border-collapse: collapse; }
+.pdf-totals td { padding: 8px 0; border-bottom: 1px solid #e2e2e7; text-align: right; }
+.pdf-totals td:first-child { text-align: left; }
+.pdf-totals tr.pdf-grand td { font-weight: 800; font-size: 15px; border-bottom: none; color: var(--navy); }
+
+/* === FOOTER === */
+.page-footer { text-align: center; padding: 24px 16px; font-size: 12px; color: var(--text2); }
+
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">⚙️</div>
+      <div class="logo-text">Admin-Center</div>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#dashboard" class="active" data-screen="dashboard"><span class="icon">📊</span> Dashboard</a>
+      <a href="#vermieter" data-screen="vermieter"><span class="icon">🏘️</span> Vermieter</a>
+      <a href="#angebote" data-screen="angebote"><span class="icon">📄</span> Angebote</a>
+      <a href="#rechnungen" data-screen="rechnungen"><span class="icon">🧾</span> Rechnungen</a>
+      <a href="#zahlungen" data-screen="zahlungen"><span class="icon">💳</span> Zahlungen</a>
+      <a href="#ki" data-screen="ki"><span class="icon">🤖</span> KI-Kosten</a>
+      <a href="#logs" data-screen="logs"><span class="icon">🪵</span> Logs</a>
+      <a href="#system" data-screen="system"><span class="icon">🖥️</span> System</a>
+      <a href="#audit" data-screen="audit"><span class="icon">📜</span> Audit-Log</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="admin-badge">ADMIN</div>
+      <div>Max Mustermann</div>
+      <div style="font-size:11px; margin-top:4px; opacity:.7">IP: 192.168.x.x</div>
+      <div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:6px;">
+        <a href="investor.html" style="font-size:12px;">Investor</a>
+        <a href="index.html" style="font-size:12px;">App</a>
+        <a href="pricing.html" style="font-size:12px;">Preise</a>
+        <a href="Markt-Kennzahlen-Dashboard.html" style="font-size:12px;">Markt</a>
+      </div>
+      <div style="margin-top:10px; font-size:11px; opacity:.6;">© 2026 MietVerwaltung GbR · Demo mit Beispieldaten</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <button class="btn btn-icon menu-toggle" id="menuToggle" style="background:var(--navy-light); color:var(--navy); font-size:18px;">☰</button>
+        <div class="topbar-title" id="pageTitle">Dashboard</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="theme-toggle" id="themeToggle" title="Dark Mode">🌙</button>
+        <button class="btn btn-primary btn-sm">Abmelden</button>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- DASHBOARD -->
+      <div id="dashboard" class="screen active">
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon green">🏘️</div>
+            <div class="kpi-value">1.247</div>
+            <div class="kpi-label">Vermieter gesamt</div>
+            <div class="kpi-change up">↑ 12 diese Woche</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon blue">💶</div>
+            <div class="kpi-value">31.420 €</div>
+            <div class="kpi-label">MRR</div>
+            <div class="kpi-change up">↑ 8,4%</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon orange">🏠</div>
+            <div class="kpi-value">4.832</div>
+            <div class="kpi-label">Wohnungen verwaltet</div>
+            <div class="kpi-change up">↑ 3,1%</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon red">⚠️</div>
+            <div class="kpi-value">7</div>
+            <div class="kpi-label">Fehlgeschlagene Zahlungen</div>
+            <div class="kpi-change down">↑ 2 heute</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon blue">👥</div>
+            <div class="kpi-value">3.891</div>
+            <div class="kpi-label">Mieter gesamt</div>
+            <div class="kpi-change up">↑ 1,8%</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon green">📈</div>
+            <div class="kpi-value">376.980 €</div>
+            <div class="kpi-label">ARR</div>
+            <div class="kpi-change up">↑ 8,4%</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon orange">🤖</div>
+            <div class="kpi-value">842 €</div>
+            <div class="kpi-label">KI-Kosten (Monat)</div>
+            <div class="kpi-change down">↑ 12%</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon blue">🎫</div>
+            <div class="kpi-value">23</div>
+            <div class="kpi-label">Offene Support-Tickets</div>
+            <div class="kpi-change up">↓ 5%</div>
+          </div>
+        </div>
+
+        <div class="chart-row">
+          <div class="card">
+            <div class="card-title">MRR-Entwicklung</div>
+            <div class="chart-wrapper">
+              <canvas id="mrrChart" class="chart-canvas"></canvas>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Neuregistrierungen</div>
+            <div class="chart-wrapper">
+              <canvas id="regChart" class="chart-canvas"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Fehlgeschlagene Zahlungen</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Vermieter</th><th>WE</th><th>Preis/WE</th><th>Betrag</th><th>Status</th><th>Aktion</th></tr></thead>
+              <tbody>
+                <tr><td>Thomas Weber</td><td>18</td><td>7,50 €</td><td>135,00 €</td><td><span class="badge badge-orange">Retry offen</span></td><td><button class="btn btn-primary btn-sm" onclick="toast('Retry gestartet')">Retry</button></td></tr>
+                <tr><td>Sabine Müller</td><td>7</td><td>7,50 €</td><td>52,50 €</td><td><span class="badge badge-red">Past due</span></td><td><button class="btn btn-primary btn-sm" onclick="toast('Retry gestartet')">Retry</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- VERMIETER -->
+      <div id="vermieter" class="screen">
+        <div class="card">
+          <div class="card-title">Vermieter-Verwaltung</div>
+          <div class="filters">
+            <input type="text" id="vermieterSearch" placeholder="Suche Name/E-Mail...">
+            <select id="planFilter">
+              <option value="">Alle Staffelpreise</option>
+              <option>1-5 WE (9,75 EUR)</option>
+              <option>6-25 WE (7,50 EUR)</option>
+              <option>26-49 WE (5,90 EUR)</option>
+              <option>50+ WE (Custom)</option>
+            </select>
+            <select id="statusFilter">
+              <option value="">Alle Status</option>
+              <option>Aktiv</option>
+              <option>Gesperrt</option>
+            </select>
+            <button class="btn btn-primary" onclick="toast('Filter angewendet')">Filtern</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th><th>E-Mail</th><th>WE</th><th>Preis/WE</th><th>Status</th><th>MRR</th><th>Letzte Aktivität</th><th>Aktionen</th>
+                </tr>
+              </thead>
+              <tbody id="vermieterTable">
+                <tr>
+                  <td><strong>Thomas Weber</strong></td>
+                  <td>thomas@weber-immobilien.de</td>
+                  <td>18</td>
+                  <td>7,50 €</td>
+                  <td><span class="badge badge-green">Aktiv</span></td>
+                  <td>135,00 €</td>
+                  <td>vor 2 Stunden</td>
+                  <td class="row-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="openVermieterDetail()">Details</button>
+                    <button class="btn btn-danger btn-sm" onclick="openSuspendModal('Thomas Weber', 1)">Sperren</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Sabine Müller</strong></td>
+                  <td>sabine@mueller-vermietung.de</td>
+                  <td>7</td>
+                  <td>7,50 €</td>
+                  <td><span class="badge badge-red">Gesperrt</span></td>
+                  <td>52,50 €</td>
+                  <td>vor 3 Tagen</td>
+                  <td class="row-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="openVermieterDetail()">Details</button>
+                    <button class="btn btn-success btn-sm" onclick="openUnsuspendModal('Sabine Müller', 2)">Entsperren</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Klaus Schmidt</strong></td>
+                  <td>klaus.schmidt@gmail.com</td>
+                  <td>5</td>
+                  <td>9,75 €</td>
+                  <td><span class="badge badge-green">Aktiv</span></td>
+                  <td>48,75 €</td>
+                  <td>vor 5 Minuten</td>
+                  <td class="row-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="openVermieterDetail()">Details</button>
+                    <button class="btn btn-danger btn-sm" onclick="openSuspendModal('Klaus Schmidt', 3)">Sperren</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Immobilien Müller GmbH</strong></td>
+                  <td>info@immobilien-mueller.de</td>
+                  <td>67</td>
+                  <td>8,88 € (Custom)</td>
+                  <td><span class="badge badge-green">Aktiv</span></td>
+                  <td>594,96 €</td>
+                  <td>vor 1 Stunde</td>
+                  <td class="row-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="openVermieterDetail()">Details</button>
+                    <button class="btn btn-danger btn-sm" onclick="openSuspendModal('Immobilien Müller GmbH', 4)">Sperren</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ZAHLUNGEN -->
+      <div id="zahlungen" class="screen">
+        <div class="card">
+          <div class="card-title">Zahlungs-Übersicht</div>
+          <div class="card-subtitle">Alle aktiven Subscriptions, Stripe-Status und MRR pro Staffel.</div>
+          <div class="filters">
+            <select><option>Alle Status</option><option>Aktiv</option><option>Past due</option><option>Cancelled</option></select>
+            <select id="zahlungPlanFilter"><option value="">Alle Staffelpreise</option><option>1-5 WE (9,75 EUR)</option><option>6-25 WE (7,50 EUR)</option><option>26-49 WE (5,90 EUR)</option><option>50+ WE (Custom)</option></select>
+            <button class="btn btn-secondary" onclick="toast('Stripe-Sync gestartet')">🔄 Stripe-Sync</button>
+            <button class="btn btn-primary" onclick="toast('CSV-Export gestartet')">📥 Export CSV</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Vermieter</th><th>WE</th><th>Preis/WE</th><th>Status</th><th>Betrag</th><th>Nächste Abbuchung</th><th>Zahlungsmethode</th><th>Aktionen</th></tr></thead>
+              <tbody>
+                <tr><td>Thomas Weber</td><td>18</td><td>7,50 €</td><td><span class="badge badge-green">Active</span></td><td>135,00 €</td><td>15.11.2026</td><td>SEPA</td><td class="row-actions"><button class="btn btn-secondary btn-sm" onclick="toast('Plan bearbeiten')">Plan</button></td></tr>
+                <tr><td>Sabine Müller</td><td>7</td><td>7,50 €</td><td><span class="badge badge-red">Past due</span></td><td>52,50 €</td><td>—</td><td>SEPA</td><td class="row-actions"><button class="btn btn-primary btn-sm" onclick="toast('Retry')">Retry</button><button class="btn btn-danger btn-sm" onclick="toast('Refund')">Refund</button></td></tr>
+                <tr><td>Klaus Schmidt</td><td>5</td><td>9,75 €</td><td><span class="badge badge-green">Active</span></td><td>48,75 €</td><td>03.11.2026</td><td>Karte</td><td class="row-actions"><button class="btn btn-secondary btn-sm" onclick="toast('Plan bearbeiten')">Plan</button></td></tr>
+                <tr><td>Immobilien Müller GmbH</td><td>67</td><td>8,88 €</td><td><span class="badge badge-green">Active</span></td><td>594,96 €</td><td>01.12.2026</td><td>Rechnung</td><td class="row-actions"><button class="btn btn-secondary btn-sm" onclick="toast('Plan bearbeiten')">Plan</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">MRR pro Staffel</div>
+          <div class="chart-wrapper"><canvas id="planChart" class="chart-canvas"></canvas></div>
+        </div>
+      </div>
+
+      <!-- KI-KOSTEN -->
+      <div id="ki" class="screen">
+        <div class="card">
+          <div class="card-title">KI-Kosten-Tracking</div>
+          <div class="card-subtitle">Aufrufe, Token, Kosten und Cache-Trefferrate pro Vermieter.</div>
+          <div class="kpi-grid" style="grid-template-columns:repeat(2,1fr)">
+            <div class="kpi-card"><div class="kpi-icon blue">🤖</div><div class="kpi-value">24.582</div><div class="kpi-label">KI-Aufrufe (Monat)</div></div>
+            <div class="kpi-card"><div class="kpi-icon green">💰</div><div class="kpi-value">842 €</div><div class="kpi-label">KI-Kosten (Monat)</div></div>
+            <div class="kpi-card"><div class="kpi-icon orange">📉</div><div class="kpi-value">34%</div><div class="kpi-label">Cache-Trefferrate</div></div>
+            <div class="kpi-card"><div class="kpi-icon blue">📊</div><div class="kpi-value">2,7%</div><div class="kpi-label">KI-Kosten / MRR</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Top Vermieter nach KI-Kosten</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Vermieter</th><th>Aufrufe</th><th>Tokens</th><th>Kosten</th><th>Budget</th><th>Aktion</th></tr></thead>
+              <tbody>
+                <tr><td>Immobilien Müller GmbH</td><td>4.821</td><td>12,4 Mio</td><td>142 €</td><td>200 €</td><td><button class="btn btn-secondary btn-sm" onclick="toast('Budget bearbeitet')">Budget</button></td></tr>
+                <tr><td>Thomas Weber</td><td>2.102</td><td>5,1 Mio</td><td>58 €</td><td>50 €</td><td><button class="btn btn-secondary btn-sm" onclick="toast('Budget bearbeitet')">Budget</button></td></tr>
+                <tr><td>Klaus Schmidt</td><td>1.890</td><td>4,3 Mio</td><td>49 €</td><td>30 €</td><td><button class="btn btn-secondary btn-sm" onclick="toast('Budget bearbeitet')">Budget</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOGS -->
+      <div id="logs" class="screen">
+        <div class="card">
+          <div class="card-title">Log-Management (DSGVO-konform)</div>
+          <div class="card-subtitle">Aufbewahrungsfristen und Live-Logs.</div>
+          <div class="filters">
+            <select id="logType"><option>Access Logs</option><option>Error Logs</option><option>Audit Logs</option><option>Security Logs</option><option>KI Logs</option><option>E-Mail Logs</option></select>
+            <select id="retentionDays">
+              <option value="7">7 Tage</option>
+              <option value="14">14 Tage</option>
+              <option value="30">30 Tage</option>
+              <option value="90">90 Tage</option>
+              <option value="365">12 Monate</option>
+            </select>
+            <button class="btn btn-primary" onclick="toast('Retention-Einstellung gespeichert')">Speichern</button>
+            <button class="btn btn-secondary" onclick="toast('CSV-Export gestartet')">Export CSV</button>
+          </div>
+          <div style="margin-top:16px; border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden;">
+            <div class="log-entry"><span class="log-time">2026-11-02 14:32:01</span> <span class="log-level info">INFO</span> user_login user_id=482 ip_anon=192.168.x.x</div>
+            <div class="log-entry"><span class="log-time">2026-11-02 14:31:45</span> <span class="log-level info">INFO</span> subscription_created vermieter_id=482 tier=6-25_we</div>
+            <div class="log-entry"><span class="log-time">2026-11-02 14:28:12</span> <span class="log-level warn">WARN</span> failed_login user_id=unknown ip_anon=10.0.x.x count=3</div>
+            <div class="log-entry"><span class="log-time">2026-11-02 14:25:03</span> <span class="log-level info">INFO</span> ai_request vermieter_id=104 use_case=document_draft tokens=1240 cost=0.0021</div>
+            <div class="log-entry"><span class="log-time">2026-11-02 14:20:56</span> <span class="log-level error">ERROR</span> stripe_webhook_invalid_signature ip_anon=unknown</div>
+            <div class="log-entry"><span class="log-time">2026-11-02 14:18:33</span> <span class="log-level info">INFO</span> email_sent template=welcome recipient_hash=7a3f... status=sent</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Empfohlene Aufbewahrungsfristen</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Log-Typ</th><th>Frist</th><th>Anonymisierung</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>Access Logs</td><td>7 Tage</td><td>IP gekürzt</td><td><span class="badge badge-green">Aktiv</span></td></tr>
+                <tr><td>Error Logs</td><td>30 Tage</td><td>Keine PII</td><td><span class="badge badge-green">Aktiv</span></td></tr>
+                <tr><td>Audit Logs</td><td>12 Monate</td><td>IP gekürzt</td><td><span class="badge badge-green">Aktiv</span></td></tr>
+                <tr><td>Security Logs</td><td>90 Tage</td><td>IP gehasht</td><td><span class="badge badge-green">Aktiv</span></td></tr>
+                <tr><td>KI Logs</td><td>6 Monate</td><td>Anonymisiert</td><td><span class="badge badge-green">Aktiv</span></td></tr>
+                <tr><td>E-Mail Logs</td><td>6 Monate</td><td>Recipient gehasht</td><td><span class="badge badge-green">Aktiv</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SYSTEM -->
+      <div id="system" class="screen">
+        <div class="card">
+          <div class="card-title">System-Status</div>
+          <div class="kpi-grid" style="grid-template-columns:repeat(2,1fr)">
+            <div class="kpi-card"><div class="kpi-icon green">🐘</div><div class="kpi-value" style="font-size:18px">PostgreSQL</div><div class="kpi-label"><span class="badge badge-green">Gesund</span></div></div>
+            <div class="kpi-card"><div class="kpi-icon green">⚡</div><div class="kpi-value" style="font-size:18px">Redis</div><div class="kpi-label"><span class="badge badge-green">Gesund</span></div></div>
+            <div class="kpi-card"><div class="kpi-icon green">💳</div><div class="kpi-value" style="font-size:18px">Stripe</div><div class="kpi-label"><span class="badge badge-green">Gesund</span></div></div>
+            <div class="kpi-card"><div class="kpi-icon green">🤖</div><div class="kpi-value" style="font-size:18px">Ollama Cloud</div><div class="kpi-label"><span class="badge badge-green">Gesund</span></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Feature-Flags</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Feature</th><th>Status</th><th>Aktualisiert</th><th>Aktion</th></tr></thead>
+              <tbody>
+                <tr><td>KI-Dokumente</td><td><span class="badge badge-green" id="ff-kidoku-badge">Aktiv</span></td><td>vor 2 Tagen</td><td><button class="btn btn-sm btn-secondary" onclick="toggleFeatureFlag('kidoku')">Umschalten</button></td></tr>
+                <tr><td>Mieter-Portal</td><td><span class="badge badge-green" id="ff-portal-badge">Aktiv</span></td><td>vor 5 Tagen</td><td><button class="btn btn-sm btn-secondary" onclick="toggleFeatureFlag('portal')">Umschalten</button></td></tr>
+                <tr><td>Neues Pricing</td><td><span class="badge badge-green" id="ff-pricing-badge">Aktiv</span></td><td>vor 1 Stunde</td><td><button class="btn btn-sm btn-secondary" onclick="toggleFeatureFlag('pricing')">Umschalten</button></td></tr>
+                <tr><td>eID-Integration</td><td><span class="badge badge-gray" id="ff-eid-badge">Inaktiv</span></td><td>vor 1 Woche</td><td><button class="btn btn-sm btn-secondary" onclick="toggleFeatureFlag('eid')">Umschalten</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card mt-3">
+          <div class="card-title">Wartungsmodus</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;">
+            <div>
+              <div style="font-weight:600;">Wartungsmodus aktivieren</div>
+              <div class="card-sub" style="font-size:13px;">Sperrt die App fuer alle Benutzer. Nur Admins haben Zugriff.</div>
+            </div>
+            <button class="btn btn-sm btn-secondary" id="maintenance-toggle" onclick="toggleMaintenance()">Deaktiviert</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- AUDIT LOG -->
+      <div id="audit" class="screen">
+        <div class="card">
+          <div class="card-title">Admin-Audit-Log</div>
+          <div class="filters">
+            <select><option>Alle Aktionen</option><option>suspend_vermieter</option><option>password_reset</option><option>impersonate_start</option><option>payment_refund</option><option>maintenance_activate</option></select>
+            <input type="date" value="2026-11-01">
+            <button class="btn btn-secondary" onclick="toast('CSV-Export gestartet')">Export CSV</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Zeit</th><th>Admin</th><th>Aktion</th><th>Entity</th><th>ID</th><th>Risiko</th><th>IP</th></tr></thead>
+              <tbody>
+                <tr><td>02.11. 14:30</td><td>Max</td><td>suspend_vermieter</td><td>users</td><td>482</td><td><span class="badge badge-red">Hoch</span></td><td>192.168.x.x</td></tr>
+                <tr><td>02.11. 13:12</td><td>Max</td><td>password_reset</td><td>users</td><td>104</td><td><span class="badge badge-red">Hoch</span></td><td>192.168.x.x</td></tr>
+                <tr><td>02.11. 11:45</td><td>Max</td><td>stripe_sync</td><td>stripe</td><td>—</td><td><span class="badge badge-orange">Mittel</span></td><td>192.168.x.x</td></tr>
+                <tr><td>02.11. 09:20</td><td>Max</td><td>log_retention_update</td><td>settings</td><td>—</td><td><span class="badge badge-orange">Mittel</span></td><td>192.168.x.x</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    
+      <!-- ANGEBOTE -->
+      <div id="angebote" class="screen">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <div class="card-title" style="margin:0;">Angebote</div>
+            <button class="btn btn-primary" onclick="openAngebotModal()">+ Neues Angebot</button>
+          </div>
+          <div class="filters">
+            <input type="text" id="angebotSearch" placeholder="Suche Vermieter...">
+            <select id="angebotStatusFilter">
+              <option value="">Alle Status</option>
+              <option>Entwurf</option>
+              <option>Versendet</option>
+              <option>Angenommen</option>
+              <option>Abgelaufen</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Vermieter</th><th>WE</th><th>Preis/WE</th><th>Monatlich</th><th>Jährlich</th><th>Status</th><th>Gültig bis</th><th>Aktion</th></tr></thead>
+              <tbody id="angebotTable">
+                <tr>
+                  <td><strong>Immobilien Müller GmbH</strong></td>
+                  <td>67</td>
+                  <td>8,88 €</td>
+                  <td>595,00 €</td>
+                  <td>6.534,00 €</td>
+                  <td><span class="badge badge-green">Angenommen</span></td>
+                  <td>—</td>
+                  <td class="row-actions"><button class="btn btn-secondary btn-sm" onclick="toast('PDF geöffnet')">PDF</button></td>
+                </tr>
+                <tr>
+                  <td><strong>WOBAU GmbH</strong></td>
+                  <td>124</td>
+                  <td>7,50 €</td>
+                  <td>930,00 €</td>
+                  <td>10.023,00 €</td>
+                  <td><span class="badge badge-blue">Versendet</span></td>
+                  <td>02.12.2026</td>
+                  <td class="row-actions"><button class="btn btn-secondary btn-sm" onclick="toast('Erneut senden')">Senden</button></td>
+                </tr>
+                <tr>
+                  <td><strong>Schmidt & Söhne GbR</strong></td>
+                  <td>58</td>
+                  <td>9,20 €</td>
+                  <td>533,60 €</td>
+                  <td>5.803,20 €</td>
+                  <td><span class="badge badge-gray">Entwurf</span></td>
+                  <td>—</td>
+                  <td class="row-actions"><button class="btn btn-primary btn-sm" onclick="openAngebotModal()">Bearbeiten</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECHNUNGEN -->
+      <div id="rechnungen" class="screen">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <div class="card-title" style="margin:0;">Rechnungen</div>
+            <button class="btn btn-primary" onclick="openRechnungModal()">+ Neue Rechnung</button>
+          </div>
+          <div class="filters">
+            <input type="text" id="rechnungSearch" placeholder="Suche Rechnungsnr./Vermieter...">
+            <select id="rechnungStatusFilter">
+              <option value="">Alle Status</option>
+              <option>Entwurf</option>
+              <option>Versendet</option>
+              <option>Bezahlt</option>
+              <option>Storniert</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Rechnungsnr.</th><th>Vermieter</th><th>Datum</th><th>Netto</th><th>USt.</th><th>Gesamt</th><th>Status</th><th>Aktion</th></tr></thead>
+              <tbody id="rechnungTable">
+                <tr>
+                  <td><strong>MV-2026-0001</strong></td>
+                  <td>Immobilien Müller GmbH</td>
+                  <td>02.11.2026</td>
+                  <td>595,00 €</td>
+                  <td>113,05 €</td>
+                  <td>708,05 €</td>
+                  <td><span class="badge badge-green">Bezahlt</span></td>
+                  <td class="row-actions"><button class="btn btn-secondary btn-sm" onclick="openRechnungPreview(1)">PDF</button></td>
+                </tr>
+                <tr>
+                  <td><strong>MV-2026-0002</strong></td>
+                  <td>WOBAU GmbH</td>
+                  <td>02.11.2026</td>
+                  <td>930,00 €</td>
+                  <td>176,70 €</td>
+                  <td>1.106,70 €</td>
+                  <td><span class="badge badge-blue">Versendet</span></td>
+                  <td class="row-actions"><button class="btn btn-secondary btn-sm" onclick="openRechnungPreview(2)">PDF</button></td>
+                </tr>
+                <tr>
+                  <td><strong>MV-2026-0003</strong></td>
+                  <td>Klaus Schmidt</td>
+                  <td>01.11.2026</td>
+                  <td>48,75 €</td>
+                  <td>9,26 €</td>
+                  <td>58,01 €</td>
+                  <td><span class="badge badge-orange">Entwurf</span></td>
+                  <td class="row-actions"><button class="btn btn-secondary btn-sm" onclick="openRechnungPreview(3)">PDF</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- VERMIETER DETAIL -->
+      <div id="vermieter-detail" class="screen">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <div>
+              <div class="card-title" style="margin:0;">Immobilien Müller GmbH</div>
+              <div class="card-subtitle" style="margin:0;">67 WE · Custom Pricing (8,88 €/WE) · seit 12.08.2026</div>
+            </div>
+            <div class="row-actions">
+              <button class="btn btn-primary" onclick="openAngebotModal()">+ Angebot</button>
+              <button class="btn btn-secondary" onclick="openRechnungModal()">+ Rechnung</button>
+            </div>
+          </div>
+
+          <div class="tabs">
+            <div class="tab active" data-tab="stamm" onclick="showDetailTab('stamm')">Stammdaten</div>
+            <div class="tab" data-tab="angebote-detail" onclick="showDetailTab('angebote-detail')">Angebote (2)</div>
+            <div class="tab" data-tab="rechnungen-detail" onclick="showDetailTab('rechnungen-detail')">Rechnungen (5)</div>
+          </div>
+
+          <div id="tab-stamm" class="tab-content active">
+            <div class="stamm-grid">
+              <div class="stamm-item"><span>Name</span><strong>Immobilien Müller GmbH</strong></div>
+              <div class="stamm-item"><span>E-Mail</span><strong>info@immobilien-mueller.de</strong></div>
+              <div class="stamm-item"><span>Telefon</span><strong>+49 30 12345678</strong></div>
+              <div class="stamm-item"><span>Adresse</span><strong>Friedrichstraße 100, 10115 Berlin</strong></div>
+              <div class="stamm-item"><span>USt-Id</span><strong>DE987654321</strong></div>
+              <div class="stamm-item"><span>Steuerbefreit</span><strong>Nein</strong></div>
+              <div class="stamm-item"><span>WE-Anzahl</span><strong>67</strong></div>
+              <div class="stamm-item"><span>Aktueller Plan</span><strong>Custom (8,88 €/WE)</strong></div>
+            </div>
+            <div style="margin-top:16px; color:var(--text2); font-size:13px;">
+              Hinweis: Adresse wird aus users.adresse gezogen. Falls leer, Fallback auf Hauptobjekt (objekte.adresse).
+            </div>
+          </div>
+
+          <div id="tab-angebote-detail" class="tab-content">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Datum</th><th>Preis/WE</th><th>WE</th><th>Monatlich</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr><td>15.10.2026</td><td>8,88 €</td><td>67</td><td>595,00 €</td><td><span class="badge badge-green">Angenommen</span></td></tr>
+                  <tr><td>01.09.2026</td><td>9,75 €</td><td>67</td><td>653,25 €</td><td><span class="badge badge-gray">Abgelaufen</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="tab-rechnungen-detail" class="tab-content">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Rechnungsnr.</th><th>Datum</th><th>Betrag</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr><td>MV-2026-0001</td><td>02.11.2026</td><td>708,05 €</td><td><span class="badge badge-green">Bezahlt</span></td></tr>
+                  <tr><td>MV-2026-0002</td><td>02.10.2026</td><td>708,05 €</td><td><span class="badge badge-green">Bezahlt</span></td></tr>
+                  <tr><td>MV-2026-0003</td><td>02.09.2026</td><td>708,05 €</td><td><span class="badge badge-green">Bezahlt</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MEHR (Mobile) -->
+      <div id="mehr" class="screen">
+        <div class="card">
+          <div class="card-title">Weitere Bereiche</div>
+          <div class="kpi-grid" style="grid-template-columns:1fr">
+            <div class="kpi-card" style="cursor:pointer" onclick="showScreen('ki')">
+              <div class="kpi-icon blue">🤖</div>
+              <div class="kpi-value" style="font-size:18px">KI-Kosten</div>
+              <div class="kpi-label">Tracking, Budgets, Top-Nutzer</div>
+            </div>
+            <div class="kpi-card" style="cursor:pointer" onclick="showScreen('logs')">
+              <div class="kpi-icon orange">🪵</div>
+              <div class="kpi-value" style="font-size:18px">Logs</div>
+              <div class="kpi-label">Access, Error, Audit, KI Logs</div>
+            </div>
+            <div class="kpi-card" style="cursor:pointer" onclick="showScreen('audit')">
+              <div class="kpi-icon red">📜</div>
+              <div class="kpi-value" style="font-size:18px">Audit-Log</div>
+              <div class="kpi-label">Admin-Aktionen, Risiko, Export</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <footer class="page-footer">© 2026 MietVerwaltung GbR · Demo mit Beispieldaten</footer>
+
+    <nav class="mobile-tabbar">
+      <a href="#dashboard" class="active" data-screen="dashboard"><span class="icon">📊</span><span>Dash</span></a>
+      <a href="#vermieter" data-screen="vermieter"><span class="icon">🏘️</span><span>Vermieter</span></a>
+      <a href="#angebote" data-screen="angebote"><span class="icon">📄</span><span>Angebote</span></a>
+      <a href="#rechnungen" data-screen="rechnungen"><span class="icon">🧾</span><span>Rechn.</span></a>
+      <a href="#mehr" data-screen="mehr"><span class="icon">⋯</span><span>Mehr</span></a>
+    </nav>
+  </main>
+</div>
+
+
+<!-- ANGEBOT MODAL -->
+<div class="modal-backdrop" id="angebotModal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <div class="modal-title">Neues Angebot</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label>Vermieter</label>
+        <select id="angebotVermieter">
+          <option data-we="67">Immobilien Müller GmbH — 67 WE</option>
+          <option data-we="124">WOBAU GmbH — 124 WE</option>
+          <option data-we="58">Schmidt & Söhne GbR — 58 WE</option>
+        </select>
+      </div>
+      <div class="form-grid two-col">
+        <div class="form-row">
+          <label>Staffelpreis</label>
+          <select id="angebotStaffel" onchange="setAngebotPreis(); calcAngebot()">
+            <option value="custom" data-preis="8.88">50+ WE — Custom</option>
+            <option value="1-5" data-preis="9.75">1-5 WE — 9,75 €/WE</option>
+            <option value="6-25" data-preis="7.50">6-25 WE — 7,50 €/WE</option>
+            <option value="26-49" data-preis="5.90">26-49 WE — 5,90 €/WE</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Preis pro WE (€)</label>
+          <input type="number" id="angebotPreis" value="8.88" step="0.01" min="0" oninput="calcAngebot()">
+        </div>
+      </div>
+      <div class="form-grid two-col">
+        <div class="form-row">
+          <label>Laufzeit</label>
+          <select id="angebotLaufzeit" onchange="calcAngebot()">
+            <option value="monatlich">Monatlich</option>
+            <option value="jaehrlich">Jährlich (-20%)</option>
+            <option value="2-jaehrlich">2-jährlich (-25%)</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Rabatt (%)</label>
+          <input type="number" id="angebotRabatt" value="0" step="0.01" min="0" max="100" oninput="calcAngebot()">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Gültig bis</label>
+        <input type="date" id="angebotGueltig" value="2026-12-02">
+      </div>
+      <div class="form-row">
+        <label>Sonderbedingungen</label>
+        <textarea id="angebotSonder" rows="2" placeholder="z. B. Kündigungsfrist, Inklusivleistungen..."></textarea>
+      </div>
+      <div class="live-calc" style="margin-top:8px;">
+        <div class="calc-row"><span>WE-Anzahl</span><strong id="calcWE">67</strong></div>
+        <div class="calc-row"><span>Monatlich</span><strong id="calcMonthly">594,96 €</strong></div>
+        <div class="calc-row"><span>Jährlich</span><strong id="calcYearly">7.139,52 €</strong></div>
+        <div class="calc-row"><span>Ersparnis vs. Standard (9,75 €/WE)</span><strong class="green" id="calcSaving">58,29 €</strong></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeAngebotModal()">Abbrechen</button>
+      <button class="btn btn-secondary" onclick="toast('PDF-Vorschau generiert')">PDF</button>
+      <button class="btn btn-primary" onclick="confirmAngebot()">Speichern & Senden</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECHNUNG MODAL -->
+<div class="modal-backdrop" id="rechnungModal">
+  <div class="modal" style="max-width:720px;">
+    <div class="modal-header">
+      <div class="modal-title" id="rechnungModalTitle">Rechnung MV-2026-0001</div>
+    </div>
+    <div class="modal-body">
+      <div class="tabs" style="margin-top:-8px;">
+        <div class="tab active" data-tab="rechnung-form" onclick="showRechnungTab('rechnung-form')">Positionen</div>
+        <div class="tab" data-tab="rechnung-preview" onclick="showRechnungTab('rechnung-preview')">PDF-Vorschau</div>
+        <div class="tab" data-tab="rechnung-erechnung" onclick="showRechnungTab('rechnung-erechnung')">E-Rechnung</div>
+      </div>
+
+      <div id="rechnung-tab-rechnung-form" class="tab-content active">
+        <div class="form-row">
+          <label>Vermieter</label>
+          <select id="rechnungVermieter">
+            <option data-we="67">Immobilien Müller GmbH — DE987654321</option>
+            <option data-we="124">WOBAU GmbH — DE123456789</option>
+            <option data-we="5">Klaus Schmidt — privat</option>
+          </select>
+        </div>
+        <div class="form-grid two-col">
+          <div class="form-row"><label>Leistungszeitraum von</label><input type="date" value="2026-11-01"></div>
+          <div class="form-row"><label>bis</label><input type="date" value="2026-11-30"></div>
+        </div>
+        <div class="form-row">
+          <label>Positionen</label>
+          <div class="table-wrap" style="margin:0;">
+            <table>
+              <thead><tr><th>Bezeichnung</th><th>Menge</th><th>Einzelpreis</th><th>Gesamt</th></tr></thead>
+              <tbody>
+                <tr><td>MietVerwaltung — 67 WE</td><td>67</td><td>8,88 €</td><td>595,00 €</td></tr>
+                <tr><td>Setup-Gebühr Migration</td><td>1</td><td>0,00 €</td><td>0,00 €</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="live-calc">
+          <div class="calc-row"><span>Netto</span><strong>595,00 €</strong></div>
+          <div class="calc-row"><span>USt. 19%</span><strong>113,05 €</strong></div>
+          <div class="calc-row"><span>Gesamt</span><strong>708,05 €</strong></div>
+        </div>
+      </div>
+
+      <div id="rechnung-tab-rechnung-preview" class="tab-content">
+        <div class="pdf-preview" id="rechnungPdfPreview">
+          <div class="pdf-header">
+            <div class="pdf-logo">MietVerwaltung</div>
+            <div style="font-size:13px; text-align:right;">
+              <div><strong>Rechnungsnr. MV-2026-0001</strong></div>
+              <div>Datum: 02.11.2026</div>
+            </div>
+          </div>
+          <div class="pdf-address">
+            <strong>Immobilien Müller GmbH</strong><br>
+            Friedrichstraße 100<br>
+            10115 Berlin<br>
+            USt-Id: DE987654321
+          </div>
+          <h3 style="margin-bottom:8px;">Rechnung</h3>
+          <p style="font-size:13px; margin-bottom:12px;">Leistungszeitraum: 01.11.2026 – 30.11.2026</p>
+          <table class="pdf-table">
+            <thead><tr><th>Pos.</th><th>Bezeichnung</th><th>Menge</th><th>Einzelpreis</th><th>Gesamt</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>MietVerwaltung — 67 WE</td><td>67</td><td>8,88 €</td><td>595,00 €</td></tr>
+            </tbody>
+          </table>
+          <table class="pdf-totals">
+            <tr><td>Zwischensumme (netto)</td><td>595,00 €</td></tr>
+            <tr><td>USt. 19%</td><td>113,05 €</td></tr>
+            <tr class="pdf-grand"><td>Gesamtbetrag</td><td>708,05 €</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div id="rechnung-tab-rechnung-erechnung" class="tab-content">
+        <div class="form-row">
+          <label>Format</label>
+          <select>
+            <option>XRechnung XML (EN 16931)</option>
+            <option>ZUGFeRD 2.3 Comfort PDF/A</option>
+          </select>
+        </div>
+        <div style="background:var(--bg); border-radius:var(--radius-sm); padding:12px; font-family:monospace; font-size:11px; white-space:pre-wrap; color:var(--text2); max-height:200px; overflow:auto;">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;Invoice xmlns="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100"&gt;
+  &lt;ExchangedDocument&gt;
+    &lt;ID&gt;MV-2026-0001&lt;/ID&gt;
+    &lt;TypeCode&gt;380&lt;/TypeCode&gt;
+    &lt;IssueDateTime&gt;20261102&lt;/IssueDateTime&gt;
+  &lt;/ExchangedDocument&gt;
+  ...
+&lt;/Invoice&gt;
+        &lt;/div&gt;
+        <div class="row-actions" style="margin-top:12px;">
+          <button class="btn btn-secondary" onclick="toast('XRechnung XML heruntergeladen')">📥 XRechnung.xml</button>
+          <button class="btn btn-secondary" onclick="toast('ZUGFeRD PDF heruntergeladen')">📥 ZUGFeRD.pdf</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeRechnungModal()">Schließen</button>
+      <button class="btn btn-secondary" onclick="toast('Rechnung als Entwurf gespeichert')">Entwurf</button>
+      <button class="btn btn-primary" onclick="toast('Rechnung versendet')">Senden</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUSPEND MODAL -->
+<div class="modal-backdrop" id="suspendModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Vermieter sperren</div>
+    </div>
+    <div class="modal-body">
+      <p>Sperre <strong id="suspendName">—</strong>. Der Vermieter bekommt eine E-Mail mit dem Grund.</p>
+      <textarea id="suspendReason" rows="3" style="width:100%; margin-top:12px; padding:12px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--bg); color:var(--text);" placeholder="Grund für die Sperrung..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeSuspendModal()">Abbrechen</button>
+      <button class="btn btn-danger" onclick="confirmSuspend()">Sperren</button>
+    </div>
+  </div>
+</div>
+
+<!-- UNSUSPEND MODAL -->
+<div class="modal-backdrop" id="unsuspendModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Vermieter entsperren</div>
+    </div>
+    <div class="modal-body">
+      <p>Entsperre <strong id="unsuspendName">—</strong>. Der Zugriff wird sofort wiederhergestellt.</p>
+      <textarea id="unsuspendReason" rows="3" style="width:100%; margin-top:12px; padding:12px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--bg); color:var(--text);" placeholder="Interner Vermerk (optional)..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeUnsuspendModal()">Abbrechen</button>
+      <button class="btn btn-success" onclick="confirmUnsuspend()">Entsperren</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* === NAVIGATION === */
+const screens = {
+  dashboard: 'Dashboard',
+  vermieter: 'Vermieter-Verwaltung',
+  'vermieter-detail': 'Vermieter-Detail',
+  angebote: 'Angebote',
+  rechnungen: 'Rechnungen',
+  zahlungen: 'Zahlungs-Verwaltung',
+  ki: 'KI-Kosten',
+  logs: 'Log-Management',
+  system: 'System-Status',
+  audit: 'Audit-Log',
+  mehr: 'Weitere Bereiche'
+};
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById(name);
+  if (target) target.classList.add('active');
+
+  document.querySelectorAll('.sidebar-nav a, .mobile-tabbar a').forEach(a => a.classList.remove('active'));
+  document.querySelectorAll(`[data-screen="${name}"]`).forEach(a => a.classList.add('active'));
+
+  document.getElementById('pageTitle').textContent = screens[name] || 'Admin-Center';
+  document.getElementById('sidebar').classList.remove('open');
+  setTimeout(renderCharts, 100);
+}
+
+document.querySelectorAll('.sidebar-nav a, .mobile-tabbar a').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const name = a.getAttribute('data-screen');
+    showScreen(name);
+    window.location.hash = name;
+  });
+});
+
+window.addEventListener('hashchange', () => {
+  const raw = window.location.hash.replace('#', '') || 'dashboard';
+  showScreen(raw.split('/')[0]);
+});
+
+const rawInitial = window.location.hash.replace('#', '') || 'dashboard';
+showScreen(rawInitial.split('/')[0]);
+
+/* === MOBILE MENU === */
+document.getElementById('menuToggle').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('open');
+});
+
+/* === THEME TOGGLE === */
+const themeToggle = document.getElementById('themeToggle');
+if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  document.documentElement.classList.add('dark');
+  themeToggle.textContent = '☀️';
+}
+themeToggle.addEventListener('click', () => {
+  document.documentElement.classList.toggle('dark');
+  const isDark = document.documentElement.classList.contains('dark');
+  localStorage.theme = isDark ? 'dark' : 'light';
+  themeToggle.textContent = isDark ? '☀️' : '🌙';
+});
+
+/* === TOAST === */
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function formatCurrency(num) {
+  return num.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+}
+
+function getTier(we) {
+  we = parseInt(we) || 0;
+  if (we >= 50) return { label: '50+ WE (Custom)', price: null };
+  if (we >= 26) return { label: '26-49 WE (5,90 EUR)', price: 5.90 };
+  if (we >= 6) return { label: '6-25 WE (7,50 EUR)', price: 7.50 };
+  return { label: '1-5 WE (9,75 EUR)', price: 9.75 };
+}
+
+/* === SUSPEND MODAL === */
+let suspendTarget = null;
+function openSuspendModal(name, id) {
+  suspendTarget = { name, id };
+  document.getElementById('suspendName').textContent = name;
+  document.getElementById('suspendReason').value = '';
+  document.getElementById('suspendModal').classList.add('open');
+}
+function closeSuspendModal() {
+  document.getElementById('suspendModal').classList.remove('open');
+}
+function confirmSuspend() {
+  const reason = document.getElementById('suspendReason').value.trim();
+  if (!reason) { toast('Bitte einen Grund eingeben'); return; }
+  toast(`${suspendTarget.name} gesperrt`);
+  closeSuspendModal();
+}
+
+/* === UNSUSPEND MODAL === */
+let unsuspendTarget = null;
+function openUnsuspendModal(name, id) {
+  unsuspendTarget = { name, id };
+  document.getElementById('unsuspendName').textContent = name;
+  document.getElementById('unsuspendReason').value = '';
+  document.getElementById('unsuspendModal').classList.add('open');
+}
+function closeUnsuspendModal() {
+  document.getElementById('unsuspendModal').classList.remove('open');
+}
+function confirmUnsuspend() {
+  toast(`${unsuspendTarget.name} entsperrt`);
+  closeUnsuspendModal();
+}
+
+/* === FEATURE FLAGS & WARTUNGSMODUS === */
+function toggleFeatureFlag(flag) {
+  const badge = document.getElementById('ff-' + flag + '-badge');
+  if (!badge) return;
+  if (badge.classList.contains('badge-green')) {
+    badge.classList.remove('badge-green');
+    badge.classList.add('badge-gray');
+    badge.textContent = 'Inaktiv';
+    toast(flag + ' deaktiviert');
+  } else {
+    badge.classList.remove('badge-gray');
+    badge.classList.add('badge-green');
+    badge.textContent = 'Aktiv';
+    toast(flag + ' aktiviert');
+  }
+}
+
+function toggleMaintenance() {
+  const btn = document.getElementById('maintenance-toggle');
+  if (btn.textContent === 'Deaktiviert') {
+    btn.textContent = 'Aktiviert';
+    btn.classList.remove('btn-secondary');
+    btn.classList.add('btn-danger');
+    toast('Wartungsmodus aktiviert — App fuer Benutzer gesperrt');
+  } else {
+    btn.textContent = 'Deaktiviert';
+    btn.classList.remove('btn-danger');
+    btn.classList.add('btn-secondary');
+    toast('Wartungsmodus deaktiviert');
+  }
+}
+
+/* === MINI CHARTS (keine externen Dependencies) === */
+function drawBarChart(canvasId, data, color) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+
+  const w = rect.width, h = rect.height;
+  const pad = 20;
+  const max = Math.max(...data) || 1;
+  const barW = (w - pad * 2) / data.length * 0.6;
+  const step = (w - pad * 2) / data.length;
+
+  ctx.clearRect(0, 0, w, h);
+  data.forEach((val, i) => {
+    const barH = (val / max) * (h - pad * 2);
+    const x = pad + i * step + (step - barW) / 2;
+    const y = h - pad - barH;
+    ctx.fillStyle = color;
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(x, y, barW, barH, 4);
+      ctx.fill();
+    } else {
+      ctx.fillRect(x, y, barW, barH);
+    }
+  });
+}
+
+function drawLineChart(canvasId, data, color) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+
+  const w = rect.width, h = rect.height;
+  const pad = 20;
+  const max = Math.max(...data) || 1;
+  const step = (w - pad * 2) / (data.length - 1);
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  data.forEach((val, i) => {
+    const x = pad + i * step;
+    const y = h - pad - (val / max) * (h - pad * 2);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // fill area
+  ctx.lineTo(pad + (data.length - 1) * step, h - pad);
+  ctx.lineTo(pad, h - pad);
+  ctx.closePath();
+  ctx.fillStyle = color + '22';
+  ctx.fill();
+}
+
+function renderCharts() {
+  drawLineChart('mrrChart', [24, 25, 26, 27, 28, 29, 30, 31], '#0D3B70');
+  drawBarChart('regChart', [3, 5, 2, 7, 4, 9, 12], '#2a5a9e');
+  drawBarChart('planChart', [48.75, 135, 177, 594.96], '#34c759');
+}
+
+window.addEventListener('load', renderCharts);
+window.addEventListener('resize', renderCharts);
+
+/* === VERMIETER FILTER DEMO === */
+document.getElementById('vermieterSearch').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase();
+  document.querySelectorAll('#vermieterTable tr').forEach(tr => {
+    const text = tr.textContent.toLowerCase();
+    tr.style.display = text.includes(q) ? '' : 'none';
+  });
+});
+
+/* === ANGEBOT FILTER === */
+document.getElementById('angebotSearch')?.addEventListener('input', e => {
+  const q = e.target.value.toLowerCase();
+  document.querySelectorAll('#angebotTable tr').forEach(tr => {
+    tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+});
+
+/* === RECHNUNG FILTER === */
+document.getElementById('rechnungSearch')?.addEventListener('input', e => {
+  const q = e.target.value.toLowerCase();
+  document.querySelectorAll('#rechnungTable tr').forEach(tr => {
+    tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+});
+
+/* === ANGEBOT MODAL === */
+function openAngebotModal() {
+  document.getElementById('angebotModal').classList.add('open');
+  calcAngebot();
+}
+function closeAngebotModal() { document.getElementById('angebotModal').classList.remove('open'); }
+function confirmAngebot() {
+  toast('Angebot gespeichert und per E-Mail versendet');
+  closeAngebotModal();
+}
+function calcAngebot() {
+  const sel = document.getElementById('angebotVermieter').selectedOptions[0];
+  const we = parseInt(sel?.dataset.we) || 67;
+  const preis = parseFloat(document.getElementById('angebotPreis').value) || 0;
+  const laufzeit = document.getElementById('angebotLaufzeit').value;
+  const rabatt = parseFloat(document.getElementById('angebotRabatt').value) || 0;
+  let monthly = preis * we;
+  if (laufzeit === 'jaehrlich') monthly *= 0.80;
+  if (laufzeit === '2-jaehrlich') monthly *= 0.75;
+  monthly -= monthly * (rabatt / 100);
+  const yearly = monthly * 12;
+  const tier = getTier(we);
+  const standard = (tier.price || preis) * we;
+  document.getElementById('calcWE').textContent = we;
+  document.getElementById('calcMonthly').textContent = formatCurrency(monthly);
+  document.getElementById('calcYearly').textContent = formatCurrency(yearly);
+  document.getElementById('calcSaving').textContent = formatCurrency(Math.max(0, standard - monthly));
+}
+
+function setAngebotPreis() {
+  const sel = document.getElementById('angebotStaffel').selectedOptions[0];
+  const preis = sel?.dataset.preis;
+  if (preis) document.getElementById('angebotPreis').value = preis;
+}
+
+/* === RECHNUNG MODAL === */
+function openRechnungModal(id) {
+  document.getElementById('rechnungModalTitle').textContent = id ? 'Rechnung MV-2026-000' + id : 'Neue Rechnung';
+  showRechnungTab('rechnung-form');
+  document.getElementById('rechnungModal').classList.add('open');
+}
+function openRechnungPreview(id) { openRechnungModal(id); showRechnungTab('rechnung-preview'); }
+function closeRechnungModal() { document.getElementById('rechnungModal').classList.remove('open'); }
+function showRechnungTab(name) {
+  document.querySelectorAll('#rechnungModal .tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#rechnungModal .tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector(`#rechnungModal .tab[data-tab="${name}"]`).classList.add('active');
+  document.getElementById('rechnung-tab-' + name).classList.add('active');
+}
+
+/* === VERMIETER DETAIL === */
+function openVermieterDetail(id, name) {
+  showScreen('vermieter-detail');
+  window.location.hash = 'vermieter-detail';
+}
+function showDetailTab(name) {
+  document.querySelectorAll('#vermieter-detail .tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#vermieter-detail .tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector(`#vermieter-detail .tab[data-tab="${name}"]`).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+/* === OVERRIDE DETAILS BUTTONS === */
+document.querySelectorAll('#vermieterTable button').forEach(btn => {
+  if (btn.textContent === 'Details') {
+    btn.onclick = () => openVermieterDetail();
+  }
+});
+</script>
+</body>
+</html>

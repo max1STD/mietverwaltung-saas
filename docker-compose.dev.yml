@@ -1,0 +1,30 @@
+version: "3.9"
+
+# Dev-Override: Hot-Reload, MailHog,Exposed Ports
+services:
+  backend:
+    build:
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./backend:/app
+      - uploads:/app/uploads
+    environment:
+      ENVIRONMENT: development
+      LOG_LEVEL: DEBUG
+
+  frontend:
+    build:
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      VITE_API_URL: http://localhost:8000
+
+  db:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"

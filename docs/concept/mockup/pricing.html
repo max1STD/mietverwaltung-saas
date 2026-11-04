@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0D3B70">
+<title>MietVerwaltung — Preise pro Wohnung</title>
+<style>
+/* === RESET & TOKENS === */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --navy: #0D3B70;
+  --navy-hover: #2a5a9e;
+  --navy-light: #e8eff8;
+  --bg: #f5f5f7;
+  --card: #ffffff;
+  --text: #1d1d1f;
+  --text2: #6e6e73;
+  --border: #e2e2e7;
+  --green: #34c759;
+  --green-bg: #e8f5e9;
+  --orange: #ff9500;
+  --orange-bg: #fff3e0;
+  --red: #ff3b30;
+  --red-bg: #ffebee;
+  --blue: #007aff;
+  --blue-bg: #e3f2fd;
+  --radius-xl: 24px;
+  --radius-lg: 18px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+  --radius-xs: 10px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-float: 0 12px 40px rgba(0,0,0,0.14);
+  --transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+html.dark {
+  --navy: #1f6feb;
+  --navy-hover: #58a6ff;
+  --navy-light: rgba(31,111,235,0.12);
+  --bg: #0d1117;
+  --card: #161b22;
+  --text: #e6edf3;
+  --text2: #7d8597;
+  --border: #30363d;
+  --green: #3fb950;
+  --green-bg: rgba(63,185,80,0.15);
+  --orange: #ff9500;
+  --orange-bg: rgba(255,149,0,0.15);
+  --red: #ff453a;
+  --red-bg: rgba(255,69,58,0.15);
+  --blue: #58a6ff;
+  --blue-bg: rgba(88,166,255,0.15);
+}
+html, body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  font-size: 15px;
+  line-height: 1.5;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+input, select, textarea { font-size: 16px; }
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+a { color: var(--navy); text-decoration: none; }
+
+/* === LAYOUT === */
+.page { min-height: 100vh; display: flex; flex-direction: column; }
+.container { width: 100%; max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  height: 60px;
+  background: rgba(255,255,255,0.85); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  transition: var(--transition);
+}
+html.dark .topbar { background: rgba(22,27,34,0.85); }
+.topbar-inner { height: 100%; display: flex; align-items: center; justify-content: space-between; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; letter-spacing: -0.01em; color: var(--text); }
+.brand-icon { width: 30px; height: 30px; background: var(--navy); border-radius: 8px; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+.topbar-actions { display: flex; align-items: center; gap: 10px; }
+.topbar-link { display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; font-size: 14px; font-weight: 600; color: var(--text); border-radius: var(--radius-xs); transition: var(--transition); }
+.topbar-link:hover { color: var(--navy); background: var(--navy-light); }
+.main { flex: 1; padding: 28px 0 40px; }
+@media (min-width: 640px) { .main { padding: 44px 0 60px; } }
+
+/* === TYPOGRAPHY === */
+h1, h2, h3, h4 { font-weight: 700; letter-spacing: -0.02em; }
+h1 { font-size: 28px; } h2 { font-size: 24px; } h3 { font-size: 18px; } h4 { font-size: 15px; }
+.subtitle { color: var(--text2); font-size: 15px; margin-top: 6px; }
+.text-center { text-align: center; }
+
+/* === BUTTONS === */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 0 18px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600;
+  border: 1px solid transparent; cursor: pointer; transition: var(--transition);
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--navy); color: #fff; }
+.btn-primary:hover { background: var(--navy-hover); }
+.btn-secondary { background: var(--card); color: var(--navy); border-color: var(--border); }
+.btn-secondary:hover { background: var(--navy-light); }
+.btn-ghost { background: transparent; color: var(--text2); border-color: var(--border); }
+.btn-lg { min-height: 52px; padding: 0 24px; font-size: 15px; border-radius: var(--radius-lg); width: 100%; }
+.btn-block { width: 100%; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.icon-btn { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: var(--text); transition: var(--transition); }
+.icon-btn:hover { background: var(--navy-light); color: var(--navy); }
+.flex-1 { flex: 1; }
+
+/* === CARDS === */
+.card {
+  background: var(--card); border-radius: var(--radius-md); box-shadow: var(--shadow);
+  padding: 20px; transition: var(--transition);
+}
+.card-hover:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.card-xl { border-radius: var(--radius-lg); padding: 24px; }
+.card-hero {
+  border-radius: var(--radius-lg); padding: 28px 24px;
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-hover) 100%); color: #fff;
+}
+html.dark .card-hero { background: linear-gradient(135deg, #0d419d 0%, #1f6feb 100%); }
+
+/* === BADGES === */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.01em;
+}
+.badge-pro { background: var(--navy); color: #fff; }
+.badge-gift { background: var(--green-bg); color: #237a32; }
+html.dark .badge-gift { background: var(--green-bg); color: var(--green); }
+.badge-trial { background: var(--orange-bg); color: #bf6f00; }
+html.dark .badge-trial { background: var(--orange-bg); color: var(--orange); }
+.badge-scarcity { background: var(--red-bg); color: var(--red); }
+
+/* === HERO === */
+.hero { text-align: center; margin-bottom: 28px; }
+@media (min-width: 640px) { .hero { margin-bottom: 40px; } }
+.hero h1 { font-size: 32px; line-height: 1.15; }
+@media (min-width: 640px) { .hero h1 { font-size: 42px; } }
+.hero-price { font-size: 48px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; color: var(--navy); margin-top: 14px; }
+html.dark .hero-price { color: var(--navy); }
+@media (min-width: 640px) { .hero-price { font-size: 64px; } }
+.hero-sub { color: var(--text2); font-size: 15px; margin-top: 10px; }
+
+/* === BILLING TOGGLE === */
+.toggle-wrap { display: inline-flex; align-items: center; justify-content: center; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+.toggle-label { font-size: 15px; font-weight: 600; color: var(--text2); cursor: pointer; }
+.toggle-label.active { color: var(--text); }
+.toggle {
+  width: 56px; height: 32px; border-radius: 16px; background: var(--border);
+  position: relative; cursor: pointer; transition: var(--transition);
+}
+.toggle::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 26px; height: 26px; border-radius: 50%; background: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+.toggle.yearly { background: var(--navy); }
+.toggle.yearly::after { transform: translateX(24px); }
+
+/* === CALCULATOR === */
+.calc-card { margin-bottom: 24px; }
+.calc-header { text-align: center; margin-bottom: 24px; }
+.calc-header h2 { font-size: 22px; }
+@media (min-width: 640px) { .calc-header h2 { font-size: 26px; } }
+
+.slider-wrap { margin: 24px 0 12px; }
+.slider-labels { display: flex; justify-content: space-between; font-size: 13px; color: var(--text2); margin-bottom: 8px; }
+.slider-track {
+  position: relative; height: 8px; border-radius: 4px;
+  background: linear-gradient(to right,
+    var(--navy) 0%, var(--navy) 11.11%,
+    var(--navy-hover) 11.11%, var(--navy-hover) 55.55%,
+    var(--blue) 55.55%, var(--blue) 100%
+  );
+}
+.slider {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 4px;
+  background: transparent; cursor: pointer; position: relative; z-index: 2;
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 28px; height: 28px; border-radius: 50%; background: #fff; border: 3px solid var(--navy);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18); transition: transform 0.15s;
+}
+.slider::-webkit-slider-thumb:hover { transform: scale(1.1); }
+.slider::-moz-range-thumb {
+  width: 28px; height: 28px; border-radius: 50%; background: #fff; border: 3px solid var(--navy);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+
+.tier-badges { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
+.tier-badge {
+  padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  background: var(--bg); color: var(--text2); border: 1px solid var(--border);
+}
+.tier-badge.active { background: var(--navy-light); color: var(--navy); border-color: var(--navy); }
+
+.price-display { text-align: center; margin: 24px 0; }
+.price-main { font-size: 42px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+@media (min-width: 640px) { .price-main { font-size: 56px; } }
+.price-meta { font-size: 15px; color: var(--text2); margin-top: 6px; }
+.price-highlight { color: var(--navy); font-weight: 700; }
+
+.savings-box {
+  background: var(--green-bg); color: #237a32; border-radius: var(--radius-sm);
+  padding: 12px 16px; text-align: center; font-size: 14px; font-weight: 600; margin-top: 12px;
+}
+html.dark .savings-box { color: var(--green); }
+.framing-box {
+  background: var(--orange-bg); color: #bf6f00; border-radius: var(--radius-sm);
+  padding: 12px 16px; text-align: center; font-size: 14px; font-weight: 600; margin-top: 10px;
+}
+html.dark .framing-box { color: var(--orange); }
+
+/* === TIER VISUALIZATION === */
+.tiers { display: grid; grid-template-columns: 1fr; gap: 14px; margin: 24px 0; }
+@media (min-width: 640px) { .tiers { grid-template-columns: repeat(2,1fr); } }
+@media (min-width: 900px) { .tiers { grid-template-columns: repeat(4,1fr); } }
+.tier-card {
+  background: var(--card); border-radius: var(--radius-md); box-shadow: var(--shadow);
+  padding: 20px; text-align: center; transition: var(--transition);
+  border: 2px solid transparent;
+}
+.tier-card.active { border-color: var(--navy); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.tier-range { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.02em; }
+.tier-price { font-size: 32px; font-weight: 800; letter-spacing: -0.03em; margin: 8px 0 4px; color: var(--text); }
+.tier-price span { font-size: 15px; font-weight: 500; color: var(--text2); }
+.tier-note { font-size: 13px; color: var(--text2); }
+
+/* === FEATURES === */
+.features { margin: 40px 0; }
+.features h2 { text-align: center; margin-bottom: 8px; }
+.features .subtitle { text-align: center; margin-bottom: 24px; }
+.feature-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+@media (min-width: 640px) { .feature-grid { grid-template-columns: repeat(2,1fr); } }
+@media (min-width: 900px) { .feature-grid { grid-template-columns: repeat(3,1fr); } }
+.feature-card { display: flex; align-items: flex-start; gap: 14px; }
+.feature-icon {
+  width: 40px; height: 40px; border-radius: var(--radius-xs); background: var(--navy-light);
+  color: var(--navy); display: grid; place-items: center; flex-shrink: 0;
+}
+.feature-title { font-weight: 700; font-size: 15px; }
+.feature-desc { font-size: 14px; color: var(--text2); margin-top: 2px; }
+
+/* === CTA SECTION === */
+.cta-section { margin: 32px 0; }
+.cta-card {
+  background: var(--card); border-radius: var(--radius-lg); box-shadow: var(--shadow);
+  padding: 24px; text-align: center;
+}
+.cta-card h3 { font-size: 20px; margin-bottom: 8px; }
+.cta-card p { color: var(--text2); font-size: 14px; margin-bottom: 18px; }
+
+/* === TRIAL BANNER === */
+.trial-banner {
+  margin: 28px 0;
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-hover) 100%); color: #fff;
+  border-radius: var(--radius-lg); padding: 22px 24px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+@media (min-width: 640px) {
+  .trial-banner { flex-direction: row; align-items: center; justify-content: space-between; }
+}
+.trial-banner h3 { font-size: 18px; }
+.trial-banner p { font-size: 14px; opacity: 0.9; margin-top: 4px; }
+.trial-banner .btn { background: #fff; color: var(--navy); }
+
+/* === SOCIAL PROOF === */
+.social-proof {
+  margin: 24px 0; text-align: center;
+  background: var(--card); border-radius: var(--radius-md); box-shadow: var(--shadow);
+  padding: 18px 20px;
+}
+.stars { color: var(--orange); font-size: 18px; letter-spacing: 2px; }
+.social-proof p { font-size: 14px; color: var(--text2); margin-top: 6px; }
+.social-proof strong { color: var(--text); }
+
+/* === FAQ === */
+.faq { margin-top: 44px; }
+.faq h2 { text-align: center; margin-bottom: 20px; }
+.faq-item {
+  background: var(--card); border-radius: var(--radius-md); box-shadow: var(--shadow);
+  margin-bottom: 12px; overflow: hidden;
+}
+.faq-q {
+  width: 100%; padding: 18px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 15px; font-weight: 600; text-align: left; color: var(--text);
+  background: none; border: none;
+}
+.faq-q::after { content: '+'; font-size: 22px; font-weight: 500; color: var(--navy); transition: transform 0.2s; }
+.faq-item.open .faq-q::after { content: '−'; }
+.faq-a {
+  max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s ease;
+  padding: 0 20px; font-size: 14px; color: var(--text2); line-height: 1.55;
+}
+.faq-item.open .faq-a { max-height: 500px; padding: 0 20px 18px; }
+
+/* === CHECKOUT MODAL === */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+  z-index: 200; display: none; align-items: flex-end; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.checkout-sheet {
+  width: 100%; max-width: 520px; max-height: 94vh; overflow-y: auto;
+  background: var(--card);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 22px 22px calc(28px + var(--safe-bottom)) 22px;
+  transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.25,1,0.5,1);
+}
+.modal-overlay.open .checkout-sheet { transform: translateY(0); }
+.sheet-handle { width: 40px; height: 5px; background: var(--border); border-radius: 3px; margin: 0 auto 18px; }
+.sheet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.sheet-header h2 { font-size: 22px; }
+.sheet-step { display: none; }
+.sheet-step.active { display: block; animation: stepIn 0.25s ease; }
+@keyframes stepIn { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
+
+/* === PAYMENT METHODS === */
+.method-list { display: flex; flex-direction: column; gap: 10px; margin: 18px 0; }
+.method-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--card); cursor: pointer; transition: var(--transition);
+}
+.method-item:hover { border-color: var(--navy); background: var(--navy-light); }
+.method-item.selected { border-color: var(--navy); background: var(--navy-light); }
+.method-icon { width: 38px; height: 38px; border-radius: var(--radius-xs); background: var(--bg); display: grid; place-items: center; color: var(--navy); flex-shrink: 0; }
+.method-info { flex: 1; }
+.method-name { font-weight: 600; font-size: 15px; }
+.method-meta { font-size: 13px; color: var(--text2); margin-top: 1px; }
+.method-meta .stripe-note { display: inline-block; font-size: 11px; color: var(--navy); font-weight: 600; margin-top: 2px; }
+.method-check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); display: grid; place-items: center; transition: var(--transition); }
+.method-item.selected .method-check { border-color: var(--navy); background: var(--navy); color: #fff; }
+
+/* === FORM === */
+.form-group { margin-bottom: 18px; }
+.form-label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.form-input, .form-select {
+  width: 100%; min-height: 48px; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius-xs);
+  background: var(--card); color: var(--text); font-size: 16px; transition: var(--transition);
+}
+.form-select { padding: 0 14px; }
+.form-input:focus, .form-select:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px var(--navy-light); }
+.form-input::placeholder { color: var(--text2); opacity: 0.7; }
+.card-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; }
+@media (max-width: 400px) { .card-row { grid-template-columns: 1fr; } }
+
+/* === ORDER SUMMARY === */
+.order-summary {
+  background: var(--bg); border-radius: var(--radius-md); padding: 16px;
+  display: flex; flex-direction: column; gap: 10px; margin: 16px 0;
+}
+.order-row { display: flex; justify-content: space-between; font-size: 14px; }
+.order-row.total { font-weight: 700; font-size: 16px; padding-top: 10px; border-top: 1px solid var(--border); }
+.trial-note { background: var(--orange-bg); color: #bf6f00; border-radius: var(--radius-sm); padding: 12px; font-size: 13px; display: flex; gap: 8px; }
+html.dark .trial-note { color: var(--orange); }
+
+/* === SUCCESS ANIMATION === */
+.success-view { text-align: center; padding: 24px 8px; }
+.success-ring {
+  width: 86px; height: 86px; border-radius: 50%;
+  background: var(--green-bg); color: var(--green);
+  display: grid; place-items: center; margin: 0 auto 20px;
+  animation: pop 0.5s cubic-bezier(0.175,0.885,0.32,1.275);
+}
+.success-ring svg { width: 42px; height: 42px; }
+@keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+.success-checkmark { stroke-dasharray: 50; stroke-dashoffset: 50; animation: draw 0.6s 0.2s forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.success-view h3 { font-size: 22px; margin-bottom: 8px; }
+.success-view p { color: var(--text2); font-size: 15px; margin-bottom: 24px; }
+
+/* === WIZARD STEPPER === */
+.wizard-stepper { display: flex; gap: 8px; margin-bottom: 24px; }
+.wizard-dot { flex: 1; height: 4px; border-radius: 2px; background: var(--border); transition: var(--transition); }
+.wizard-dot.active { background: var(--navy); }
+.wizard-dot.completed { background: var(--green); }
+
+/* === FOOTER === */
+.footer {
+  border-top: 1px solid var(--border); padding: 24px 0 calc(24px + var(--safe-bottom));
+  text-align: center; font-size: 13px; color: var(--text2);
+}
+
+/* === UTILITIES === */
+.hidden { display: none !important; }
+.mt-1 { margin-top: 4px; } .mt-2 { margin-top: 8px; } .mt-3 { margin-top: 16px; } .mt-4 { margin-top: 24px; }
+.mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 16px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">MV</div>
+        <span>MietVerwaltung</span>
+      </a>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="themeToggle" aria-label="Design wechseln" title="Design wechseln">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+          </svg>
+        </button>
+        <a href="index.html" class="icon-btn" aria-label="Zurück zum Dashboard" title="Zurück zum Dashboard">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+        </a>
+        <a href="investor.html" class="topbar-link" aria-label="Investor-Demo" title="Investor-Demo">Investor-Demo</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+      <!-- Hero -->
+      <section class="hero">
+        <span class="badge badge-scarcity">Einführungspreis — nur für kurze Zeit</span>
+        <h1 class="mt-3">Ab 9,75 EUR pro Wohnung pro Monat</h1>
+        <div class="hero-price" id="heroPrice">9,75 €</div>
+        <p class="hero-sub">pro Wohnung / Monat · inkl. MwSt. · alle Features inklusive</p>
+
+        <div class="toggle-wrap">
+          <span class="toggle-label" id="labelMonthly">Monatlich</span>
+          <button class="toggle yearly" id="billingToggle" aria-label="Zwischen monatlich und jährlich wechseln"></button>
+          <span class="toggle-label active" id="labelYearly">Jährlich</span>
+          <span class="badge badge-gift">2 Monate geschenkt</span>
+        </div>
+      </section>
+
+      <!-- Calculator -->
+      <section class="card card-xl calc-card">
+        <div class="calc-header">
+          <h2>Wie viele Wohnungen verwaltest du?</h2>
+          <p class="subtitle">Ziehe den Regler und sieh sofort deinen Preis.</p>
+        </div>
+
+        <div class="tier-badges">
+          <span class="tier-badge active" id="tierBadge1">1–5 WE: 9,75 €</span>
+          <span class="tier-badge" id="tierBadge2">6–25 WE: 7,50 €</span>
+          <span class="tier-badge" id="tierBadge3">26–49 WE: 5,90 €</span>
+          <span class="tier-badge" id="tierBadge4">50+ WE: Individuell</span>
+        </div>
+
+        <div class="slider-wrap">
+          <div class="slider-labels">
+            <span>1 WE</span>
+            <span id="sliderValueLabel">10 WE</span>
+            <span>100 WE</span>
+          </div>
+          <div class="slider-track"></div>
+          <input type="range" min="1" max="100" value="10" class="slider" id="unitSlider" aria-label="Anzahl Wohnungen">
+        </div>
+
+        <div class="price-display">
+          <div class="price-main" id="totalPrice">75,00 €</div>
+          <div class="price-meta" id="priceMeta">pro Monat bei 10 Wohnungen · <span class="price-highlight">7,50 € pro WE</span></div>
+        </div>
+
+        <div class="savings-box" id="yearlySavings">Bei Jahreszahlung: 60,00 € gespart — nur 720,00 €/Jahr</div>
+        <div class="framing-box" id="framingText">Das sind nur 2,50 € pro Tag für alle 10 Wohnungen — 25 Cent pro Tag pro Wohnung.</div>
+        <div class="framing-box" style="margin-top:10px;">📌 Nur 32 Cent pro Tag pro Wohnung beim Einstiegspreis.</div>
+
+        <button class="btn btn-primary btn-lg btn-block mt-4" id="calcCta" onclick="openCheckout()">14 Tage kostenlos testen</button>
+      </section>
+
+      <!-- Tier Visualization -->
+      <section class="tiers" id="tierCards">
+        <article class="tier-card active" data-tier="1">
+          <div class="tier-range">1 – 5 Wohnungen</div>
+          <div class="tier-price">9,75 <span>€ / WE / Mo</span></div>
+          <div class="tier-note">Ideal für Hobby-Vermieter</div>
+        </article>
+        <article class="tier-card" data-tier="2">
+          <span class="badge badge-pro">Beliebteste Wahl</span>
+          <div class="tier-range mt-2">6 – 25 Wohnungen</div>
+          <div class="tier-price">7,50 <span>€ / WE / Mo</span></div>
+          <div class="tier-note">Beliebteste Wahl für Profis</div>
+        </article>
+        <article class="tier-card" data-tier="3">
+          <div class="tier-range">26 – 49 Wohnungen</div>
+          <div class="tier-price">5,90 <span>€ / WE / Mo</span></div>
+          <div class="tier-note">Bestes Preis-Leistungs-Verhältnis</div>
+        </article>
+        <article class="tier-card" data-tier="4">
+          <div class="tier-range">Ab 50 Wohnungen</div>
+          <div class="tier-price" style="font-size:24px;">Individuelles Angebot</div>
+          <div class="tier-note">Wir erstellen dir ein maßgeschneidertes Paket</div>
+        </article>
+      </section>
+
+      <!-- CTA -->
+      <section class="cta-section">
+        <div class="cta-card">
+          <h3 class="mt-2">Starte jetzt mit deinem individuellen Preis</h3>
+          <p>Keine versteckten Kosten, keine Begrenzungen — nur ein fairer Preis pro Wohnung. Teste 14 Tage kostenlos.</p>
+          <button class="btn btn-primary btn-lg btn-block" onclick="openCheckout()">14 Tage kostenlos testen</button>
+        </div>
+      </section>
+
+      <!-- Features -->
+      <section class="features">
+        <h2>Alles inklusive — keine Pläne, keine Kompromisse</h2>
+        <p class="subtitle">Jeder Account bekommt das volle Feature-Set. Team-Accounts erst ab 6 Wohnungen.</p>
+        <div class="feature-grid">
+          <div class="card feature-card card-hover">
+            <div class="feature-icon">🤖</div>
+            <div>
+              <div class="feature-title">KI-gestützte Verwaltung</div>
+              <div class="feature-desc">Automatische Texte, Mahnungen und Dokumente.</div>
+            </div>
+          </div>
+          <div class="card feature-card card-hover">
+            <div class="feature-icon">🎫</div>
+            <div>
+              <div class="feature-title">Tickets & Mängelmelder</div>
+              <div class="feature-desc">Mieter reichen Anliegen ein — du behältst den Überblick.</div>
+            </div>
+          </div>
+          <div class="card feature-card card-hover">
+            <div class="feature-icon">📊</div>
+            <div>
+              <div class="feature-title">Dashboard & Berichte</div>
+              <div class="feature-desc">Einnahmen, Ausgaben, Mietrückstände auf einen Blick.</div>
+            </div>
+          </div>
+          <div class="card feature-card card-hover">
+            <div class="feature-icon">📄</div>
+            <div>
+              <div class="feature-title">PDF-Dokumente</div>
+              <div class="feature-desc">Verträge, Kündigungen und Nebenkostenabrechnungen.</div>
+            </div>
+          </div>
+          <div class="card feature-card card-hover">
+            <div class="feature-icon">🏦</div>
+            <div>
+              <div class="feature-title">Mietzahlungen erfassen</div>
+              <div class="feature-desc">Status pro Mieter, Mahnwesen, Zahlungshistorie.</div>
+            </div>
+          </div>
+          <div class="card feature-card card-hover">
+            <div class="feature-icon">👥</div>
+            <div>
+              <div class="feature-title">Team-Accounts</div>
+              <div class="feature-desc">Ab 6 Wohnungen: weitere Nutzer, Rollen & Rechte.</div>
+            </div>
+          </div>
+          <div class="card feature-card card-hover">
+            <div class="feature-icon">🌐</div>
+            <div>
+              <div class="feature-title">Mieter-Portal</div>
+              <div class="feature-desc">Self-Service für Mieter: Dokumente, Zahlungen, Tickets.</div>
+            </div>
+          </div>
+          <div class="card feature-card card-hover">
+            <div class="feature-icon">🔒</div>
+            <div>
+              <div class="feature-title">Sicher & DSGVO-konform</div>
+              <div class="feature-desc">SSL, verschlüsselte Speicherung, Backup.</div>
+            </div>
+          </div>
+          <div class="card feature-card card-hover">
+            <div class="feature-icon">🆘</div>
+            <div>
+              <div class="feature-title">Support</div>
+              <div class="feature-desc">Schnelle Hilfe per E-Mail — für alle Kunden.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Trial Banner -->
+      <section class="trial-banner">
+        <div>
+          <span class="badge badge-trial">14 Tage kostenlos</span>
+          <h3 class="mt-2">14 Tage kostenlos testen — danach ab 9,75 EUR pro Wohnung</h3>
+          <p>Keine Kosten in den ersten 14 Tagen. Kreditkarte hinterlegen, sofort loslegen — wie bei Netflix. Jederzeit vor Ablauf kündbar.</p>
+        </div>
+        <button class="btn btn-lg" style="flex-shrink:0;" onclick="openCheckout()">Jetzt testen</button>
+      </section>
+
+      <!-- Social Proof -->
+      <section class="social-proof">
+        <div class="stars">★★★★★</div>
+        <p><strong>4,9 / 5</strong> von über 800 Vermietern · „Endlich ein Preismodell, das mitwächst.“</p>
+      </section>
+
+      <!-- FAQ -->
+      <section class="faq">
+        <h2>Häufig gestellte Fragen</h2>
+        <div class="faq-item open">
+          <button class="faq-q">Wie funktioniert Pro-WE-Preisgestaltung?</button>
+          <div class="faq-a">Du zahlst einen festen Preis pro Wohnung und Monat. Je mehr Wohnungen du verwaltest, desto günstiger wird der Preis pro Einheit: 1–5 WE zu 9,75 €, 6–25 WE zu 7,50 €, 26–49 WE zu 5,90 €. Ab 50 Wohnungen erstellen wir dir ein individuelles Angebot.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">Was kosten 10 Wohnungen?</button>
+          <div class="faq-a">10 Wohnungen liegen in der Staffel 6–25 WE und kosten 7,50 € pro Wohnung und Monat — also 75,00 € monatlich. Bei Jahreszahlung sparst du 20 % und zahlst nur 720,00 € statt 900,00 €.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">Was ist ab 50 Wohnungen?</button>
+          <div class="faq-a">Ab 50 Wohnungen bieten wir maßgeschneiderte Pakete mit persönlichem Account-Manager, API-Zugriff, erweiterten Rollen und White-Label-Optionen. Fordere einfach ein unverbindliches Angebot an.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">Wie funktioniert die 14-Tage-Testphase?</button>
+          <div class="faq-a">Du hinterlegst eine Kreditkarte und kannst MietVerwaltung 14 Tage lang vollständig kostenlos nutzen — wie bei Netflix. Erst nach Ablauf der 14 Tage beginnt die kostenpflichtige Nutzung. Du kannst jederzeit vor Ablauf kündigen.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">Welche Zahlungsmethoden gibt es?</button>
+          <div class="faq-a">Wir akzeptieren Kreditkarte (Visa, Mastercard, Amex), PayPal und SEPA-Lastschrift. Eine Zahlung per Rechnung wird nicht angeboten.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">Jährlich oder monatlich zahlen?</button>
+          <div class="faq-a">Standard ist die Jahreszahlung — damit sparst du 20 %, also 2 Monate geschenkt. Wer flexibel bleiben möchte, kann auch monatlich zahlen.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">Wann kann ich kündigen?</button>
+          <div class="faq-a">Jederzeit zum Ende der aktuellen Abrechnungsperiode. Bei monatlicher Zahlung also monatlich, bei jährlicher Zahlung jährlich.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">Sind die Preise inklusive Mehrwertsteuer?</button>
+          <div class="faq-a">Ja, alle angezeigten Preise verstehen sich inklusive der gesetzlichen Mehrwertsteuer.</div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      © 2026 MietVerwaltung GbR · 14-Tage Trial mit Kreditkarte · Jederzeit kündbar · Demo mit Beispieldaten · <a href="index.html">Zurück zum Dashboard</a> · <a href="investor.html">Investor-Demo</a>
+    </div>
+  </footer>
+</div>
+
+<!-- Checkout Modal -->
+<div class="modal-overlay" id="checkoutModal" onclick="closeCheckoutOnBackdrop(event)">
+  <div class="checkout-sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle" onclick="closeCheckout()"></div>
+    <div class="sheet-header">
+      <h2>Checkout</h2>
+      <button class="icon-btn" onclick="closeCheckout()" aria-label="Schließen">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+
+    <div class="wizard-stepper" id="checkoutStepper">
+      <div class="wizard-dot active"></div>
+      <div class="wizard-dot"></div>
+      <div class="wizard-dot"></div>
+    </div>
+
+    <!-- Step 1: WE count & billing -->
+    <div class="sheet-step active" id="stepUnits">
+      <p class="subtitle" style="margin-bottom:14px;">Überprüfe deine Wohnungsanzahl und Abrechnung.</p>
+      <div class="order-summary">
+        <div class="order-row"><span>Anzahl Wohnungen</span><span id="summaryUnits">10</span></div>
+        <div class="order-row"><span>Preis pro WE</span><span id="summaryUnitPrice">7,50 €</span></div>
+        <div class="order-row"><span>Abrechnung</span><span id="summaryBilling">jährlich</span></div>
+        <div class="order-row total"><span>Preis nach Trial</span><span id="summaryTotal">720,00 € / Jahr</span></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Wohnungen (1–100)</label>
+        <input type="range" min="1" max="100" value="10" class="slider" id="checkoutSlider" aria-label="Anzahl Wohnungen im Checkout">
+      </div>
+
+      <div class="toggle-wrap" style="justify-content:flex-start;margin-top:0;">
+        <span class="toggle-label" id="checkoutLabelMonthly">Monatlich</span>
+        <button class="toggle yearly" id="checkoutBillingToggle" aria-label="Zwischen monatlich und jährlich wechseln"></button>
+        <span class="toggle-label active" id="checkoutLabelYearly">Jährlich</span>
+        <span class="badge badge-gift">2 Monate geschenkt</span>
+      </div>
+
+      <button class="btn btn-primary btn-lg btn-block mt-3" onclick="goToStep(2)">Weiter zur Zahlung</button>
+    </div>
+
+    <!-- Step 2: Payment -->
+    <div class="sheet-step" id="stepPayment">
+      <p class="subtitle" style="margin-bottom:14px;">Wähle deine Zahlungsmethode.</p>
+      <div class="method-list">
+        <label class="method-item" data-method="apple" onclick="selectMethod(this)">
+          <div class="method-icon" style="color:#000;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.7 8.5c-.9 0-1.8.5-2.3.5-.6 0-1.6-.5-2.5-.5-2.2 0-3.8 1.7-3.8 4.2 0 1.7.7 3.6 2 5.1.9 1.1 1.9 2.1 2.9 2.1 1.1 0 1.5-.7 2.8-.7 1.3 0 1.7.7 2.8.7 1.1 0 1.9-1 2.8-2.2.6-.8 1-1.6 1.3-2.4-.1 0-2.2-.9-2.2-3.2 0-2 1.6-2.9 1.7-3-.9-1.4-2.4-1.6-2.9-1.6-.1.1-1.1.3-1.8.3zM15.8 5.7c.5-.7.9-1.6.8-2.5-.8 0-1.7.5-2.3 1.2-.5.5-.9 1.4-.8 2.3.9 0 1.8-.5 2.3-1.2z"/></svg>
+          </div>
+          <div class="method-info"><div class="method-name">Apple Pay</div><div class="method-meta">1-Klick Schnellzugang</div></div>
+          <div class="method-check"><span id="checkMethodApple"></span></div>
+        </label>
+        <label class="method-item" data-method="google" onclick="selectMethod(this)">
+          <div class="method-icon" style="background:#fff;">
+            <svg width="20" height="20" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          </div>
+          <div class="method-info"><div class="method-name">Google Pay</div><div class="method-meta">1-Klick Schnellzugang</div></div>
+          <div class="method-check"><span id="checkMethodGoogle"></span></div>
+        </label>
+        <label class="method-item selected" data-method="card" onclick="selectMethod(this)">
+          <div class="method-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+          </div>
+          <div class="method-info"><div class="method-name">Kreditkarte</div><div class="method-meta">Visa, Mastercard, Amex · für die 14-Tage-Testphase · <span class="stripe-note">Sichere Zahlung via Stripe</span></div></div>
+          <div class="method-check"><span id="checkMethodCard">✓</span></div>
+        </label>
+        <label class="method-item" data-method="paypal" onclick="selectMethod(this)">
+          <div class="method-icon">Pp</div>
+          <div class="method-info"><div class="method-name">PayPal</div><div class="method-meta">Schnell &amp; sicher bezahlen</div></div>
+          <div class="method-check"><span id="checkMethodPaypal"></span></div>
+        </label>
+        <label class="method-item" data-method="sepa" onclick="selectMethod(this)">
+          <div class="method-icon">Se</div>
+          <div class="method-info"><div class="method-name">SEPA-Lastschrift</div><div class="method-meta">Automatische Abbuchung</div></div>
+          <div class="method-check"><span id="checkMethodSepa"></span></div>
+        </label>
+      </div>
+      <p class="subtitle" style="font-size:12px; color:var(--text2);">Zahlung per Rechnung ist nicht verfügbar.</p>
+
+      <div id="cardFields" class="mt-3">
+        <div class="form-group"><label class="form-label">Karteninhaber</label><input type="text" class="form-input" placeholder="Max Mustermann" id="cardName"></div>
+        <div class="form-group"><label class="form-label">Kartennummer</label><input type="text" class="form-input" placeholder="1234 5678 9012 3456" id="cardNumber" inputmode="numeric"></div>
+        <div class="form-group card-row">
+          <div><label class="form-label">Ablaufdatum</label><input type="text" class="form-input" placeholder="MM/JJ" id="cardExpiry" inputmode="numeric"></div>
+          <div><label class="form-label">CVC</label><input type="text" class="form-input" placeholder="123" id="cardCvc" inputmode="numeric"></div>
+          <div><label class="form-label">PLZ</label><input type="text" class="form-input" placeholder="PLZ" id="cardZip"></div>
+        </div>
+      </div>
+      <div id="sepaFields" class="hidden mt-3">
+        <div class="form-group"><label class="form-label">Kontoinhaber</label><input type="text" class="form-input" placeholder="Max Mustermann" id="sepaName"></div>
+        <div class="form-group"><label class="form-label">IBAN</label><input type="text" class="form-input" placeholder="DE89 3704 0044 0532 0130 00" id="sepaIban"></div>
+      </div>
+
+      <div class="order-summary">
+        <div class="order-row"><span id="summaryPlanName2">10 Wohnungen</span><span id="summaryPlanPrice2">75,00 €</span></div>
+        <div class="order-row"><span>Abrechnung</span><span id="summaryBilling2">jährlich</span></div>
+        <div class="order-row total"><span>Heute fällig</span><span>0,00 €</span></div>
+      </div>
+      <div class="trial-note"><span>ℹ️</span><span>14 Tage kostenlos. Danach automatische Abbuchung über <strong id="summaryMethod">Kreditkarte</strong>.</span></div>
+
+      <div style="display:flex;gap:10px;margin-top:18px;">
+        <button class="btn btn-ghost flex-1" onclick="goToStep(1)">Zurück</button>
+        <button class="btn btn-primary flex-1" onclick="goToStep(3)">Weiter</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Confirm -->
+    <div class="sheet-step" id="stepConfirm">
+      <p class="subtitle" style="margin-bottom:14px;">Überprüfe deine Auswahl und starte die Testphase.</p>
+      <div class="order-summary">
+        <div class="order-row"><span>Wohnungen</span><span id="confirmUnits">10</span></div>
+        <div class="order-row"><span>Zahlungsmethode</span><span id="confirmMethod">Kreditkarte</span></div>
+        <div class="order-row"><span>Abrechnung</span><span id="confirmBilling">jährlich</span></div>
+        <div class="order-row"><span>Preis nach Trial</span><span id="confirmPrice">720,00 € / Jahr</span></div>
+        <div class="order-row total"><span>Heute</span><span>0,00 €</span></div>
+      </div>
+      <div class="trial-note"><span>ℹ️</span><span>Du startest 14 Tage kostenlos. Erst danach beginnt die kostenpflichtige Nutzung. Du kannst jederzeit vor dem Periodenende kündigen.</span></div>
+      <button class="btn btn-primary btn-lg btn-block mt-3" id="confirmButton" onclick="completeCheckout()">Testphase starten</button>
+      <button class="btn btn-ghost btn-block mt-2" onclick="goToStep(2)">Zurück</button>
+    </div>
+
+    <!-- Success -->
+    <div class="sheet-step" id="stepSuccess">
+      <div class="success-view">
+        <div class="success-ring">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <path class="success-checkmark" d="M5 13l4 4L19 7"></path>
+          </svg>
+        </div>
+        <h3>Testphase gestartet!</h3>
+        <p>Dein Account für <strong id="successUnits">10</strong> Wohnungen ist 14 Tage aktiv. Wir schicken dir eine Bestätigung an deine E-Mail-Adresse.</p>
+        <button class="btn btn-primary btn-lg btn-block" onclick="closeCheckout()">Zum Dashboard</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Inquiry Modal -->
+<div class="modal-overlay" id="inquiryModal" onclick="closeInquiryOnBackdrop(event)">
+  <div class="checkout-sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle" onclick="closeInquiry()"></div>
+    <div class="sheet-header">
+      <h2>Individuelles Angebot anfragen</h2>
+      <button class="icon-btn" onclick="closeInquiry()" aria-label="Schließen">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <p class="subtitle" style="margin-bottom:14px;">Ab 50 Wohnungen erstellen wir dir ein maßgeschneidertes Paket.</p>
+    <form id="inquiryForm" onsubmit="submitInquiry(event)">
+      <div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" placeholder="Max Mustermann" id="inquiryName" required></div>
+      <div class="form-group"><label class="form-label">E-Mail</label><input type="email" class="form-input" placeholder="max@beispiel.de" id="inquiryEmail" required></div>
+      <div class="form-group"><label class="form-label">Telefon</label><input type="tel" class="form-input" placeholder="+49 170 1234567" id="inquiryPhone"></div>
+      <div class="form-group"><label class="form-label">WE-Anzahl</label><input type="number" min="50" max="100" class="form-input" placeholder="50" id="inquiryUnits" value="50" required></div>
+      <div class="form-group"><label class="form-label">Nachricht</label><textarea class="form-input" rows="3" placeholder="Wie können wir dir helfen?" id="inquiryMessage"></textarea></div>
+      <button type="submit" class="btn btn-primary btn-lg btn-block" id="inquirySubmit">Anfrage senden</button>
+    </form>
+    <div id="inquirySuccess" class="hidden mt-3" style="text-align:center;">
+      <div class="success-ring" style="width:64px;height:64px;margin-bottom:12px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path class="success-checkmark" d="M5 13l4 4L19 7"></path></svg>
+      </div>
+      <h3>Anfrage gesendet!</h3>
+      <p class="subtitle">Wir melden uns innerhalb von 24 Stunden bei dir.</p>
+      <button class="btn btn-primary btn-lg btn-block mt-3" onclick="closeInquiry()">Zurück zur Preisseite</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* === THEME === */
+const themeToggle = document.getElementById('themeToggle');
+function applyTheme(dark) {
+  if (dark) document.documentElement.classList.add('dark');
+  else document.documentElement.classList.remove('dark');
+  localStorage.setItem('mv-theme', dark ? 'dark' : 'light');
+}
+applyTheme(localStorage.getItem('mv-theme') === 'dark');
+themeToggle.addEventListener('click', () => applyTheme(!document.documentElement.classList.contains('dark')));
+
+/* === PRICING LOGIC === */
+const BASE_PRICE = 9.75;
+const YEARLY_DISCOUNT = 0.20;
+const tiers = [
+  { max: 5, price: 9.75, label: '1–5 WE' },
+  { max: 25, price: 7.50, label: '6–25 WE' },
+  { max: 49, price: 5.90, label: '26–49 WE' },
+  { max: Infinity, price: 0, label: '50+ WE', custom: true }
+];
+
+function getTier(we) {
+  for (const t of tiers) {
+    if (we <= t.max) return t;
+  }
+  return tiers[tiers.length - 1];
+}
+
+function formatMoney(n) {
+  return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+}
+
+let unitCount = 10;
+let isYearly = true;
+let selectedMethod = 'card';
+let currentStep = 1;
+const methodNames = { card: 'Kreditkarte', paypal: 'PayPal', sepa: 'SEPA-Lastschrift', apple: 'Apple Pay', google: 'Google Pay' };
+
+const unitSlider = document.getElementById('unitSlider');
+const checkoutSlider = document.getElementById('checkoutSlider');
+const billingToggle = document.getElementById('billingToggle');
+const checkoutBillingToggle = document.getElementById('checkoutBillingToggle');
+const labelMonthly = document.getElementById('labelMonthly');
+const labelYearly = document.getElementById('labelYearly');
+const checkoutLabelMonthly = document.getElementById('checkoutLabelMonthly');
+const checkoutLabelYearly = document.getElementById('checkoutLabelYearly');
+
+function updateUI() {
+  const tier = getTier(unitCount);
+  const isCustom = unitCount >= 50;
+
+  // Hero price stays fixed at anchor price 9,75 €
+  const heroPriceEl = document.getElementById('heroPrice');
+  if (heroPriceEl) heroPriceEl.textContent = '9,75 €';
+
+  // Slider labels
+  document.getElementById('sliderValueLabel').textContent = unitCount + ' WE';
+
+  if (isCustom) {
+    // 50+ WE: no fixed price, show inquiry CTA
+    document.getElementById('totalPrice').textContent = 'Individuelles Angebot';
+    document.getElementById('priceMeta').innerHTML = 'Ab 50 Wohnungen — wir erstellen dir ein maßgeschneidertes Paket';
+    document.getElementById('yearlySavings').textContent = 'Kontaktiere uns für ein maßgeschneidertes Angebot — inklusive persönlichem Account-Manager.';
+    document.getElementById('framingText').textContent = 'Für größere Portfolios bieten wir individuelle Konditionen, API-Zugang und White-Label-Optionen.';
+  } else {
+    const monthlyTotal = unitCount * tier.price;
+    const yearlyTotal = monthlyTotal * 12 * (1 - YEARLY_DISCOUNT);
+    const displayedTotal = isYearly ? yearlyTotal : monthlyTotal;
+    const daysPerPeriod = isYearly ? 365 : 30;
+    const perDayTotal = displayedTotal / daysPerPeriod;
+    const perDayPerUnit = perDayTotal / unitCount;
+
+    // Price display
+    document.getElementById('totalPrice').textContent = formatMoney(displayedTotal);
+    document.getElementById('priceMeta').innerHTML =
+      'pro ' + (isYearly ? 'Jahr' : 'Monat') + ' bei ' + unitCount + ' Wohnungen · <span class="price-highlight">' + formatMoney(tier.price) + ' pro WE</span>';
+
+    // Savings box
+    if (isYearly) {
+      const saved = (monthlyTotal * 12) - yearlyTotal;
+      document.getElementById('yearlySavings').textContent =
+        'Bei Jahreszahlung: ' + formatMoney(saved) + ' gespart — nur ' + formatMoney(yearlyTotal) + '/Jahr (statt ' + formatMoney(monthlyTotal * 12) + ')';
+    } else {
+      document.getElementById('yearlySavings').textContent =
+        'Bei Jahreszahlung würdest du ' + formatMoney(monthlyTotal * 12 * YEARLY_DISCOUNT) + ' sparen — 2 Monate geschenkt.';
+    }
+
+    // Framing box
+    document.getElementById('framingText').textContent =
+      'Das sind nur ' + perDayTotal.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' € pro Tag für alle ' + unitCount + ' Wohnungen — ' + perDayPerUnit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' € pro Tag pro Wohnung.';
+  }
+
+  // Tier badges
+  document.getElementById('tierBadge1').classList.toggle('active', unitCount <= 5);
+  document.getElementById('tierBadge2').classList.toggle('active', unitCount >= 6 && unitCount <= 25);
+  document.getElementById('tierBadge3').classList.toggle('active', unitCount >= 26 && unitCount <= 49);
+  document.getElementById('tierBadge4').classList.toggle('active', unitCount >= 50);
+
+  // Tier cards
+  document.querySelectorAll('.tier-card').forEach(card => {
+    const t = parseInt(card.dataset.tier, 10);
+    let active = false;
+    if (t === 1 && unitCount <= 5) active = true;
+    if (t === 2 && unitCount >= 6 && unitCount <= 25) active = true;
+    if (t === 3 && unitCount >= 26 && unitCount <= 49) active = true;
+    if (t === 4 && unitCount >= 50) active = true;
+    card.classList.toggle('active', active);
+  });
+
+  // Sync sliders
+  unitSlider.value = unitCount;
+  checkoutSlider.value = unitCount;
+
+  // Sync toggles
+  billingToggle.classList.toggle('yearly', isYearly);
+  labelMonthly.classList.toggle('active', !isYearly);
+  labelYearly.classList.toggle('active', isYearly);
+  checkoutBillingToggle.classList.toggle('yearly', isYearly);
+  checkoutLabelMonthly.classList.toggle('active', !isYearly);
+  checkoutLabelYearly.classList.toggle('active', isYearly);
+
+  // Button text for 50+
+  const calcCta = document.getElementById('calcCta');
+  if (unitCount >= 50) {
+    calcCta.textContent = 'Individuelles Angebot anfragen';
+  } else {
+    calcCta.textContent = '14 Tage kostenlos testen';
+  }
+
+  // Checkout summaries
+  updateCheckoutSummary();
+}
+
+function updateCheckoutSummary() {
+  const tier = getTier(unitCount);
+  const isCustom = unitCount >= 50;
+  const billingText = isYearly ? 'jährlich' : 'monatlich';
+
+  document.getElementById('summaryUnits').textContent = unitCount + (unitCount === 1 ? ' Wohnung' : ' Wohnungen');
+  document.getElementById('summaryBilling').textContent = billingText;
+  document.getElementById('summaryPlanName2').textContent = unitCount + (unitCount === 1 ? ' Wohnung' : ' Wohnungen');
+  document.getElementById('summaryBilling2').textContent = billingText;
+  document.getElementById('summaryMethod').textContent = methodNames[selectedMethod];
+  document.getElementById('confirmUnits').textContent = unitCount + (unitCount === 1 ? ' Wohnung' : ' Wohnungen');
+  document.getElementById('confirmMethod').textContent = methodNames[selectedMethod];
+  document.getElementById('confirmBilling').textContent = billingText;
+  document.getElementById('successUnits').textContent = unitCount + (unitCount === 1 ? ' Wohnung' : ' Wohnungen');
+
+  if (isCustom) {
+    document.getElementById('summaryUnitPrice').textContent = 'Individuell';
+    document.getElementById('summaryTotal').textContent = 'Individuelles Angebot';
+    document.getElementById('summaryPlanPrice2').textContent = 'Individuelles Angebot';
+    document.getElementById('confirmPrice').textContent = 'Individuelles Angebot';
+  } else {
+    const monthlyTotal = unitCount * tier.price;
+    const yearlyTotal = monthlyTotal * 12 * (1 - YEARLY_DISCOUNT);
+    const totalText = isYearly ? formatMoney(yearlyTotal) + ' / Jahr' : formatMoney(monthlyTotal) + ' / Monat';
+
+    document.getElementById('summaryUnitPrice').textContent = formatMoney(tier.price) + ' / WE / Mo';
+    document.getElementById('summaryTotal').textContent = totalText;
+    document.getElementById('summaryPlanPrice2').textContent = isYearly ? formatMoney(yearlyTotal / 12) + ' / Mo' : formatMoney(monthlyTotal) + ' / Mo';
+    document.getElementById('confirmPrice').textContent = totalText;
+  }
+}
+
+function setUnitCount(n) {
+  unitCount = Math.max(1, Math.min(100, parseInt(n, 10) || 1));
+  updateUI();
+}
+
+function setBilling(yearly) {
+  isYearly = yearly;
+  updateUI();
+}
+
+unitSlider.addEventListener('input', (e) => setUnitCount(e.target.value));
+checkoutSlider.addEventListener('input', (e) => setUnitCount(e.target.value));
+billingToggle.addEventListener('click', () => setBilling(!isYearly));
+checkoutBillingToggle.addEventListener('click', () => setBilling(!isYearly));
+labelMonthly.addEventListener('click', () => setBilling(false));
+labelYearly.addEventListener('click', () => setBilling(true));
+checkoutLabelMonthly.addEventListener('click', () => setBilling(false));
+checkoutLabelYearly.addEventListener('click', () => setBilling(true));
+
+/* === FAQ === */
+document.querySelectorAll('.faq-q').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const item = btn.parentElement;
+    const wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+    if (!wasOpen) item.classList.add('open');
+  });
+});
+
+/* === CHECKOUT === */
+function openCheckout() {
+  if (unitCount >= 50) { openInquiry(); return; }
+  currentStep = 1;
+  selectedMethod = 'card';
+  updateStepper();
+  resetPaymentUI();
+  updateCheckoutSummary();
+  document.getElementById('checkoutModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeCheckout() {
+  document.getElementById('checkoutModal').classList.remove('open');
+  document.body.style.overflow = '';
+  setTimeout(() => { currentStep = 1; selectedMethod = 'card'; updateStepper(); resetPaymentUI(); }, 300);
+}
+function closeCheckoutOnBackdrop(e) { if (e.target === e.currentTarget) closeCheckout(); }
+
+function selectMethod(el) {
+  selectedMethod = el.dataset.method;
+  document.querySelectorAll('.method-item[data-method]').forEach(item => {
+    item.classList.toggle('selected', item === el);
+    const m = item.dataset.method;
+    const check = document.getElementById('checkMethod' + m.charAt(0).toUpperCase() + m.slice(1));
+    if (check) check.textContent = item === el ? '✓' : '';
+  });
+  document.getElementById('cardFields').classList.toggle('hidden', selectedMethod !== 'card');
+  document.getElementById('sepaFields').classList.toggle('hidden', selectedMethod !== 'sepa');
+  updateCheckoutSummary();
+}
+function resetPaymentUI() {
+  document.querySelectorAll('.method-item[data-method]').forEach(item => {
+    item.classList.toggle('selected', item.dataset.method === 'card');
+    const m = item.dataset.method;
+    const check = document.getElementById('checkMethod' + m.charAt(0).toUpperCase() + m.slice(1));
+    if (check) check.textContent = item.dataset.method === 'card' ? '✓' : '';
+  });
+  document.getElementById('cardFields').classList.remove('hidden');
+  document.getElementById('sepaFields').classList.add('hidden');
+}
+
+function goToStep(step) {
+  currentStep = step;
+  updateStepper();
+}
+function updateStepper() {
+  document.querySelectorAll('.sheet-step').forEach((s, i) => s.classList.toggle('active', i + 1 === currentStep));
+  const dots = document.querySelectorAll('#checkoutStepper .wizard-dot');
+  dots.forEach((d, i) => {
+    d.classList.remove('active','completed');
+    if (i + 1 === currentStep) d.classList.add('active');
+    else if (i + 1 < currentStep) d.classList.add('completed');
+  });
+}
+
+function completeCheckout() {
+  const btn = document.getElementById('confirmButton');
+  btn.disabled = true;
+  btn.textContent = 'Wird aktiviert …';
+  setTimeout(() => {
+    currentStep = 4;
+    updateStepper();
+    btn.disabled = false;
+    btn.textContent = 'Testphase starten';
+  }, 1200);
+}
+
+/* === INQUIRY === */
+function openInquiry() {
+  const modal = document.getElementById('inquiryModal');
+  const form = document.getElementById('inquiryForm');
+  const success = document.getElementById('inquirySuccess');
+  form.classList.remove('hidden');
+  success.classList.add('hidden');
+  document.getElementById('inquiryUnits').value = Math.max(50, unitCount);
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeInquiry() {
+  const modal = document.getElementById('inquiryModal');
+  modal.classList.remove('open');
+  document.body.style.overflow = '';
+  setTimeout(() => {
+    document.getElementById('inquiryForm').classList.remove('hidden');
+    document.getElementById('inquirySuccess').classList.add('hidden');
+    document.getElementById('inquirySubmit').disabled = false;
+    document.getElementById('inquirySubmit').textContent = 'Anfrage senden';
+  }, 300);
+}
+function closeInquiryOnBackdrop(e) { if (e.target === e.currentTarget) closeInquiry(); }
+function submitInquiry(e) {
+  e.preventDefault();
+  const unitsInput = document.getElementById('inquiryUnits');
+  const requestedUnits = Math.max(50, Math.min(100, parseInt(unitsInput.value, 10) || 50));
+  unitCount = requestedUnits;
+  updateUI();
+  const btn = document.getElementById('inquirySubmit');
+  btn.disabled = true;
+  btn.textContent = 'Wird gesendet …';
+  setTimeout(() => {
+    document.getElementById('inquiryForm').classList.add('hidden');
+    document.getElementById('inquirySuccess').classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = 'Anfrage senden';
+  }, 1200);
+}
+
+/* === INIT === */
+updateUI();
+</script>
+</body>
+</html>

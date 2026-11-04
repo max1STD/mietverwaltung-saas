@@ -1,0 +1,92 @@
+# ──────────────────────────────────────────────
+# MietVerwaltung SaaS — .gitignore
+# Python + Vue/Node + Docker + IDE + OS
+# ──────────────────────────────────────────────
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+pip-wheel-metadata/
+venv/
+.venv/
+env/
+ENV/
+.python-version
+
+# ── Testing ──
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# ── Node / Frontend ──
+node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/coverage/
+*.tsbuildinfo
+.npm
+.yarn/cache
+.yarn/install-state.gz
+.pnp.*
+
+# ── Environment & Secrets ──
+.env
+.env.dev
+.env.prod
+.env.local
+.env.*.local
+*.pem
+*.key
+*.crt
+secrets/
+.sops/
+
+# ── Docker ──
+docker-compose.override.yml
+
+# ── IDE ──
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Database ──
+*.db
+*.sqlite
+*.sqlite3
+postgres-data/
+redis-data/
+
+# ── Uploads / Files ──
+uploads/
+storage/
+*.log
+
+# ── Misc ──
+.cache/
+.tmp/
+*.bak
+*.tmp

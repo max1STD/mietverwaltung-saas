@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MietVerwaltung — Markt-Kennzahlen Dashboard</title>
+<style>
+:root {
+  --navy: #0D3B70;
+  --navy-light: #145599;
+  --bg: #0B0F19;
+  --surface: rgba(13, 59, 112, 0.18);
+  --surface-2: rgba(255,255,255,0.06);
+  --text: #F5F7FA;
+  --muted: #9FB3C8;
+  --accent: #38BDF8;
+  --success: #34D399;
+  --warning: #FBBF24;
+  --danger: #F87171;
+  --radius: 22px;
+  --shadow: 0 10px 40px rgba(0,0,0,0.35);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+header {
+  padding: 32px 20px 18px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(13,59,112,0.35) 0%, rgba(11,15,25,0) 100%);
+}
+header h1 { margin: 0; font-size: 1.9rem; letter-spacing: -0.03em; }
+header p { margin: 8px 0 0; color: var(--muted); font-size: 0.95rem; }
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 16px 48px;
+}
+.hero-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 24px 0;
+}
+@media (min-width: 720px) {
+  .hero-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  header h1 { font-size: 2.4rem; }
+}
+.card {
+  background: var(--surface);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+}
+.card h3 {
+  margin: 0 0 8px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.big {
+  font-size: 1.9rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  margin: 0;
+}
+.big span { font-size: 0.95rem; color: var(--muted); font-weight: 500; }
+.section {
+  margin-top: 28px;
+}
+.section-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+.chart-card { padding: 20px; }
+.chart-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+/* Funnel */
+.funnel { display: flex; flex-direction: column; gap: 10px; }
+.funnel-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.funnel-bar {
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--navy), var(--navy-light));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.92rem;
+  transition: width 1s ease;
+}
+.funnel-name { min-width: 78px; font-size: 0.85rem; color: var(--muted); }
+.funnel-val { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* Bar charts */
+.bar-list { display: flex; flex-direction: column; gap: 10px; }
+.bar-item { display: flex; align-items: center; gap: 10px; }
+.bar-label { min-width: 120px; font-size: 0.8rem; color: var(--muted); }
+.bar-track {
+  flex: 1;
+  height: 28px;
+  background: var(--surface-2);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--navy-light), var(--accent));
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  min-width: 28px;
+}
+
+/* Positioning cards */
+.plans-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 640px) { .plans-grid { grid-template-columns: repeat(3, 1fr); } }
+.plan-card {
+  text-align: center;
+  position: relative;
+  padding: 22px 16px;
+}
+.plan-card.popular {
+  border-color: var(--accent);
+  background: rgba(13,59,112,0.32);
+  transform: scale(1.02);
+}
+.badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: #041325;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+.plan-name { font-size: 1.1rem; font-weight: 700; margin: 6px 0 4px; }
+.plan-price { font-size: 2rem; font-weight: 800; letter-spacing: -0.04em; margin: 0; }
+.plan-price span { font-size: 0.9rem; color: var(--muted); font-weight: 500; }
+.plan-detail { font-size: 0.8rem; color: var(--muted); margin-top: 6px; }
+
+/* SVG line chart */
+.svg-chart { width: 100%; height: 220px; }
+
+/* KPI compare */
+.kpi-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  text-align: center;
+}
+.kpi-sub { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+/* Upsell arrows */
+.upsell-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.upsell-step {
+  background: var(--surface-2);
+  border-radius: 14px;
+  padding: 14px 18px;
+  text-align: center;
+  min-width: 120px;
+}
+.upsell-step strong { display: block; font-size: 1.1rem; }
+.upsell-step small { color: var(--muted); font-size: 0.72rem; }
+.arrow {
+  color: var(--accent);
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+/* Target distribution */
+.dist-row { margin-bottom: 10px; }
+.dist-meta { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--muted); margin-bottom: 4px; }
+
+/* Footer */
+.footer {
+  margin-top: 40px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* Break-even highlight */
+.be-big {
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--success);
+  letter-spacing: -0.04em;
+  margin: 8px 0;
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>MietVerwaltung SaaS</h1>
+  <p>Markt- & Preis-Kennzahlen Dashboard · DACH · November 2026</p>
+</header>
+
+<div class="container">
+  <div class="hero-grid">
+    <div class="card">
+      <h3>Private Vermieter DACH</h3>
+      <p class="big">6,35 Mio.</p>
+    </div>
+    <div class="card">
+      <h3>Privat vermietete WE</h3>
+      <p class="big">18,0 Mio.</p>
+    </div>
+    <div class="card">
+      <h3>TAM / Jahr</h3>
+      <p class="big">1,14 Mrd. €</p>
+    </div>
+    <div class="card">
+      <h3>SAM / Jahr</h3>
+      <p class="big">~340 Mio. €</p>
+    </div>
+  </div>
+
+  <!-- Funnel -->
+  <section class="section">
+    <h2 class="section-title"><span class="dot"></span>TAM / SAM / SOM Trichter</h2>
+    <div class="card chart-card">
+      <div class="chart-label">Jährliches Marktpotenzial in Euro (log. Darstellung)</div>
+      <div class="funnel">
+        <div class="funnel-row">
+          <div class="funnel-name">TAM</div>
+          <div class="funnel-bar" style="width:100%;">
+            <span>Alle privaten Vermieter</span>
+            <span class="funnel-val">1,14 Mrd. €</span>
+          </div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-name">SAM</div>
+          <div class="funnel-bar" style="width:30%;background:linear-gradient(90deg,#145599,#38BDF8);">
+            <span>1,9 Mio. online-affine Vermieter</span>
+            <span class="funnel-val">~340 Mio. €</span>
+          </div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-name">SOM J3</div>
+          <div class="funnel-bar" style="width:12%;background:linear-gradient(90deg,#38BDF8,#34D399);">
+            <span>30.000 Kunden</span>
+            <span class="funnel-val">~6 Mio. €</span>
+          </div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-name">SOM J5</div>
+          <div class="funnel-bar" style="width:8%;background:linear-gradient(90deg,#34D399,#10B981);">
+            <span>125.000 Kunden</span>
+            <span class="funnel-val">~23 Mio. €</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Competitor price comparison -->
+  <section class="section">
+    <h2 class="section-title"><span class="dot"></span>Konkurrenz-Preisvergleich</h2>
+    <div class="card chart-card">
+      <div class="chart-label">Monatliche Kosten bei 25 Wohnungen (brutto in €)</div>
+      <div class="bar-list">
+        <div class="bar-item"><div class="bar-label">MietVerwaltung Pro-WE</div><div class="bar-track"><div class="bar-fill" style="width:57%;background:linear-gradient(90deg,#10B981,#34D399);">198,75</div></div></div>
+        <div class="bar-item"><div class="bar-label">rentably Pro</div><div class="bar-track"><div class="bar-fill" style="width:21%;">10,71</div></div></div>
+        <div class="bar-item"><div class="bar-label">hellohousing Prof.</div><div class="bar-track"><div class="bar-fill" style="width:31%;">19,50</div></div></div>
+        <div class="bar-item"><div class="bar-label">objego (25 WE)</div><div class="bar-track"><div class="bar-fill" style="width:48%;">31,70</div></div></div>
+        <div class="bar-item"><div class="bar-label">immocloud Manager</div><div class="bar-track"><div class="bar-fill" style="width:47%;">30,93</div></div></div>
+        <div class="bar-item"><div class="bar-label">VermietenPlus</div><div class="bar-track"><div class="bar-fill" style="width:51%;">33,66</div></div></div>
+        <div class="bar-item"><div class="bar-label">verwaltio</div><div class="bar-track"><div class="bar-fill" style="width:100%;">68,31</div></div></div>
+        <div class="bar-item"><div class="bar-label">Immoware24 (ab)</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:linear-gradient(90deg,#F59E0B,#FBBF24);">350+</div></div></div>
+      </div>
+      <p style="color:var(--muted);font-size:0.75rem;margin-top:14px;">
+        Ø Marktpreis bei 25 WE: ~30 €/Monat. MietVerwaltung Pro-WE (198,75 €) ist klar Premium-positioniert.
+      </p>
+    </div>
+  </section>
+
+  <!-- Positioning -->
+  <section class="section">
+    <h2 class="section-title"><span class="dot"></span>Unsere Preispositionierung</h2>
+    <div class="plans-grid">
+      <div class="plan-card card">
+        <div class="plan-name">1–5 WE</div>
+        <p class="plan-price">9,75 <span>€/WE</span></p>
+        <p class="plan-detail">1–5 Wohneinheiten · Volle KI</p>
+        <p class="plan-detail">Konkurrenzfähiger Einstieg</p>
+      </div>
+      <div class="plan-card card popular">
+        <div class="badge">Beliebtester</div>
+        <div class="plan-name">6–25 WE</div>
+        <p class="plan-price">7,50 <span>€/WE</span></p>
+        <p class="plan-detail">6–25 Wohneinheiten · Volle KI</p>
+        <p class="plan-detail">10 WE = 86,25 €/Mo</p>
+      </div>
+      <div class="plan-card card">
+        <div class="plan-name">26–49 WE</div>
+        <p class="plan-price">5,90 <span>€/WE</span></p>
+        <p class="plan-detail">26–49 Wohneinheiten · Team + API</p>
+        <p class="plan-detail">50+ WE = Custom · auf Anfrage</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Market growth -->
+  <section class="section">
+    <h2 class="section-title"><span class="dot"></span>Marktwachstum Deutschland</h2>
+    <div class="card chart-card">
+      <div class="chart-label">Property-Management-Software Markt Deutschland (Mio. €, CAGR 7,6 %)</div>
+      <svg class="svg-chart" viewBox="0 0 400 220" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="rgba(56,189,248,0.35)"/>
+            <stop offset="100%" stop-color="rgba(56,189,248,0)"/>
+          </linearGradient>
+        </defs>
+        <!-- grid -->
+        <line x1="40" y1="180" x2="380" y2="180" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <line x1="40" y1="130" x2="380" y2="130" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <line x1="40" y1="80" x2="380" y2="80" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <line x1="40" y1="30" x2="380" y2="30" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <line x1="40" y1="180" x2="40" y2="30" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <!-- area -->
+        <polygon points="40,178 155,168 270,120 380,55 380,180 40,180" fill="url(#lineGrad)"/>
+        <!-- line -->
+        <polyline points="40,178 155,168 270,120 380,55" fill="none" stroke="#38BDF8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- points -->
+        <circle cx="40" cy="178" r="5" fill="#38BDF8"/>
+        <circle cx="155" cy="168" r="5" fill="#38BDF8"/>
+        <circle cx="270" cy="120" r="5" fill="#38BDF8"/>
+        <circle cx="380" cy="55" r="5" fill="#38BDF8"/>
+        <!-- labels -->
+        <text x="40" y="205" fill="#9FB3C8" font-size="10" text-anchor="middle">2025</text>
+        <text x="155" y="205" fill="#9FB3C8" font-size="10" text-anchor="middle">2026</text>
+        <text x="270" y="205" fill="#9FB3C8" font-size="10" text-anchor="middle">2030</text>
+        <text x="380" y="205" fill="#9FB3C8" font-size="10" text-anchor="middle">2033</text>
+
+        <text x="40" y="170" fill="#fff" font-size="10" text-anchor="start" font-weight="600">210</text>
+        <text x="155" y="160" fill="#fff" font-size="10" text-anchor="middle" font-weight="600">225</text>
+        <text x="270" y="108" fill="#fff" font-size="10" text-anchor="middle" font-weight="600">300</text>
+        <text x="380" y="45" fill="#fff" font-size="10" text-anchor="middle" font-weight="600">375</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- Target distribution -->
+  <section class="section">
+    <h2 class="section-title"><span class="dot"></span>Zielgruppen-Verteilung</h2>
+    <div class="card chart-card">
+      <div class="chart-label">Anteil privater Vermieter in Deutschland nach Anzahl Wohnungen</div>
+      <div class="bar-list">
+        <div class="dist-row">
+          <div class="dist-meta"><span>1 Wohnung</span><span>58 %</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:58%;background:linear-gradient(90deg,#0D3B70,#38BDF8);">58 %</div></div>
+        </div>
+        <div class="dist-row">
+          <div class="dist-meta"><span>2 Wohnungen</span><span>19 %</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:19%;background:linear-gradient(90deg,#0D3B70,#38BDF8);">19 %</div></div>
+        </div>
+        <div class="dist-row">
+          <div class="dist-meta"><span>3–5 Wohnungen</span><span>16 %</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:16%;background:linear-gradient(90deg,#0D3B70,#38BDF8);">16 %</div></div>
+        </div>
+        <div class="dist-row">
+          <div class="dist-meta"><span>6–10 Wohnungen</span><span>4 %</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:4%;background:linear-gradient(90deg,#0D3B70,#38BDF8);">4 %</div></div>
+        </div>
+        <div class="dist-row">
+          <div class="dist-meta"><span>11–50 Wohnungen</span><span>2 %</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:2%;background:linear-gradient(90deg,#0D3B70,#38BDF8);">2 %</div></div>
+        </div>
+        <div class="dist-row">
+          <div class="dist-meta"><span>&gt; 50 Wohnungen</span><span>1 %</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:1%;background:linear-gradient(90deg,#0D3B70,#38BDF8);">1 %</div></div>
+        </div>
+      </div>
+      <p style="color:var(--muted);font-size:0.75rem;margin-top:12px;">93 % aller privaten Vermieter haben 1–5 WE — unser Massenmarkt.</p>
+    </div>
+  </section>
+
+  <!-- Break-even -->
+  <section class="section">
+    <h2 class="section-title"><span class="dot"></span>Break-even-Punkt</h2>
+    <div class="card chart-card" style="text-align:center;">
+      <div class="chart-label">Pro-WE Modell, nahezu 0 € Hosting-Fixkosten</div>
+      <p class="be-big">1</p>
+      <p style="margin:0;color:var(--text);font-weight:600;">zahlender Kunde</p>
+      <p style="color:var(--muted);font-size:0.8rem;margin-top:8px;">
+        Fixkosten nahe 0 EUR durch Proxmox-Hosting. Break-even ab dem ersten zahlenden Kunden.
+      </p>
+    </div>
+  </section>
+
+  <!-- CLV vs CAC -->
+  <section class="section">
+    <h2 class="section-title"><span class="dot"></span>CLV vs. CAC</h2>
+    <div class="card chart-card">
+      <div class="kpi-row">
+        <div>
+          <h3 style="margin:0 0 6px;">Customer Lifetime Value</h3>
+          <p class="big" style="color:#38BDF8;">500 €</p>
+          <p class="kpi-sub">Pro-WE-Modell, Ø 25 € ARPU, 5 % Churn</p>
+        </div>
+        <div>
+          <h3 style="margin:0 0 6px;">Customer Acquisition Cost</h3>
+          <p class="big" style="color:#FBBF24;">75 €</p>
+          <p class="kpi-sub">Ziel für DACH-SMB-SaaS</p>
+        </div>
+      </div>
+      <div style="margin-top:18px;text-align:center;">
+        <span style="display:inline-block;background:var(--surface-2);padding:8px 16px;border-radius:20px;font-weight:700;color:#34D399;">
+          LTV : CAC = 6,7 : 1
+        </span>
+        <p class="kpi-sub">Benchmark: gesundes SaaS ≥ 3 : 1</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Upsell path -->
+  <section class="section">
+    <h2 class="section-title"><span class="dot"></span>Upsell-Pfad</h2>
+    <div class="card chart-card">
+      <div class="upsell-flow">
+        <div class="upsell-step">
+          <strong>1–5 WE</strong>
+          <small>9,75 €/WE</small>
+        </div>
+        <div class="arrow">→</div>
+        <div class="upsell-step">
+          <strong>6–25 WE</strong>
+          <small>7,50 €/WE</small>
+        </div>
+        <div class="arrow">→</div>
+        <div class="upsell-step">
+          <strong>26–49 WE</strong>
+          <small>5,90 €/WE</small>
+        </div>
+        <div class="arrow">→</div>
+        <div class="upsell-step">
+          <strong>50+ WE</strong>
+          <small>Custom</small>
+        </div>
+      </div>
+      <p style="color:var(--muted);font-size:0.75rem;margin-top:18px;text-align:center;">
+        Zusätzliche Overage-Einnahme: 1 €/WE/Monat ab Plan-Limit. Ziel-NRR: 110–115 %.
+      </p>
+    </div>
+  </section>
+
+  
+  <!-- WE-Scenario flow -->
+  <section class="section">
+    <h2 class="section-title"><span class="dot"></span>WE-Downgrade-/Upgrade-Szenario</h2>
+    <div class="card chart-card">
+      <div class="chart-label">Kunde startet mit 3 WE, wächst auf 10 WE, reduziert auf 7 WE, dann 0 WE</div>
+      <div class="upsell-flow" style="flex-direction:column;align-items:stretch;">
+        <div class="upsell-step" style="text-align:left;">
+          <strong>Start: 3 WE</strong>
+          <small>3 × 9,75 € = 29,25 €/Mo</small>
+        </div>
+        <div class="arrow" style="text-align:center;">↓ +2 WE</div>
+        <div class="upsell-step" style="text-align:left;">
+          <strong>5 WE</strong>
+          <small>5 × 9,75 € = 48,75 €/Mo</small>
+        </div>
+        <div class="arrow" style="text-align:center;">↓ +5 WE (Band 6–25)</div>
+        <div class="upsell-step" style="text-align:left;">
+          <strong>10 WE</strong>
+          <small>5×9,75 + 5×7,50 = 86,25 €/Mo</small>
+        </div>
+        <div class="arrow" style="text-align:center;">↓ −3 WE</div>
+        <div class="upsell-step" style="text-align:left;">
+          <strong>7 WE</strong>
+          <small>5×9,75 + 2×7,50 = 51,75 €/Mo</small>
+        </div>
+        <div class="arrow" style="text-align:center;">↓ −7 WE</div>
+        <div class="upsell-step" style="text-align:left;">
+          <strong>0 WE</strong>
+          <small>Account pausiert nach 30 Tagen · Mindestabrechnung 1 WE (9,75 €) während aktiver Account</small>
+        </div>
+      </div>
+      <p style="color:var(--muted);font-size:0.75rem;margin-top:18px;">
+        Jede Änderung wirkt sofort im nächsten Stripe-Zyklus. Dashboard-Widget zeigt Live-Preis. Archivierung statt Löschung bei aktivem Mietvertrag / offenem Ticket.
+      </p>
+    </div>
+  </section>
+
+  <nav class="cross-nav" style="margin-top:32px;text-align:center;">
+    <a href="investor.html">Investor</a>
+    <span style="color:var(--muted);margin:0 8px;">·</span>
+    <a href="index.html">App-Demo</a>
+    <span style="color:var(--muted);margin:0 8px;">·</span>
+    <a href="pricing.html">Preise</a>
+    <span style="color:var(--muted);margin:0 8px;">·</span>
+    <a href="admin.html">Admin-Center</a>
+  </nav>
+
+  <footer class="legal-footer" style="margin-top:18px;padding:18px;border-top:1px solid rgba(255,255,255,0.08);text-align:center;color:var(--muted);font-size:0.75rem;">
+    <p style="margin:0 0 8px;">© 2026 MietVerwaltung GbR · Demo mit Beispieldaten</p>
+    <p style="margin:0;">
+      <a href="investor.html">Investor</a> ·
+      <a href="index.html">App-Demo</a> ·
+      <a href="pricing.html">Preise</a> ·
+      <a href="admin.html">Admin-Center</a>
+    </p>
+  </footer>
+
+  <div class="footer">
+    Quellen: IW Köln / Bundestag / Statistik Austria / BFS / Grand View Research / interne Analysen · Keine externen Bibliotheken.
+  </div>
+</div>
+</body>
+</html>

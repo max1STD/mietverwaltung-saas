@@ -1,0 +1,1 @@
+"""MietVerwaltung SaaS package."""

@@ -1,0 +1,29 @@
+name: Deploy Production (Hetzner)
+
+on:
+  push:
+    tags:
+      - "v1.*"
+      - "v2.*"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://mietverwaltung.de
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Hetzner via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          script: |
+            cd /opt/mietverwaltung
+            git pull origin main
+            docker compose build
+            docker compose up -d
+            docker compose exec backend alembic upgrade head
+            curl -sf http://localhost:8000/health || exit 1

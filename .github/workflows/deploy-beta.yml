@@ -1,0 +1,28 @@
+name: Deploy Beta (Proxmox)
+
+on:
+  push:
+    tags:
+      - "v0.*-beta.*"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: beta
+      url: https://beta.mietverwaltung.de
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Proxmox via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PROXMOX_HOST }}
+          username: ${{ secrets.PROXMOX_USER }}
+          key: ${{ secrets.PROXMOX_SSH_KEY }}
+          script: |
+            cd /opt/mietverwaltung
+            git pull origin main
+            docker compose build
+            docker compose up -d
+            docker compose exec backend alembic upgrade head
+            curl -sf http://localhost:8000/health || exit 1

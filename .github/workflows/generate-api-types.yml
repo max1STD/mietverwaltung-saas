@@ -1,0 +1,35 @@
+name: Generate API Types
+
+on:
+  push:
+    paths:
+      - "backend/app/schemas/**"
+      - ".github/workflows/generate-api-types.yml"
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pip install -r backend/requirements.txt
+      - name: Export OpenAPI spec
+        run: |
+          cd backend
+          python -c "from app.main import app; import json; print(json.dumps(app.openapi()))" > ../shared/openapi/openapi.json
+      - run: npx openapi-typescript shared/openapi/openapi.json -o shared/types/api.d.ts
+      - name: Commit generated types
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add shared/openapi/openapi.json shared/types/api.d.ts
+          git diff --staged --quiet && echo "No changes" || git commit -m "chore(shared): regenerate API types from OpenAPI spec"
+          git push

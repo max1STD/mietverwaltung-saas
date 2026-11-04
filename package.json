@@ -1,0 +1,14 @@
+{
+  "name": "mietverwaltung-saas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Monorepo root — dev tools only",
+  "scripts": {
+    "lint:frontend": "cd frontend && pnpm eslint src/",
+    "lint:backend": "cd backend && ruff check app/",
+    "generate-api-types": "openapi-typescript shared/openapi/openapi.json -o shared/types/api.d.ts"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.4.0"
+  }
+}
