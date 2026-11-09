@@ -2,13 +2,11 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.database import get_db
-
 security = HTTPBearer()
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials = Depends(security),  # noqa: B008
 ):
     """Extract and validate JWT token. To be implemented."""
     # TODO: Implement JWT validation

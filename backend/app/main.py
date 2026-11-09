@@ -1,10 +1,11 @@
 """FastAPI application factory for MietVerwaltung SaaS."""
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.lifespan import startup, shutdown
+from app.lifespan import shutdown, startup
 
 
 @asynccontextmanager
@@ -34,12 +35,8 @@ app.add_middleware(
 )
 
 
-@app.get("/health")
-async def health():
-    return {"status": "ok", "version": "0.1.0"}
-
-
 # Routes (imported after app creation to avoid circular imports)
 from app.routes import auth, health  # noqa: E402
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
+app.include_router(health.router, tags=["health"])

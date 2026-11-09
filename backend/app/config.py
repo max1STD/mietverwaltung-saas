@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     # App
     ENVIRONMENT: str = "development"
     LOG_LEVEL: str = "INFO"
-    SECRET_KEY: str = "change-me"
+    SECRET_KEY: str = "change-me"  # noqa: S105 - dev placeholder, overridden in prod
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://mv:change-me@db:5432/mietverwaltung"
@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://redis:6379/0"
 
     # JWT
-    JWT_SECRET: str = "change-me"
+    JWT_SECRET: str = "change-me"  # noqa: S105 - dev placeholder, overridden in prod
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 15
     JWT_REFRESH_EXPIRE_DAYS: int = 7

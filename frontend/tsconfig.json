@@ -12,10 +12,8 @@
     "skipLibCheck": true,
     "noEmit": true,
     "paths": {
-      "@/*": ["./src/*"],
-      "@shared/*": ["../shared/types/*"]
+      "@/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.vue", "../shared/types/**/*.ts"],
-  "references": [{ "path": "../shared/types" }]
+  "include": ["src/**/*.ts", "src/**/*.vue"]
 }
