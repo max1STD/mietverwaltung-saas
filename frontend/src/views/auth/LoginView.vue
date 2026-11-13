@@ -1,41 +1,114 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-50">
-    <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 w-full max-w-md">
-      <h2 class="text-2xl font-bold text-[#0D3B70] mb-6">Anmelden</h2>
-      <form class="space-y-4" @submit.prevent="onSubmit">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">E-Mail</label>
-          <input type="email" v-model="email" required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0D3B70]" />
+  <div class="min-h-screen flex items-center justify-center bg-[#f5f5f7] px-4 py-12">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-lg border border-gray-200/60 p-8 sm:p-10">
+      <div class="mb-8 text-center">
+        <h1 class="text-3xl font-semibold text-[#0D3B70] tracking-tight">Anmelden</h1>
+        <p class="mt-2 text-sm text-gray-500">Melde dich an, um deine Mietverwaltung zu öffnen.</p>
+      </div>
+
+      <form class="space-y-5" @submit.prevent="handleSubmit">
+        <AppInput
+          id="email"
+          v-model="email"
+          type="email"
+          label="E-Mail"
+          placeholder="name@beispiel.de"
+          :error="fieldErrors.email"
+          autocomplete="email"
+          required
+        />
+
+        <AppInput
+          id="password"
+          v-model="password"
+          type="password"
+          label="Passwort"
+          placeholder="••••••••"
+          :error="fieldErrors.password"
+          autocomplete="current-password"
+          required
+        />
+
+        <div class="flex items-center justify-between text-sm">
+          <label class="inline-flex items-center gap-2 text-gray-600">
+            <input type="checkbox" v-model="rememberMe" class="rounded border-gray-300 text-[#0D3B70] focus:ring-[#0D3B70]" />
+            Angemeldet bleiben
+          </label>
+          <RouterLink to="/password-reset" class="text-[#0D3B70] hover:text-[#2a5a9e] font-medium">
+            Passwort vergessen?
+          </RouterLink>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Passwort</label>
-          <input type="password" v-model="password" required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0D3B70]" />
-        </div>
-        <button type="submit"
-          class="w-full bg-[#0D3B70] text-white py-2 rounded-lg hover:bg-[#2a5a9e]">
+
+        <AppButton type="submit" variant="primary" :loading="authStore.loading" full-width>
           Anmelden
-        </button>
+        </AppButton>
       </form>
-      <p class="text-sm text-gray-500 mt-4 text-center">
+
+      <p class="mt-6 text-center text-sm text-gray-500">
         Noch kein Konto?
-        <RouterLink to="/register" class="text-[#0D3B70] font-medium">Registrieren</RouterLink>
+        <RouterLink to="/register" class="text-[#0D3B70] hover:text-[#2a5a9e] font-medium ml-1">
+          Registrieren
+        </RouterLink>
       </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { useToast } from '@/composables/useToast'
+import AppInput from '@/components/ui/AppInput.vue'
+import AppButton from '@/components/ui/AppButton.vue'
 
 const router = useRouter()
+const route = useRoute()
+const authStore = useAuthStore()
+const { showToast } = useToast()
+
 const email = ref('')
 const password = ref('')
+const rememberMe = ref(false)
+const fieldErrors = reactive<Record<string, string>>({})
 
-async function onSubmit() {
-  // TODO: Phase 1 — Auth-Implementierung
-  router.push('/dashboard')
+function validate(): boolean {
+  Object.keys(fieldErrors).forEach((k) => delete fieldErrors[k])
+
+  if (!email.value.trim()) {
+    fieldErrors.email = 'E-Mail ist erforderlich.'
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+    fieldErrors.email = 'Bitte gib eine gültige E-Mail-Adresse ein.'
+  }
+
+  if (!password.value) {
+    fieldErrors.password = 'Passwort ist erforderlich.'
+  }
+
+  return Object.keys(fieldErrors).length === 0
+}
+
+watch([email, password], () => {
+  Object.keys(fieldErrors).forEach((k) => delete fieldErrors[k])
+})
+
+async function handleSubmit() {
+  if (!validate()) return
+
+  try {
+    const result = await authStore.login(email.value, password.value)
+
+    if (result.requires_2fa) {
+      showToast('Bitte verifiziere die Zwei-Faktor-Authentifizierung.', 'info')
+      await router.push('/2fa-setup')
+      return
+    }
+
+    showToast('Erfolgreich angemeldet.', 'success')
+    const redirect = (route.query.redirect as string) || '/dashboard'
+    await router.push(redirect)
+  } catch {
+    showToast(authStore.error?.message || 'Anmeldung fehlgeschlagen.', 'error')
+  }
 }
 </script>
