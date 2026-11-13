@@ -47,17 +47,19 @@ def _user_export_dict(user: User) -> dict:
 
 async def _gather_counts(db: AsyncSession, user: User) -> dict:
     """Ermittelt die Anzahl der vorhandenen Datensätze pro Kategorie."""
+    from sqlalchemy import func
+
     sessions = await db.scalar(
-        select(select(UserSession.id).where(UserSession.user_id == user.id).subquery().count())
+        select(func.count(UserSession.id)).where(UserSession.user_id == user.id)
     )
     einwilligungen = await db.scalar(
-        select(select(Einwilligung.id).where(Einwilligung.user_id == user.id).subquery().count())
+        select(func.count(Einwilligung.id)).where(Einwilligung.user_id == user.id)
     )
     # Audit-Logs zählen (RLS limitiert sichtbare Zeilen auf User/Vermieter).
     from app.models.audit import AuditLog
 
     audit_logs = await db.scalar(
-        select(select(AuditLog.id).where(AuditLog.user_id == user.id).subquery().count())
+        select(func.count(AuditLog.id)).where(AuditLog.user_id == user.id)
     )
 
     # Mietverträge und Abrechnungen zählen (nur für Vermieter sichtbar).
@@ -68,10 +70,10 @@ async def _gather_counts(db: AsyncSession, user: User) -> dict:
     abrechnungen = 0
     if user.role == "vermieter":
         mietvertraege = await db.scalar(
-            select(select(Mietvertrag.id).where(Mietvertrag.vermieter_id == user.id).subquery().count())
+            select(func.count(Mietvertrag.id)).where(Mietvertrag.vermieter_id == user.id)
         )
         abrechnungen = await db.scalar(
-            select(select(Abrechnung.id).where(Abrechnung.vermieter_id == user.id).subquery().count())
+            select(func.count(Abrechnung.id)).where(Abrechnung.vermieter_id == user.id)
         )
     return {
         "sessions_count": sessions or 0,

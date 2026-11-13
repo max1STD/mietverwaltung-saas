@@ -286,6 +286,19 @@ async def logout_route(
             from datetime import UTC, datetime
 
             session.revoked_at = datetime.now(UTC)
+    else:
+        # Refresh-Cookie hat path=/api/v1/auth/refresh und wird nicht
+        # an /logout gesendet. Alle aktiven Sessions des Users widerrufen.
+        from datetime import UTC, datetime
+
+        result = await db.execute(
+            select(UserSession).where(
+                UserSession.user_id == user.id,
+                UserSession.revoked_at.is_(None),
+            )
+        )
+        for session in result.scalars().all():
+            session.revoked_at = datetime.now(UTC)
     clear_auth_cookies(response)
     await db.commit()
     return MessageResponse(message="Ausgeloggt")
