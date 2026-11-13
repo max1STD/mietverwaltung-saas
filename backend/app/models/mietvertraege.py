@@ -1,20 +1,22 @@
-"""Mietvertrag-Modell (für DSGVO-Aufbewahrungsprüfung)."""
+"""Mietvertrag-Modell — Vertragsdaten zwischen Vermieter und Mieter."""
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import date
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, Numeric, String
+from sqlalchemy import DECIMAL, Boolean, Date, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, SoftDeleteMixin, TimestampMixin
 
 if TYPE_CHECKING:
+    from app.models.einheit import Einheit
+    from app.models.mieter import Mieter
     from app.models.user import User
 
 
 class Mietvertrag(Base, TimestampMixin, SoftDeleteMixin):
-    """Mietvertrag zwischen Vermieter und Mieter."""
+    """Mietvertrag zwischen Vermieter und Mieter für eine bestimmte Einheit."""
 
     __tablename__ = "mietvertraege"
 
@@ -31,11 +33,23 @@ class Mietvertrag(Base, TimestampMixin, SoftDeleteMixin):
         ForeignKey("einheiten.id"),
         nullable=False,
     )
-    mietbeginn: Mapped[datetime] = mapped_column(Date, nullable=False)
-    mietende: Mapped[datetime | None] = mapped_column(Date, nullable=True)
-    miete_cold: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
-    nebenkosten_voraus: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
-    kaution: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="aktiv")
+    mietbeginn: Mapped[date] = mapped_column(Date, nullable=False)
+    mietende: Mapped[date | None] = mapped_column(Date, nullable=True)
+    miete_cold: Mapped[float] = mapped_column(DECIMAL(10, 2), nullable=False)
+    nebenkosten_voraus: Mapped[float] = mapped_column(DECIMAL(10, 2), nullable=False)
+    kaution: Mapped[float | None] = mapped_column(DECIMAL(10, 2), nullable=True)
+    kaution_hinterlegt: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="aktiv",
+    )
 
-    vermieter: Mapped["User"] = relationship("User", foreign_keys=[vermieter_id])
+    # Beziehungen
+    vermieter: Mapped[User] = relationship("User", foreign_keys=[vermieter_id])
+    mieter: Mapped[Mieter] = relationship("Mieter", back_populates="mietvertraege")
+    einheit: Mapped[Einheit] = relationship("Einheit", back_populates="mietvertraege")

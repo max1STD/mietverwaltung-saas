@@ -114,6 +114,10 @@ export const useAuthStore = defineStore('auth', () => {
       return data
     } catch (err) {
       error.value = normalizeError(err as Error)
+      // Bei Login-Fehler alten Auth-State verwerfen — sonst bleibt
+      // eine vorherige Session aktiv und der User kommt trotz
+      // falschem Passwort ins Dashboard.
+      clearAuth()
       throw err
     } finally {
       loading.value = false

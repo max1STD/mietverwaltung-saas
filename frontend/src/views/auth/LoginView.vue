@@ -98,9 +98,16 @@ async function handleSubmit() {
   try {
     const result = await authStore.login(email.value, password.value)
 
+    // Bei requires_2fa hat das Backend ein Temp-Token gesetzt.
     if (result.requires_2fa) {
       showToast('Bitte verifiziere die Zwei-Faktor-Authentifizierung.', 'info')
       await router.push('/2fa-setup')
+      return
+    }
+
+    // Nur weiterleiten, wenn der Store wirklich authentifiziert ist.
+    if (!authStore.isAuthenticated) {
+      showToast('Anmeldung fehlgeschlagen.', 'error')
       return
     }
 

@@ -1,0 +1,74 @@
+"""Pydantic-Schemas für Mietverträge."""
+from __future__ import annotations
+
+from datetime import date, datetime
+from decimal import Decimal
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class MietvertragBase(BaseModel):
+    """Gemeinsame Felder für Mietvertrag-Schemas."""
+
+    mieter_id: int
+    einheit_id: int
+    mietbeginn: date
+    mietende: date | None = None
+    miete_cold: Decimal = Field(..., ge=0)
+    nebenkosten_voraus: Decimal = Field(..., ge=0)
+    kaution: Decimal | None = None
+    kaution_hinterlegt: bool = False
+    status: str = Field(default="aktiv", pattern="^(aktiv|gekuendigt|beendet)$")
+
+
+class MietvertragCreate(MietvertragBase):
+    """Payload für das Anlegen eines Mietvertrags."""
+
+    pass
+
+
+class MietvertragUpdate(BaseModel):
+    """Payload für das Aktualisieren eines Mietvertrags (alle Felder optional)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    mietbeginn: date | None = None
+    mietende: date | None = None
+    miete_cold: Decimal | None = Field(None, ge=0)
+    nebenkosten_voraus: Decimal | None = Field(None, ge=0)
+    kaution: Decimal | None = None
+    kaution_hinterlegt: bool | None = None
+    status: str | None = Field(None, pattern="^(aktiv|gekuendigt|beendet)$")
+
+
+class MietvertragNestedMieter(BaseModel):
+    """Kompakte Mieter-Info für die Vertrags-Detailansicht."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    full_name: str
+
+
+class MietvertragNestedEinheit(BaseModel):
+    """Kompakte Einheit-Info für die Vertrags-Detailansicht."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    objekt_name: str
+
+
+class MietvertragResponse(MietvertragBase):
+    """Vollständige Mietvertrag-Daten in API-Responses."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    vermieter_id: int
+    created_at: datetime
+    updated_at: datetime
+    deleted_at: datetime | None = None
+    mieter: MietvertragNestedMieter | None = None
+    einheit: MietvertragNestedEinheit | None = None

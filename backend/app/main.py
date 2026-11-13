@@ -1,17 +1,18 @@
 """FastAPI application factory for MietVerwaltung SaaS."""
-from contextlib import asynccontextmanager
 import secrets
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from starlette.responses import Response
 
 from app.config import settings
 from app.lifespan import shutdown, startup
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await startup(app)
     yield
     await shutdown(app)
@@ -38,7 +39,10 @@ app.add_middleware(
 
 
 @app.middleware("http")
-async def security_headers(request: Request, call_next):
+async def security_headers(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
     """Setzt CSP-Nonce, CSRF-Cookie und sichere Response-Header."""
     nonce = secrets.token_urlsafe(16)
     request.state.nonce = nonce
@@ -83,9 +87,24 @@ app.add_middleware(AuditMiddleware)
 
 
 # Routes (imported after app creation to avoid circular imports)
-from app.routes import auth, dsgvo, einwilligungen, health  # noqa: E402
+from app.routes import (
+    auth,
+    dsgvo,
+    einheiten,
+    einwilligungen,
+    health,
+    mieter,
+    mietvertraege,
+    objekte,
+    tickets,
+)
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(einwilligungen.router, prefix="/api/v1/einwilligungen", tags=["einwilligungen"])
 app.include_router(dsgvo.router, prefix="/api/v1/dsgvo", tags=["dsgvo"])
+app.include_router(objekte.router, prefix="/api/v1/objekte", tags=["objekte"])
+app.include_router(einheiten.router, prefix="/api/v1/einheiten", tags=["einheiten"])
+app.include_router(mieter.router, prefix="/api/v1/mieter", tags=["mieter"])
+app.include_router(mietvertraege.router, prefix="/api/v1/mietvertraege", tags=["mietvertraege"])
+app.include_router(tickets.router, prefix="/api/v1/tickets", tags=["tickets"])
 app.include_router(health.router, tags=["health"])

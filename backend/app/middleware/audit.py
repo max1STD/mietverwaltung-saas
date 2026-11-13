@@ -69,7 +69,8 @@ class AuditMiddleware(BaseHTTPMiddleware):
             payload = decode_access_cookie(request)
             user_id = int(payload.get("sub")) if payload else None
             role = payload.get("role") if payload else None
-            vermieter_id = payload.get("vermieter_id") if payload else None
+            vermieter_id_raw = payload.get("vermieter_id") if payload else None
+            vermieter_id = int(vermieter_id_raw) if vermieter_id_raw is not None else None
 
             details: dict[str, Any] = {
                 "method": request.method,
@@ -86,7 +87,8 @@ class AuditMiddleware(BaseHTTPMiddleware):
                 # RLS-Kontext für das Audit-Log setzen.
                 user_id = int(payload.get("sub")) if payload else None
                 role = payload.get("role") if payload else "anonymous"
-                vermieter_id = payload.get("vermieter_id") if payload else None
+                vermieter_id_raw = payload.get("vermieter_id") if payload else None
+                vermieter_id = int(vermieter_id_raw) if vermieter_id_raw is not None else None
                 if user_id is not None:
                     await db.execute(text(f"SET LOCAL app.current_user_id = '{user_id}'"))
                     await db.execute(text(f"SET LOCAL app.current_user_role = '{role}'"))
