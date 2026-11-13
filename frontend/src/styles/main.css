@@ -1,4 +1,8 @@
 /* MietVerwaltung SaaS — Global Styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --navy: #0D3B70;
   --navy-hover: #2a5a9e;

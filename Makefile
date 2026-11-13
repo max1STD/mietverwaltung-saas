@@ -1,66 +1,76 @@
 # ──────────────────────────────────────────────
-# MietVerwaltung SaaS — Makefile
+# MietVerwaltung SaaS — Native Dev Makefile
+# Kein Docker. Läuft direkt auf dem Proxmox-LXC.
 # ──────────────────────────────────────────────
 
-.PHONY: dev dev-up dev-down test test-backend test-frontend lint lint-backend lint-frontend migrate migrate-create build deploy-beta deploy-prod clean
+.PHONY: setup dev dev-backend dev-frontend test test-backend test-frontend lint lint-backend lint-frontend migrate migrate-create migrate-down health clean help
+
+# ── Setup ──
+setup:          ## Einmalige Native-Dev-Einrichtung
+	./scripts/setup-dev.sh
 
 # ── Development ──
-dev:           ## Start dev environment (docker-compose + hot-reload)
-	docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+dev:            ## Backend + Frontend parallel starten
+	@echo "Starting backend (port 8000) and frontend (port 5173)..."
+	@make dev-backend & make dev-frontend
+	@wait
 
-dev-up:        ## Start dev environment detached
-	docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+dev-backend:    ## Uvicorn mit Hot-Reload (port 8000)
+	cd backend && source .venv/bin/activate && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-dev-down:      ## Stop dev environment
-	docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+dev-frontend:   ## Vite Dev-Server (port 5173)
+	cd frontend && pnpm dev --host 0.0.0.0 --port 5173
 
 # ── Testing ──
-test:          ## Run all tests
+test:           ## Run all tests (Backend + Frontend)
 	$(MAKE) test-backend
 	$(MAKE) test-frontend
 
-test-backend:  ## Run backend tests (pytest)
-	docker compose exec backend pytest --cov=app --cov-report=term-missing
+test-backend:   ## Run backend tests (pytest)
+	cd backend && source .venv/bin/activate && pytest -v --cov=app --cov-report=term-missing
 
-test-frontend: ## Run frontend tests (vitest)
-	docker compose exec frontend pnpm vitest run
+test-frontend:  ## Run frontend tests (vitest)
+	cd frontend && pnpm vitest run
 
 # ── Linting ──
-lint:          ## Run all linters
+lint:           ## Run all linters
 	$(MAKE) lint-backend
 	$(MAKE) lint-frontend
 
-lint-backend:  ## Lint backend (ruff + mypy + bandit)
-	docker compose exec backend ruff check app/
-	docker compose exec backend mypy app/
-	docker compose exec backend bandit -r app/ -ll
+lint-backend:   ## Lint backend (ruff + mypy + bandit)
+	cd backend && source .venv/bin/activate && ruff check app/
+	cd backend && source .venv/bin/activate && mypy app/
+	cd backend && source .venv/bin/activate && bandit -r app/ -ll
 
-lint-frontend: ## Lint frontend (eslint)
-	docker compose exec frontend pnpm eslint src/
+lint-frontend:  ## Lint frontend (eslint)
+	cd frontend && pnpm eslint src/
 
 # ── Database ──
-migrate:       ## Run pending migrations
-	docker compose exec backend alembic upgrade head
+migrate:        ## Run pending migrations
+	cd backend && source .venv/bin/activate && alembic upgrade head
 
 migrate-create: ## Create new migration: make migrate-create m="description"
-	docker compose exec backend alembic revision --autogenerate -m "$(m)"
+	cd backend && source .venv/bin/activate && alembic revision --autogenerate -m "$(m)"
 
-# ── Build ──
-build:         ## Build production images
-	docker compose build
+migrate-down:   ## Roll back one migration
+	cd backend && source .venv/bin/activate && alembic downgrade -1
 
-# ── Deploy ──
-deploy-beta:   ## Deploy to Proxmox (beta)
-	@echo "Deploy to Proxmox — triggered via GitHub Actions (tag: v0.x-beta.y)"
+# ── Health ──
+health:         ## Health-Check
+	curl -s http://localhost:8000/health | python3 -m json.tool
 
-deploy-prod:   ## Deploy to Hetzner (production)
-	@echo "Deploy to Hetzner — triggered via GitHub Actions (tag: v1.x.y)"
+# ── Deploy (via GitHub Actions, not local) ──
+deploy-beta:    ## Deploy to Proxmox (beta) — triggered via GitHub Actions tag v0.x-beta.y
+	@echo "Deploy to Proxmox — use: git tag v0.x-beta.y && git push --tags"
+
+deploy-prod:    ## Deploy to Hetzner (production) — triggered via GitHub Actions tag v1.x.y
+	@echo "Deploy to Hetzner — use: git tag v1.x.y && git push --tags"
 
 # ── Cleanup ──
-clean:         ## Remove containers, volumes, and build cache
-	docker compose down -v
-	docker system prune -f --filter "label=com.docker.compose.project=mietverwaltung-saas"
+clean:          ## Remove build artifacts
+	cd backend && find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	cd frontend && rm -rf dist node_modules/.cache
 
 # ── Help ──
-help:          ## Show this help
+help:           ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
