@@ -1,0 +1,1190 @@
+# MietVerwaltung — DB-Schema v4.1
+
+> **Aktualisiert:** 13. November 2026  
+> **Basis:** v4 (33 Tabellen) → v4.1 (33 Tabellen + 1 View)  
+> **Ziel:** Die 5 CRITICAL Issues aus dem Pre-Build Review (#17–#21) behoben. Sauberes Fundament für den Build.
+
+---
+
+## Zusammenfassung Migration v4 → v4.1
+
+| # | GitHub Issue | Bereich | Änderung |
+|---|--------------|---------|----------|
+| 1 | **#17** | `users`, `vermieter_public_view` | RLS-Policy für `users` korrigiert: (a) Nutzer sieht eigene Zeile, (b) Vermieter sieht alle zugeordneten Mieter-Accounts (`vermieter_id = eigene ID`), (c) Admin sieht alle Zeilen. Neue View `vermieter_public_view` gibt Mieter sicher nur `name` + `e-mail` des Vermieters. |
+| 2 | **#18** | `subscriptions`, `plan_usage` | Veraltetes Fixed-Plan-Modell (`free/basis/pro/business`) ersetzt durch WE-basiertes Pricing: `price_per_we`, `billing_cycle` (`monthly`/`yearly`), `trial_ends_at`, `stripe_subscription_id`, `stripe_customer_id`, `status` (`trial`/`active`/`past_due`/`cancelled`), `current_period_end`. `UNIQUE(user_id)` auf `subscriptions` und `plan_usage`. |
+| 3 | **#19** | `users` | Vermieter-Stammdaten ergänzt: `firma`, `steuernr_enc` (AES-256 verschlüsselt), `rechnungs_strasse`, `rechnungs_hausnr`, `rechnungs_plz`, `rechnungs_ort`, `ust_id` (optional). Benötigt für Briefkopf, Mahnungen, XRechnung/ZUGFeRD. |
+| 4 | **#20** | `dokumente`, `dokument_freigaben` | `dokumente` erhält Spalte `sichtbarkeit` mit CHECK-Constraint (`vermieter`/`mieter`/`beide`/`handwerker`). `dokument_freigaben` verwendet statt `role` nun `user_id`, plus `freigegeben_von` und `freigegeben_am`. |
+| 5 | **#21** | `kosten`, `abrechnung_positionen`, `bankverbindungen`, `users`, `abrechnungen`, `subscriptions`, `plan_usage` | `deleted_at` auf `kosten`, `abrechnung_positionen` und `bankverbindungen` ergänzt. Partielle Unique-Indizes: `users(email) WHERE deleted_at IS NULL` und `abrechnungen(einheit_id, jahr) WHERE deleted_at IS NULL`. `UNIQUE(user_id)` auf `subscriptions` und `plan_usage`. |
+
+---
+
+## Übersicht: 33 Tabellen (v4: 33 → v4.1: 33)
+
+### Kern & Auth (7)
+
+| # | Tabelle | Zweck |
+|---|---------|-------|
+| 1 | `users` | Login-Accounts (Vermieter, Mieter, Admin) + `vermieter_id` für Mieter-Zuordnung + Vermieter-Stammdaten für Briefkopf/Rechnung |
+| 2 | `user_sessions` | Geräte/Session-Verwaltung |
+| 3 | `einwilligungen` | Versionierte DSGVO-Einwilligungen |
+| 4 | `audit_logs` | Sicherheitsaudit (DSGVO) |
+| 5 | `subscriptions` | WE-basiertes Abo mit `price_per_we`, Stripe-IDs, Trial, Status |
+| 6 | `plan_usage` | Tatsächliche WE-Nutzung pro Vermieter (1:1) |
+| 7 | `bankverbindungen` | Vermieter-Bankdaten & Mieter-Kaution-Konten (`iban_enc` AES-256) mit Soft-Delete |
+
+### Immobilien & Einheiten (5)
+
+| # | Tabelle | Zweck |
+|---|---------|-------|
+| 8 | `objekte` | Immobilien + Finanzierungsdaten für Rendite |
+| 9 | `einheiten` | Wohneinheiten (ohne `tenant_id`) |
+| 10 | `einheit_ausstattung` | Ausstattungsmerkmale pro WE |
+| 11 | `mieter_historie` | Vergangene Mieter pro WE |
+| 12 | `bewerbungen` | Mieter-Bewerbungen pro WE |
+
+### Mieter & Verträge (4)
+
+| # | Tabelle | Zweck |
+|---|---------|-------|
+| 13 | `mieter` | Mieter-Stammdaten (Person) |
+| 14 | `mietvertraege` | Mietverträge mit direkter `vermieter_id` |
+| 15 | `mietvertrag_aenderungen` | Vertragsänderungs-Historie |
+| 16 | `kostenkategorien` | Pro Vermieter konfigurierbar |
+
+### Finanzen (6)
+
+| # | Tabelle | Zweck |
+|---|---------|-------|
+| 17 | `kosten` | Betriebskosten mit Soft-Delete |
+| 18 | `mietzahlungen` | Mieteingänge |
+| 19 | `abrechnungen` | NK-Abrechnung pro Einheit/Jahr |
+| 20 | `abrechnung_positionen` | Einzelne Positionen mit Soft-Delete |
+| 21 | `dokumente` | Dateien/Uploads inkl. Sichtbarkeit |
+| 22 | `dokument_freigaben` | Gezielte Freigaben an einzelne User |
+
+### Tickets & Kommunikation (4)
+
+| # | Tabelle | Zweck |
+|---|---------|-------|
+| 23 | `tickets` | Störungsmeldungen |
+| 24 | `ticket_kommentare` | Verlauf/Kommentare mit `vermieter_id` |
+| 25 | `ticket_sla` | SLA-Konfiguration |
+| 26 | `ticket_trigger` | Automatisierungsregeln |
+
+### Automatisierung & Events (3)
+
+| # | Tabelle | Zweck |
+|---|---------|-------|
+| 27 | `events` | Event-Queue |
+| 28 | `notifications` | Benachrichtigungen mit `vermieter_id` |
+| 29 | `fristen` | Fristen-Tracking |
+
+### Sonstiges (4)
+
+| # | Tabelle | Zweck |
+|---|---------|-------|
+| 30 | `onboarding_progress` | Setup-Checkliste |
+| 31 | `ai_stored_results` | KI-Cache |
+| 32 | `referrals` | Empfehlungsprogramm |
+| 33 | `handwerker` | Handwerker-Stammdaten (Roadmap) |
+
+---
+
+## Konventionen
+
+- **IDs:** `INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY` (kein `SERIAL`).
+- **Zeitstempel:** `TIMESTAMPTZ` (UTC in DB, Frontend rechnet in lokale Zeit).
+- **Soft-Delete:** `deleted_at TIMESTAMPTZ` auf allen Personendaten-, Geschäftsobjekt- und Finanz-Tabellen.
+- **RLS:** Jede Tabelle, die Daten eines Vermieters enthält, hat `vermieter_id` und eine RLS-Policy.
+- **Verschlüsselung:** AES-256-GCM für `mieter.birth_date_enc`, `bankverbindungen.iban_enc` und `users.steuernr_enc`.
+- **Dateien:** Uploads werden im Filesystem gespeichert; DB speichert nur `file_path`/`foto_url`.
+- **Unique-Indizes:** E-Mail-Adressen und Abrechnungs-Jahre sind **partiell** unique (`deleted_at IS NULL`), damit Soft-Delete keine Re-Registrierung oder neue Abrechnung blockiert.
+
+---
+
+## Vollständiges SQL DDL
+
+```sql
+-- ============================================================
+-- MietVerwaltung SaaS — Datenbank-Schema v4.1
+-- PostgreSQL 17 · IDENTITY · Row-Level Security · Soft-Delete
+-- ============================================================
+
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";  -- AES-256-GCM Feld-Verschlüsselung
+
+-- ============================================================
+-- 1. users — Login-Accounts (Vermieter, Mieter, Admin)
+-- ============================================================
+CREATE TABLE users (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    -- v4.1: UNIQUE auf Tabellenebene entfernt; partieller Unique-Index weiter unten,
+    --       damit Soft-Delete keine Re-Registrierung blockiert.
+    email               VARCHAR(255) NOT NULL,
+    password_hash       VARCHAR(255) NOT NULL,
+    full_name           VARCHAR(100) NOT NULL,
+    role                VARCHAR(20) NOT NULL DEFAULT 'vermieter'
+                        CHECK (role IN ('vermieter','mieter','admin')),
+    -- Mieter-Zuordnung: Bei role='mieter' muss vermieter_id gesetzt sein.
+    -- Bei Vermieter/Admin ist sie NULL.
+    vermieter_id        INT REFERENCES users(id),
+    totp_secret         VARCHAR(64),
+    backup_codes        JSONB,
+    email_code          VARCHAR(6),
+    email_code_expires  TIMESTAMPTZ,
+    failed_login_count  INT DEFAULT 0,
+    locked_until        TIMESTAMPTZ,
+    dsgvo_consent_at    TIMESTAMPTZ,
+    -- v4.1: Vermieter-Stammdaten für Briefkopf, Mahnungen, XRechnung/ZUGFeRD
+    firma               VARCHAR(200),
+    steuernr_enc        BYTEA,                 -- AES-256 verschlüsselt
+    rechnungs_strasse   VARCHAR(255),
+    rechnungs_hausnr    VARCHAR(20),
+    rechnungs_plz       VARCHAR(10),
+    rechnungs_ort       VARCHAR(100),
+    ust_id              VARCHAR(20),            -- optional, z. B. für B2B-E-Rechnung
+    created_at          TIMESTAMPTZ DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ DEFAULT NOW(),
+    deleted_at          TIMESTAMPTZ
+);
+
+ALTER TABLE users ADD CONSTRAINT chk_mieter_vermieter_id
+    CHECK (
+        (role = 'mieter' AND vermieter_id IS NOT NULL)
+        OR (role != 'mieter' AND vermieter_id IS NULL)
+    );
+
+-- v4.1: Öffentliche Vermieter-Daten für das Mieter-Portal.
+--       Liefert nur Name + E-Mail des aktuellen Vermieters (via Session-Variable).
+CREATE VIEW vermieter_public_view AS
+SELECT id, full_name, email
+FROM users
+WHERE role = 'vermieter'
+  AND deleted_at IS NULL
+  AND id = current_setting('app.current_vermieter_id', true)::INT
+WITH (security_invoker = false);
+
+-- ============================================================
+-- 2. user_sessions — Geräte/Session-Verwaltung
+-- ============================================================
+CREATE TABLE user_sessions (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id             INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    refresh_token       VARCHAR(255) NOT NULL,
+    device_info         VARCHAR(255),
+    ip_address          INET,
+    created_at          TIMESTAMPTZ DEFAULT NOW(),
+    expires_at          TIMESTAMPTZ NOT NULL,
+    revoked_at          TIMESTAMPTZ
+);
+
+-- ============================================================
+-- 3. einwilligungen — Versionierte DSGVO-Einwilligungen
+-- ============================================================
+CREATE TABLE einwilligungen (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id             INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    version             INT NOT NULL DEFAULT 1,
+    purpose             VARCHAR(50) NOT NULL, -- ki_anonymisierung, ki_dokumente, marketing
+    consent_text        TEXT NOT NULL,
+    consented_at        TIMESTAMPTZ NOT NULL,
+    withdrawn_at        TIMESTAMPTZ,
+    ip_address          INET,
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- 4. audit_logs — Sicherheitsaudit (DSGVO)
+-- ============================================================
+CREATE TABLE audit_logs (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id             INT REFERENCES users(id),
+    vermieter_id        INT REFERENCES users(id),
+    action              VARCHAR(100) NOT NULL,
+    entity              VARCHAR(50),
+    entity_id           INT,
+    risk_level          VARCHAR(10) NOT NULL DEFAULT 'niedrig'
+                        CHECK (risk_level IN ('niedrig','mittel','hoch')),
+    details             JSONB,
+    ip_address          INET,
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- 5. subscriptions — WE-basiertes Abo pro Vermieter
+-- ============================================================
+-- v4.1: Fixed-Plan-Modell ersetzt durch Preis pro Wohneinheit (WE).
+CREATE TABLE subscriptions (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id             INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    -- v4.1: Ein Vermieter hat genau einen Abo-Datensatz; Status/Preis ändern sich in-place.
+    UNIQUE(user_id),
+    price_per_we        DECIMAL(10,2) NOT NULL,      -- z. B. 9.75
+    billing_cycle       VARCHAR(10) NOT NULL
+                        CHECK (billing_cycle IN ('monthly','yearly')),
+    trial_ends_at       TIMESTAMPTZ,
+    stripe_subscription_id VARCHAR(255),
+    stripe_customer_id  VARCHAR(255),
+    status              VARCHAR(20) NOT NULL DEFAULT 'trial'
+                        CHECK (status IN ('trial','active','past_due','cancelled')),
+    current_period_start TIMESTAMPTZ,
+    current_period_end  TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- 6. plan_usage — Tatsächliche WE-Nutzung tracken
+-- ============================================================
+CREATE TABLE plan_usage (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id             INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    -- v4.1: Genau eine Zeile pro Vermieter, da live WE-Anzahl gepflegt wird.
+    UNIQUE(user_id),
+    wohnungen_count     INT NOT NULL DEFAULT 0,
+    last_checked_at     TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- 7. objekte — Immobilien + Finanzierung
+-- ============================================================
+CREATE TABLE objekte (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name                VARCHAR(100) NOT NULL,
+    address             VARCHAR(255) NOT NULL,
+    typ                 VARCHAR(20) NOT NULL, -- mehrfamilienhaus, einfamilienhaus, etc.
+    baujahr             INT,
+    foto_url            VARCHAR(500),          -- Pfad im Upload-Verzeichnis
+    -- Finanzierungsfelder für Rendite-Berechnung im Dashboard
+    kaufpreis           DECIMAL(12,2),
+    kaufdatum           DATE,
+    eigenkapital        DECIMAL(12,2),
+    darlehen_betrag     DECIMAL(12,2),
+    zinssatz            DECIMAL(5,2),          -- z.B. 3.50
+    tilgung             DECIMAL(5,2),          -- z.B. 2.00
+    monatliche_rate     DECIMAL(10,2),
+    created_at          TIMESTAMPTZ DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ DEFAULT NOW(),
+    deleted_at          TIMESTAMPTZ
+);
+
+-- ============================================================
+-- 8. einheiten — Wohneinheiten
+-- ============================================================
+-- ACHTUNG: tenant_id wurde entfernt. Aktueller Mieter wird über
+-- den aktiven Mietvertrag ermittelt:
+--   SELECT m.* FROM mieter m
+--   JOIN mietvertraege mv ON mv.mieter_id = m.id
+--   WHERE mv.einheit_id = :einheit_id AND mv.status = 'aktiv'
+--         AND mv.deleted_at IS NULL AND m.deleted_at IS NULL
+--   ORDER BY mv.mietbeginn DESC
+--   LIMIT 1;
+CREATE TABLE einheiten (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    objekt_id           INT NOT NULL REFERENCES objekte(id) ON DELETE CASCADE,
+    name                VARCHAR(100) NOT NULL, -- 'Wohnung 1.OG links'
+    size_qm             DECIMAL(6,2) NOT NULL,
+    rooms               INT NOT NULL,
+    rent_cold           DECIMAL(10,2) NOT NULL,
+    floor               VARCHAR(20), -- EG, 1.OG, 2.OG, Souterrain
+    energy_class        VARCHAR(2), -- A+, A, B, C, D, E, F, G, H
+    last_renovation     DATE,
+    available_from      DATE,
+    created_at          TIMESTAMPTZ DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ DEFAULT NOW(),
+    deleted_at          TIMESTAMPTZ
+);
+
+-- ============================================================
+-- 9. mieter — Mieter-Stammdaten (Person)
+-- ============================================================
+-- ACHTUNG: unit_id wurde entfernt. Aktuelle Einheit wird über
+-- den aktiven Mietvertrag ermittelt.
+CREATE TABLE mieter (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    first_name          VARCHAR(50) NOT NULL,
+    last_name           VARCHAR(50) NOT NULL,
+    email               VARCHAR(255),
+    phone               VARCHAR(30),
+    birth_date_enc      BYTEA, -- AES-256 verschlüsselt
+    status              VARCHAR(20) DEFAULT 'aktiv'
+                        CHECK (status IN ('aktiv','ehemalig','bewerber')),
+    since               DATE,
+    created_at          TIMESTAMPTZ DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ DEFAULT NOW(),
+    deleted_at          TIMESTAMPTZ
+);
+
+-- ============================================================
+-- 10. mieter_historie — Vergangene Mieter pro WE
+-- ============================================================
+CREATE TABLE mieter_historie (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    einheit_id          INT NOT NULL REFERENCES einheiten(id) ON DELETE CASCADE,
+    mieter_id           INT REFERENCES mieter(id) ON DELETE SET NULL,
+    mieter_name         VARCHAR(100) NOT NULL,
+    mietbeginn          DATE NOT NULL,
+    mietende            DATE NOT NULL,
+    last_rent           DECIMAL(10,2),
+    move_out_reason     VARCHAR(100),
+    notes               TEXT,
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- 11. einheit_ausstattung — Ausstattung pro WE
+-- ============================================================
+CREATE TABLE einheit_ausstattung (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    einheit_id          INT NOT NULL REFERENCES einheiten(id) ON DELETE CASCADE,
+    feature             VARCHAR(50) NOT NULL, -- bad_wanne, bad_dusche, einbaukueche, etc.
+    value               VARCHAR(100),
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- 12. bewerbungen — Mieter-Bewerbungen pro WE
+-- ============================================================
+CREATE TABLE bewerbungen (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    einheit_id          INT NOT NULL REFERENCES einheiten(id) ON DELETE CASCADE,
+    first_name          VARCHAR(50) NOT NULL,
+    last_name           VARCHAR(50) NOT NULL,
+    email               VARCHAR(255),
+    phone               VARCHAR(30),
+    income_monthly      DECIMAL(10,2),
+    schufa_score        INT,
+    documents           JSONB,
+    status              VARCHAR(20) DEFAULT 'offen'
+                        CHECK (status IN ('offen','angenommen','abgelehnt')),
+    applied_at          TIMESTAMPTZ DEFAULT NOW(),
+    decided_at          TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ DEFAULT NOW(),
+    deleted_at          TIMESTAMPTZ
+);
+
+-- ============================================================
+-- 13. mietvertraege — Mietverträge
+-- ============================================================
+CREATE TABLE mietvertraege (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    mieter_id           INT NOT NULL REFERENCES mieter(id) ON DELETE CASCADE,
+    einheit_id          INT NOT NULL REFERENCES einheiten(id),
+    mietbeginn          DATE NOT NULL,
+    mietende            DATE,
+    miete_cold          DECIMAL(10,2) NOT NULL,
+    nebenkosten_voraus  DECIMAL(10,2) NOT NULL,
+    kaution             DECIMAL(10,2),
+    kaution_hinterlegt  BOOLEAN DEFAULT FALSE,
+    status              VARCHAR(20) DEFAULT 'aktiv'
+                        CHECK (status IN ('aktiv','gekuendigt','beendet')),
+    created_at          TIMESTAMPTZ DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ DEFAULT NOW(),
+    deleted_at          TIMESTAMPTZ
+);
+
+-- ============================================================
+-- 14. mietvertrag_aenderungen — Vertragsänderungs-Historie
+-- ============================================================
+CREATE TABLE mietvertrag_aenderungen (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    vertrag_id          INT NOT NULL REFERENCES mietvertraege(id) ON DELETE CASCADE,
+    field               VARCHAR(50) NOT NULL,
+    old_value           TEXT,
+    new_value           TEXT,
+    changed_at          TIMESTAMPTZ DEFAULT NOW(),
+    reason              TEXT
+);
+
+-- ============================================================
+-- 15. kostenkategorien — Pro Vermieter konfigurierbar
+-- ============================================================
+CREATE TABLE kostenkategorien (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name                VARCHAR(50) NOT NULL,
+    betrvk_key          VARCHAR(20),
+    umlagefaehig        BOOLEAN DEFAULT TRUE,
+    verteilungsschluessel VARCHAR(20) DEFAULT 'qm'
+                        CHECK (verteilungsschluessel IN ('qm','personen','verbrauch')),
+    is_default          BOOLEAN DEFAULT FALSE
+);
+
+-- ============================================================
+-- 16. handwerker — Handwerker-Stammdaten (Roadmap)
+-- ============================================================
+CREATE TABLE handwerker (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name                VARCHAR(100) NOT NULL,
+    gewerk              VARCHAR(50),
+    email               VARCHAR(255),
+    phone               VARCHAR(30),
+    rating              INT,
+    is_active           BOOLEAN DEFAULT TRUE,
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- 17. ticket_sla — SLA-Konfiguration pro Vermieter
+-- ============================================================
+CREATE TABLE ticket_sla (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name                VARCHAR(50) NOT NULL,
+    response_time_hours INT NOT NULL DEFAULT 48,
+    resolution_time_hours INT NOT NULL DEFAULT 168,
+    biz_hours_only      BOOLEAN DEFAULT TRUE,
+    biz_start           TIME DEFAULT '09:00',
+    biz_end             TIME DEFAULT '17:00',
+    biz_days            VARCHAR(7) DEFAULT 'mtwtf',
+    escalation_levels   JSONB,
+    is_active           BOOLEAN DEFAULT TRUE
+);
+
+-- ============================================================
+-- 18. ticket_trigger — Automatisierungsregeln
+-- ============================================================
+CREATE TABLE ticket_trigger (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name                VARCHAR(100) NOT NULL,
+    trigger_type        VARCHAR(20) NOT NULL,
+    condition           JSONB NOT NULL,
+    perform             JSONB NOT NULL,
+    is_active           BOOLEAN DEFAULT TRUE,
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- 19. abrechnungen — NK-Abrechnung pro Einheit/Jahr
+-- ============================================================
+-- ACHTUNG: Eine Abrechnung bezieht sich auf EINE Wohneinheit für EIN Jahr.
+CREATE TABLE abrechnungen (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    einheit_id          INT NOT NULL REFERENCES einheiten(id),
+    objekt_id           INT REFERENCES objekte(id),
+    jahr                INT NOT NULL,
+    zeitraum_von        DATE NOT NULL,
+    zeitraum_bis        DATE NOT NULL,
+    einwendungsfrist_bis DATE,
+    rechtskraeftig_seit DATE,
+    status              VARCHAR(20) DEFAULT 'entwurf'
+                        CHECK (status IN ('entwurf','versendet','rechtskraeftig','angefochten')),
+    created_at          TIMESTAMPTZ DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ DEFAULT NOW(),
+    deleted_at          TIMESTAMPTZ
+);
+
+-- ============================================================
+-- 20. kosten — Betriebskosten
+-- ============================================================
+CREATE TABLE kosten (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    objekt_id           INT REFERENCES objekte(id),
+    einheit_id          INT REFERENCES einheiten(id),
+    kategorie_id        INT REFERENCES kostenkategorien(id),
+    betrag              DECIMAL(10,2) NOT NULL,
+    datum               DATE NOT NULL,
+    umlagefaehig        BOOLEAN DEFAULT TRUE,
+    abrechnung_id       INT REFERENCES abrechnungen(id),
+    abgerechnet_am      DATE,
+    ki_kategorisiert    BOOLEAN DEFAULT FALSE,
+    datev_konto         VARCHAR(10),
+    datev_buchungstext  VARCHAR(100),
+    -- v4.1: Soft-Delete für steuerrechtliche Aufbewahrung
+    deleted_at          TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- 21. abrechnung_positionen — Einzelne Positionen
+-- ============================================================
+CREATE TABLE abrechnung_positionen (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    abrechnung_id       INT NOT NULL REFERENCES abrechnungen(id) ON DELETE CASCADE,
+    kategorie_id        INT REFERENCES kostenkategorien(id),
+    kosten_id           INT REFERENCES kosten(id),
+    betrag_total        DECIMAL(10,2) NOT NULL,
+    umlageanteil        DECIMAL(10,2) NOT NULL,
+    verteilungsschluessel VARCHAR(20) NOT NULL
+                        CHECK (verteilungsschluessel IN ('qm','personen','verbrauch')),
+    datev_betrag        DECIMAL(10,2),
+    -- v4.1: Soft-Delete für steuerrechtliche Aufbewahrung
+    deleted_at          TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- 22. dokumente — Dateien & Uploads
+-- ============================================================
+CREATE TABLE dokumente (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    objekt_id           INT REFERENCES objekte(id),
+    einheit_id          INT REFERENCES einheiten(id),
+    mieter_id           INT REFERENCES mieter(id),
+    name                VARCHAR(255) NOT NULL,
+    type                VARCHAR(20) NOT NULL, -- vertrag, protokoll, bewerbung, rechnung, foto, sonstiges
+    -- v4.1: Basis-Sichtbarkeit des Dokuments
+    sichtbarkeit        VARCHAR(20) NOT NULL DEFAULT 'vermieter'
+                        CHECK (sichtbarkeit IN ('vermieter','mieter','beide','handwerker')),
+    file_path           VARCHAR(500) NOT NULL,
+    file_hash           VARCHAR(64) NOT NULL, -- SHA-256
+    file_size           INT,
+    mime_type           VARCHAR(50),
+    encrypted           BOOLEAN DEFAULT TRUE,
+    created_at          TIMESTAMPTZ DEFAULT NOW(),
+    deleted_at          TIMESTAMPTZ
+);
+
+-- ============================================================
+-- 23. dokument_freigaben — Gezielte Dokumenten-Freigaben
+-- ============================================================
+-- v4.1: Gezielte Freigabe an einen einzelnen User statt an eine Rolle.
+CREATE TABLE dokument_freigaben (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    dokument_id         INT NOT NULL REFERENCES dokumente(id) ON DELETE CASCADE,
+    user_id             INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    freigegeben_von     INT REFERENCES users(id),
+    freigegeben_am      TIMESTAMPTZ DEFAULT NOW(),
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- 24. tickets — Störungsmeldungen
+-- ============================================================
+CREATE TABLE tickets (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    mieter_id           INT REFERENCES mieter(id),
+    einheit_id          INT REFERENCES einheiten(id),
+    ticket_number       VARCHAR(20) UNIQUE NOT NULL,
+    title               VARCHAR(200) NOT NULL,
+    description         TEXT,
+    category            VARCHAR(50),
+    priority            VARCHAR(10) DEFAULT 'normal',
+    status              VARCHAR(20) DEFAULT 'offen',
+    ki_kategorisiert    BOOLEAN DEFAULT FALSE,
+    ki_prioritaet       BOOLEAN DEFAULT FALSE,
+    assigned_to         INT REFERENCES users(id),
+    handwerker_id       INT REFERENCES handwerker(id),
+    sla_id              INT REFERENCES ticket_sla(id),
+    created_at          TIMESTAMPTZ DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ DEFAULT NOW(),
+    closed_at           TIMESTAMPTZ
+);
+
+-- ============================================================
+-- 25. ticket_kommentare — Verlauf/Kommentare
+-- ============================================================
+CREATE TABLE ticket_kommentare (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    ticket_id           INT NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
+    author_id           INT REFERENCES users(id),
+    author_role         VARCHAR(20) NOT NULL, -- vermieter, mieter, handwerker, system
+    content             TEXT NOT NULL,
+    ist_ki_entwurf      BOOLEAN DEFAULT FALSE,
+    is_internal         BOOLEAN DEFAULT FALSE,
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- 26. mietzahlungen — Mieteingänge
+-- ============================================================
+CREATE TABLE mietzahlungen (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    mieter_id           INT REFERENCES mieter(id),
+    vertrag_id          INT REFERENCES mietvertraege(id),
+    betrag_soll         DECIMAL(10,2) NOT NULL,
+    betrag_ist          DECIMAL(10,2),
+    zahlungsdatum       DATE,
+    mahnstufe           INT DEFAULT 0,
+    zahlungsreferenz    VARCHAR(50),
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- 27. events — Event-Queue
+-- ============================================================
+CREATE TABLE events (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    event_type          VARCHAR(50) NOT NULL,
+    entity              VARCHAR(50),
+    entity_id           INT,
+    payload             JSONB,
+    processed_at        TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- 28. notifications — Benachrichtigungen
+-- ============================================================
+CREATE TABLE notifications (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id             INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    event_id            INT REFERENCES events(id),
+    type                VARCHAR(20) NOT NULL, -- email, in_app, push
+    title               VARCHAR(200) NOT NULL,
+    body                TEXT,
+    status              VARCHAR(20) DEFAULT 'pending',
+    sent_at             TIMESTAMPTZ
+);
+
+-- ============================================================
+-- 29. fristen — Fristen-Tracking
+-- ============================================================
+CREATE TABLE fristen (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    entity              VARCHAR(50),
+    entity_id           INT,
+    deadline            DATE NOT NULL,
+    warn_level          VARCHAR(10) DEFAULT 'green',
+    description         TEXT,
+    is_done             BOOLEAN DEFAULT FALSE,
+    created_at          TIMESTAMPTZ DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- 30. onboarding_progress — Setup-Checkliste
+-- ============================================================
+CREATE TABLE onboarding_progress (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id             INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    step                VARCHAR(50) NOT NULL,
+    is_done             BOOLEAN DEFAULT FALSE,
+    done_at             TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- 31. ai_stored_results — KI-Cache
+-- ============================================================
+CREATE TABLE ai_stored_results (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    use_case            VARCHAR(50) NOT NULL,
+    model               VARCHAR(50) NOT NULL,
+    prompt_hash         VARCHAR(64) NOT NULL,
+    result              JSONB NOT NULL,
+    confidence          VARCHAR(20),
+    tokens_used         INT,
+    duration_ms         INT,
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- 32. referrals — Empfehlungsprogramm
+-- ============================================================
+CREATE TABLE referrals (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    referrer_id         INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    referred_email      VARCHAR(255) NOT NULL,
+    referred_user_id    INT REFERENCES users(id),
+    status              VARCHAR(20) DEFAULT 'pending',
+    reward_type         VARCHAR(20),
+    reward_amount       DECIMAL(10,2),
+    created_at          TIMESTAMPTZ DEFAULT NOW(),
+    rewarded_at         TIMESTAMPTZ
+);
+
+-- ============================================================
+-- 33. bankverbindungen — Vermieter-Bankdaten & Mieter-Kaution
+-- ============================================================
+CREATE TABLE bankverbindungen (
+    id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    vermieter_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    -- mieter_id: Wenn gesetzt, ist dies das Kaution-Konto des Mieters.
+    -- Wenn NULL, handelt es sich um eine Vermieter-Bankverbindung.
+    mieter_id           INT REFERENCES mieter(id) ON DELETE SET NULL,
+    iban_enc            BYTEA NOT NULL,          -- AES-256 verschlüsselt
+    bic                 VARCHAR(11),
+    kontoinhaber        VARCHAR(100) NOT NULL,
+    bankname            VARCHAR(100),
+    is_default          BOOLEAN DEFAULT FALSE,
+    -- v4.1: Soft-Delete für DSGVO-Aufbewahrungsfrist
+    deleted_at          TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+---
+
+## Row-Level Security (RLS)
+
+**Prinzip:** Jede Tabelle, die Daten eines Vermieters enthält, hat eine direkte `vermieter_id` und eine RLS-Policy. Die App setzt vor jeder Query:
+
+```sql
+-- App setzt vor der Query (Session-Kontext):
+SET app.current_user_id      = '<user_id>';
+SET app.current_vermieter_id = '<vermieter_id>';  -- Bei Vermieter = eigene ID, bei Mieter = users.vermieter_id
+SET app.current_user_role    = 'vermieter';       -- oder 'mieter' | 'admin'
+```
+
+### RLS aktivieren & Policies
+
+```sql
+-- ============================================================
+-- Tabellen mit vermieter_id aktivieren
+-- ============================================================
+ALTER TABLE users                ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bankverbindungen     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subscriptions        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE plan_usage           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE objekte              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE einheiten            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE einheit_ausstattung  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mieter               ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mieter_historie      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bewerbungen          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mietvertraege        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mietvertrag_aenderungen ENABLE ROW LEVEL SECURITY;
+ALTER TABLE kostenkategorien     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE kosten               ENABLE ROW LEVEL SECURITY;
+ALTER TABLE dokumente            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE dokument_freigaben   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tickets              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ticket_kommentare    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ticket_sla           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ticket_trigger       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mietzahlungen        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE abrechnungen         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE abrechnung_positionen ENABLE ROW LEVEL SECURITY;
+ALTER TABLE events               ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE fristen              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ai_stored_results    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE referrals            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE handwerker           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_logs           ENABLE ROW LEVEL SECURITY;
+
+-- Tabellen, die direkt einem User gehören (keine vermieter_id notwendig)
+ALTER TABLE user_sessions        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE einwilligungen       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE onboarding_progress  ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================
+-- v4.1: users-Policy — funktional korrekt
+-- ============================================================
+-- (a) Jeder Nutzer sieht seine eigene Zeile.
+-- (b) Vermieter sieht alle Accounts, deren vermieter_id = eigene ID (Mieter-Accounts).
+-- (c) Admin sieht alle Zeilen.
+DROP POLICY IF EXISTS users_isolation ON users;
+CREATE POLICY users_isolation ON users
+    FOR ALL
+    USING (
+        id = current_setting('app.current_user_id')::INT
+        OR (
+            current_setting('app.current_user_role') IN ('vermieter','admin')
+            AND role = 'mieter'
+            AND vermieter_id = current_setting('app.current_user_id')::INT
+        )
+        OR current_setting('app.current_user_role') = 'admin'
+    );
+
+-- ============================================================
+-- Standard-Policy: Vermieter sieht nur eigene Daten
+-- ============================================================
+CREATE POLICY bankverbindungen_isolation ON bankverbindungen
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY subscriptions_isolation ON subscriptions
+    FOR ALL USING (user_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY plan_usage_isolation ON plan_usage
+    FOR ALL USING (user_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY objekte_isolation ON objekte
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY einheiten_isolation ON einheiten
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY einheit_ausstattung_isolation ON einheit_ausstattung
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY mieter_isolation ON mieter
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY mieter_historie_isolation ON mieter_historie
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY bewerbungen_isolation ON bewerbungen
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY mietvertraege_isolation ON mietvertraege
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY mietvertrag_aenderungen_isolation ON mietvertrag_aenderungen
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY kostenkategorien_isolation ON kostenkategorien
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY kosten_isolation ON kosten
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY dokumente_isolation ON dokumente
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY dokument_freigaben_isolation ON dokument_freigaben
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY tickets_isolation ON tickets
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY ticket_kommentare_isolation ON ticket_kommentare
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY ticket_sla_isolation ON ticket_sla
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY ticket_trigger_isolation ON ticket_trigger
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY mietzahlungen_isolation ON mietzahlungen
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY abrechnungen_isolation ON abrechnungen
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY abrechnung_positionen_isolation ON abrechnung_positionen
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY events_isolation ON events
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY notifications_isolation ON notifications
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY fristen_isolation ON fristen
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY ai_stored_results_isolation ON ai_stored_results
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY referrals_isolation ON referrals
+    FOR ALL USING (referrer_id = current_setting('app.current_user_id')::INT);
+
+CREATE POLICY handwerker_isolation ON handwerker
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+CREATE POLICY audit_logs_isolation ON audit_logs
+    FOR ALL USING (vermieter_id = current_setting('app.current_vermieter_id')::INT);
+
+-- ============================================================
+-- User-direkte Tabellen (RLS auf user_id)
+-- ============================================================
+CREATE POLICY user_sessions_isolation ON user_sessions
+    FOR ALL USING (user_id = current_setting('app.current_user_id')::INT);
+
+CREATE POLICY einwilligungen_isolation ON einwilligungen
+    FOR ALL USING (user_id = current_setting('app.current_user_id')::INT);
+
+CREATE POLICY onboarding_progress_isolation ON onboarding_progress
+    FOR ALL USING (user_id = current_setting('app.current_user_id')::INT);
+```
+
+### Hinweis: Mieter-RLS (Erweiterung)
+
+Für Mieter-Logins empfehlen sich zusätzliche Policies, damit ein Mieter nur seine eigenen Daten sieht. Beispiel für `mietvertraege`:
+
+```sql
+CREATE POLICY mietvertraege_mieter_isolation ON mietvertraege
+    FOR SELECT
+    USING (
+        vermieter_id = current_setting('app.current_vermieter_id')::INT
+        AND mieter_id  = current_setting('app.current_mieter_id')::INT
+    );
+```
+
+Analog für `tickets`, `ticket_kommentare`, `mietzahlungen`, `abrechnungen`, `dokumente` (mit `mieter_id`).
+Das Mieter-Portal greift für Vermieter-Name/E-Mail ausschließlich über `vermieter_public_view` zu — nie direkt auf `users`.
+
+---
+
+## Indizes
+
+```sql
+-- Kern & Auth
+CREATE UNIQUE INDEX idx_users_email_active    ON users(email) WHERE deleted_at IS NULL;  -- v4.1
+CREATE INDEX idx_users_vermieter_id           ON users(vermieter_id) WHERE role = 'mieter';
+CREATE INDEX idx_user_sessions_user           ON user_sessions(user_id);
+CREATE INDEX idx_user_sessions_expires        ON user_sessions(expires_at);
+CREATE INDEX idx_einwilligungen_user          ON einwilligungen(user_id);
+CREATE INDEX idx_einwilligungen_purpose       ON einwilligungen(purpose);
+CREATE INDEX idx_audit_logs_user              ON audit_logs(user_id);
+CREATE INDEX idx_audit_logs_vermieter         ON audit_logs(vermieter_id);
+CREATE INDEX idx_audit_logs_created           ON audit_logs(created_at);
+CREATE INDEX idx_bankverbindungen_vermieter   ON bankverbindungen(vermieter_id) WHERE deleted_at IS NULL;  -- v4.1
+CREATE INDEX idx_bankverbindungen_mieter      ON bankverbindungen(mieter_id) WHERE mieter_id IS NOT NULL AND deleted_at IS NULL;  -- v4.1
+CREATE INDEX idx_subscriptions_user           ON subscriptions(user_id);
+CREATE INDEX idx_plan_usage_user              ON plan_usage(user_id);
+
+-- Immobilien
+CREATE INDEX idx_objekte_vermieter            ON objekte(vermieter_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_einheiten_objekt             ON einheiten(objekt_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_einheiten_vermieter          ON einheiten(vermieter_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_einheit_ausstattung_einheit  ON einheit_ausstattung(einheit_id);
+CREATE INDEX idx_mieter_vermieter             ON mieter(vermieter_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_mieter_historie_einheit      ON mieter_historie(einheit_id);
+CREATE INDEX idx_bewerbungen_einheit          ON bewerbungen(einheit_id, status) WHERE deleted_at IS NULL;
+
+-- Verträge & Finanzen
+CREATE INDEX idx_mietvertraege_vermieter      ON mietvertraege(vermieter_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_mietvertraege_einheit        ON mietvertraege(einheit_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_mietvertraege_mieter       ON mietvertraege(mieter_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_mietvertraege_status         ON mietvertraege(status) WHERE deleted_at IS NULL;
+CREATE INDEX idx_mietvertrag_aenderungen_vertrag ON mietvertrag_aenderungen(vertrag_id);
+CREATE INDEX idx_kostenkategorien_vermieter   ON kostenkategorien(vermieter_id);
+CREATE INDEX idx_kosten_objekt                ON kosten(objekt_id, datum) WHERE deleted_at IS NULL;  -- v4.1
+CREATE INDEX idx_kosten_einheit               ON kosten(einheit_id) WHERE einheit_id IS NOT NULL AND deleted_at IS NULL;  -- v4.1
+CREATE INDEX idx_kosten_abrechnung            ON kosten(abrechnung_id) WHERE abrechnung_id IS NOT NULL AND deleted_at IS NULL;  -- v4.1
+CREATE INDEX idx_mietzahlungen_vertrag        ON mietzahlungen(vertrag_id);
+CREATE INDEX idx_mietzahlungen_vermieter      ON mietzahlungen(vermieter_id);
+
+-- Abrechnungen
+CREATE UNIQUE INDEX uq_abrechnungen_einheit_jahr_active
+    ON abrechnungen(einheit_id, jahr) WHERE deleted_at IS NULL;  -- v4.1
+CREATE INDEX idx_abrechnungen_vermieter       ON abrechnungen(vermieter_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_abrechnung_positionen_abrechnung ON abrechnung_positionen(abrechnung_id) WHERE deleted_at IS NULL;  -- v4.1
+CREATE INDEX idx_abrechnung_positionen_kosten     ON abrechnung_positionen(kosten_id) WHERE deleted_at IS NULL;  -- v4.1
+
+-- Dokumente
+CREATE INDEX idx_dokumente_vermieter          ON dokumente(vermieter_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_dokumente_mieter             ON dokumente(mieter_id) WHERE deleted_at IS NULL AND mieter_id IS NOT NULL;
+CREATE INDEX idx_dokumente_objekt             ON dokumente(objekt_id) WHERE deleted_at IS NULL AND objekt_id IS NOT NULL;
+CREATE INDEX idx_dokumente_einheit            ON dokumente(einheit_id) WHERE deleted_at IS NULL AND einheit_id IS NOT NULL;
+CREATE INDEX idx_dokument_freigaben_dokument  ON dokument_freigaben(dokument_id);
+
+-- Tickets
+CREATE INDEX idx_tickets_vermieter_status     ON tickets(vermieter_id, status);
+CREATE INDEX idx_tickets_einheit                ON tickets(einheit_id);
+CREATE INDEX idx_tickets_mieter               ON tickets(mieter_id);
+CREATE INDEX idx_ticket_kommentare_ticket     ON ticket_kommentare(ticket_id);
+CREATE INDEX idx_ticket_sla_vermieter         ON ticket_sla(vermieter_id);
+CREATE INDEX idx_ticket_trigger_vermieter     ON ticket_trigger(vermieter_id);
+
+-- Automatisierung & Sonstiges
+CREATE INDEX idx_events_pending               ON events(processed_at) WHERE processed_at IS NULL;
+CREATE INDEX idx_events_vermieter             ON events(vermieter_id);
+CREATE INDEX idx_notifications_user           ON notifications(user_id);
+CREATE INDEX idx_notifications_status         ON notifications(status) WHERE status IN ('pending','failed');
+CREATE INDEX idx_fristen_deadline             ON fristen(deadline, warn_level);
+CREATE INDEX idx_fristen_vermieter            ON fristen(vermieter_id);
+CREATE INDEX idx_onboarding_user              ON onboarding_progress(user_id, is_done);
+CREATE INDEX idx_ai_stored_results_usecase    ON ai_stored_results(vermieter_id, use_case);
+CREATE INDEX idx_referrals_referrer           ON referrals(referrer_id);
+CREATE INDEX idx_handwerker_vermieter         ON handwerker(vermieter_id);
+```
+
+---
+
+## Verschlüsselung (AES-256-GCM)
+
+```python
+# Felder, die vor dem INSERT verschlüsselt und beim SELECT entschlüsselt werden:
+ENCRYPTED_FIELDS = {
+    'mieter':          ['birth_date_enc'],
+    'bankverbindungen': ['iban_enc'],
+    'users':            ['steuernr_enc'],  # v4.1
+}
+```
+
+---
+
+## ER-Diagramm (Text)
+
+```
+users (1)
+├──< user_sessions (n)            [user_id]
+├──< einwilligungen (n)            [user_id]
+├──< audit_logs (n)                [user_id / vermieter_id]
+├──< onboarding_progress (n)        [user_id]
+├──< referrals (n)                 [referrer_id]
+├──< subscriptions (1:1)             [user_id]     -- pro Vermieter ein Abo
+├──< plan_usage (1:1)              [user_id]
+├──< bankverbindungen (n)          [vermieter_id, optional mieter_id]
+├──< objekte (n)                   [vermieter_id]
+│   ├──< einheiten (n)             [objekt_id]
+│   │   ├──< einheit_ausstattung (n) [einheit_id]
+│   │   ├──< mieter_historie (n)   [einheit_id]
+│   │   ├──< bewerbungen (n)       [einheit_id]
+│   │   ├──< mietvertraege (n)     [einheit_id]
+│   │   ├──< tickets (n)           [einheit_id]
+│   │   ├──< dokumente (n)         [einheit_id]
+│   │   └──< abrechnungen (n)      [einheit_id]    -- pro Einheit/Jahr
+│   ├──< kosten (n)                [objekt_id]
+│   ├──< dokumente (n)             [objekt_id]
+│   └──< fristen (n)               [entity_id]
+│
+├──< mieter (n)                    [vermieter_id]
+│   ├──< mietvertraege (n)         [mieter_id]
+│   ├──< mietzahlungen (n)         [mieter_id]
+│   ├──< tickets (n)               [mieter_id]
+│   ├──< dokumente (n)             [mieter_id]
+│   ├──< bankverbindungen (n)      [mieter_id]     -- Kaution-Konten
+│   └──< abrechnungen (n)          [mieter_id]
+│
+├──< kostenkategorien (n)          [vermieter_id]
+│   ├──< kosten (n)                [kategorie_id]
+│   └──< abrechnung_positionen (n) [kategorie_id]
+│
+├──< mietvertraege (n)             [vermieter_id]
+│   ├──< mietvertrag_aenderungen (n) [vertrag_id]
+│   └──< mietzahlungen (n)         [vertrag_id]
+│
+├──< kosten (n)                    [vermieter_id]
+│   └──< abrechnung_positionen (n) [kosten_id]
+│
+├──< abrechnungen (n)              [vermieter_id]
+│   ├──< abrechnung_positionen (n) [abrechnung_id]
+│   └──< kosten (n)                [abrechnung_id]
+│
+├──< tickets (n)                   [vermieter_id]
+│   ├──< ticket_kommentare (n)     [ticket_id]
+│   ├──> ticket_sla (n:1)          [sla_id]
+│   └──> handwerker (n:1)          [handwerker_id]
+│
+├──< handwerker (n)                [vermieter_id]
+│   └──< tickets (n)               [handwerker_id]
+│
+├──< events (n)                    [vermieter_id]
+│   └──< notifications (n)         [event_id]
+│
+├──< notifications (n)             [vermieter_id / user_id]
+├──< fristen (n)                   [vermieter_id]
+├──< ticket_sla (n)                [vermieter_id]
+├──< ticket_trigger (n)            [vermieter_id]
+├──< ai_stored_results (n)         [vermieter_id]
+└──< dokumente (n)                 [vermieter_id]
+    └──< dokument_freigaben (n)    [dokument_id]
+```
+
+---
+
+## Aktueller Mieter / aktuelle Einheit ermitteln
+
+Da `einheiten.tenant_id` und `mieter.unit_id` entfernt wurden:
+
+```text
+-- Aktueller Mieter einer Einheit
+SELECT m.*
+FROM mieter m
+JOIN mietvertraege mv ON mv.mieter_id = m.id
+WHERE mv.einheit_id = :einheit_id
+  AND mv.status = 'aktiv'
+  AND mv.deleted_at IS NULL
+  AND m.deleted_at IS NULL
+ORDER BY mv.mietbeginn DESC
+LIMIT 1;
+
+-- Aktuelle Einheit eines Mieters
+SELECT e.*
+FROM einheiten e
+JOIN mietvertraege mv ON mv.einheit_id = e.id
+WHERE mv.mieter_id = :mieter_id
+  AND mv.status = 'aktiv'
+  AND mv.deleted_at IS NULL
+  AND e.deleted_at IS NULL
+ORDER BY mv.mietbeginn DESC
+LIMIT 1;
+```
+
+Empfohlen: Materialisierung in der App (Redis-Cache) für schnelle Dashboard-Abfragen, aber DB bleibt Single-Source-of-Truth.
+
+---
+
+## DSGVO: Aufbewahrungsfristen & Soft-Delete
+
+| Tabelle | Löschverhalten | Aufbewahrungsfrist | Begründung |
+|---------|----------------|--------------------|------------|
+| `users` | `deleted_at` setzen | 10 Jahre nach Vertragsende / 6 Jahre nach Konto-Löschung | Steuer- & Geschäftsunterlagen (AO, BGB) |
+| `mieter` | `deleted_at` setzen | 10 Jahre nach Mietvertragsende | Mietrechtliche Beweispflicht, § 257 HGB / § 147 AO |
+| `mietvertraege` | `deleted_at` setzen | 10 Jahre nach Ende | Vertragsdaten, Abrechnungsstreitigkeiten |
+| `bewerbungen` | `deleted_at` setzen | 6 Monate nach Ablehnung / 3 Jahre nach Annahme | AGG (Bewerberdaten) |
+| `einheiten` | `deleted_at` setzen | 10 Jahre nach Verkauf/Entfernung aus Bestand | Steuerliche Nachweispflicht |
+| `objekte` | `deleted_at` setzen | 10 Jahre nach Veräußerung | Steuerliche Nachweispflicht |
+| `abrechnungen` | `deleted_at` setzen | 10 Jahre nach rechtskräftigem Abschluss | Betriebskostenabrechnung § 556 BGB |
+| `kosten` / `abrechnung_positionen` | `deleted_at` setzen | 10 Jahre | Steuerbelege |
+| `bankverbindungen` | `deleted_at` setzen | 10 Jahre | Zahlungsnachweise |
+| `mietzahlungen` | Hard-Delete nach Anonymisierung | 10 Jahre, danach Anonymisierung | Zahlungsnachweise |
+| `dokumente` | `deleted_at` + physisches Löschen nach Frist | 10 Jahre | Dokumentenpflicht |
+| `audit_logs` | Hard-Delete nach Frist | 12 Monate | DSGVO-konformes Audit, keine Personendaten |
+| `einwilligungen` | Kein Löschen, nur `withdrawn_at` | Dauerhaft | Nachweis der Einwilligung/Rückzug |
+
+**Soft-Delete-Implementierung:** Alle Abfragen müssen standardmäßig `WHERE deleted_at IS NULL` enthalten. Ein Cron-Job löscht Datensätze mit abgelaufenem `deleted_at` endgültig aus der DB und dem Filesystem (außer `einwilligungen` und `audit_logs` nach ihrer eigenen Frist).
+
+---
+
+## WE-basiertes Pricing & Subscription-Logik
+
+Es gibt **keine festen Pläne** mehr. Der Preis ergibt sich aus der Anzahl der verwalteten Wohneinheiten (WE) und der gewählten Abrechnungsperiode.
+
+**Staffelpreise (v3):**
+
+| WE-Bereich | Preis/WE/Monat | Beispiel |
+|-----------|----------------|---------|
+| 1–5 WE | 9,75 € | 3 WE = 29,25 €/Mo |
+| 6–25 WE | 7,50 € | 10 WE = 75,00 €/Mo |
+| 26–49 WE | 5,90 € | 30 WE = 177,00 €/Mo |
+| 50+ WE | **Anfrage** (Custom Pricing) | individuelles Angebot |
+
+Standard ist **jährliche** Abrechnung (20 % Rabatt = 2 Monate geschenkt), monatlich optional.
+
+**Abo-Status:**
+
+| Status | Bedeutung |
+|--------|-----------|
+| `trial` | 14-Tage-Testphase läuft |
+| `active` | Zahlung läuft |
+| `past_due` | Zahlung ausstehend |
+| `cancelled` | Gekündigt / Account gesperrt |
+
+**Prüfung beim Anlegen einer Einheit:**
+
+```sql
+-- Live WE-Anzahl und aktueller Preis pro WE ermitteln
+SELECT s.price_per_we, pu.wohnungen_count
+FROM subscriptions s
+JOIN plan_usage pu ON pu.user_id = s.user_id
+WHERE s.user_id = :vermieter_id;
+```
+
+`plan_usage.wohnungen_count` wird bei jeder Erstellung/Soft-Löschung einer `einheiten`-Zeile aktualisiert (Trigger oder Application-Code). Bei Status `trial` endet die Testphase am `trial_ends_at`.
+
+---
+
+## Changelog v4 → v4.1
+
+| Änderung | Betroffene Tabelle(n) | Details |
+|----------|----------------------|---------|
+| **RLS-Policy `users`** | `users`, `vermieter_public_view` | Mieter sieht nicht mehr Vermieter-Passwort/TOTP; Vermieter sieht zugeordnete Mieter-Accounts; Admin sieht alle. View für öffentliche Vermieter-Daten. |
+| **WE-basiertes Abo** | `subscriptions`, `plan_usage` | `plan`/`wohnungen_limit` entfernt; `price_per_we`, `billing_cycle`, `trial_ends_at`, Stripe-IDs, Status, `current_period_end` hinzugefügt; `UNIQUE(user_id)` auf beiden Tabellen. |
+| **Vermieter-Stammdaten** | `users` | `firma`, `steuernr_enc`, Rechnungsadresse (`strasse`/`hausnr`/`plz`/`ort`), `ust_id` ergänzt. |
+| **Dokument-Sichtbarkeit & Freigaben** | `dokumente`, `dokument_freigaben` | `sichtbarkeit`-Enum mit CHECK; `dokument_freigaben` nutzt `user_id` statt `role` und speichert `freigegeben_von`/`freigegeben_am`. |
+| **Soft-Delete & partielle Uniques** | `kosten`, `abrechnung_positionen`, `bankverbindungen`, `users`, `abrechnungen`, `subscriptions`, `plan_usage` | `deleted_at` auf Finanz-/Bank-Tabellen; partieller Unique auf `users(email)` und `abrechnungen(einheit_id, jahr)`; `UNIQUE(user_id)` auf `subscriptions`/`plan_usage`. |
+
+---
+
+**Schema erstellt:** 13. November 2026 (v4.1)  
+**Tabellen:** 33 (v4: 33, v4.1: 33 + View `vermieter_public_view`)  
+**Status:** Bereit für Alembic-Migration & Implementation
