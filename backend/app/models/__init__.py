@@ -37,6 +37,7 @@ __all__ = [
     "Handwerker",
     "PlanUsage",
     "Subscription",
+    "Frist",
     "Ticket",
     "TicketComment",
     "TicketSLA",

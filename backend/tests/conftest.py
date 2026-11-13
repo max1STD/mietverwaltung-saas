@@ -226,6 +226,7 @@ async def auth_client(
     csrf_token = async_client.cookies.get("csrf_token") or "test-csrf-token"
     async_client.cookies.set("csrf_token", csrf_token)
     async_client.headers["X-CSRF-Token"] = csrf_token
+    async_client.user_id = vermieter_user.id
 
     yield async_client
 
