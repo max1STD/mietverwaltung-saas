@@ -88,13 +88,16 @@ app.add_middleware(AuditMiddleware)
 
 # Routes (imported after app creation to avoid circular imports)
 from app.routes import (
+    abrechnungen,
     auth,
     dsgvo,
     einheiten,
     einwilligungen,
     health,
+    kosten,
     mieter,
     mietvertraege,
+    mietzahlungen,
     objekte,
     tickets,
 )
@@ -107,4 +110,7 @@ app.include_router(einheiten.router, prefix="/api/v1/einheiten", tags=["einheite
 app.include_router(mieter.router, prefix="/api/v1/mieter", tags=["mieter"])
 app.include_router(mietvertraege.router, prefix="/api/v1/mietvertraege", tags=["mietvertraege"])
 app.include_router(tickets.router, prefix="/api/v1/tickets", tags=["tickets"])
+app.include_router(kosten.router, prefix="/api/v1/kosten", tags=["kosten"])
+app.include_router(abrechnungen.router, prefix="/api/v1/abrechnungen", tags=["abrechnungen"])
+app.include_router(mietzahlungen.router, prefix="/api/v1/mietzahlungen", tags=["mietzahlungen"])
 app.include_router(health.router, tags=["health"])

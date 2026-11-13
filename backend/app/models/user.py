@@ -13,6 +13,8 @@ from app.models.base import Base, SoftDeleteMixin, TimestampMixin
 from app.models.audit import AuditLog
 from app.models.einwilligung import Einwilligung
 from app.models.session import UserSession
+from app.models.subscription import Subscription
+from app.models.plan_usage import PlanUsage
 
 
 class User(Base, TimestampMixin, SoftDeleteMixin):
@@ -89,4 +91,18 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
         back_populates="user",
         cascade="all, delete-orphan",
         lazy="selectin",
+    )
+    subscription: Mapped["Subscription | None"] = relationship(
+        "Subscription",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        uselist=False,
+    )
+    plan_usage: Mapped["PlanUsage | None"] = relationship(
+        "PlanUsage",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        uselist=False,
     )

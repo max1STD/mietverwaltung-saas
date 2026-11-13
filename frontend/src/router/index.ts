@@ -126,6 +126,42 @@ const router = createRouter({
       component: () => import('../views/settings/SettingsView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/kosten',
+      name: 'kosten',
+      component: () => import('../views/kosten/KostenListView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/kosten/neu',
+      name: 'kosten-create',
+      component: () => import('../views/kosten/KostenFormView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/kosten/:id/bearbeiten',
+      name: 'kosten-edit',
+      component: () => import('../views/kosten/KostenFormView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/abrechnungen',
+      name: 'abrechnungen',
+      component: () => import('../views/abrechnungen/AbrechnungenListView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/abrechnungen/:id',
+      name: 'abrechnung-detail',
+      component: () => import('../views/abrechnungen/AbrechnungDetailView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/mietzahlungen',
+      name: 'mietzahlungen',
+      component: () => import('../views/mietzahlungen/MietzahlungenListView.vue'),
+      meta: { requiresAuth: true },
+    },
   ],
 })
 

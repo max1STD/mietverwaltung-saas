@@ -171,6 +171,10 @@ async def register(
     )
     db.add(einwilligung)
 
+    # Standard-Kostenkategorien für den neuen Vermieter anlegen.
+    from app.services.kosten import get_or_create_default_kategorien
+    await get_or_create_default_kategorien(db, vermieter_id=user.id)
+
     await _audit(
         db,
         user_id=user.id,

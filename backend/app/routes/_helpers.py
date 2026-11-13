@@ -6,14 +6,24 @@ from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.abrechnung_positionen import AbrechnungPosition
+from app.models.abrechnungen import Abrechnung
 from app.models.einheit import Einheit
+from app.models.kosten import Kosten
 from app.models.mieter import Mieter
 from app.models.mietvertraege import Mietvertrag
+from app.models.mietzahlungen import Mietzahlung
 from app.models.objekt import Objekt
+from app.schemas.abrechnung import (
+    AbrechnungNestedEinheit,
+    AbrechnungPositionResponse,
+    AbrechnungResponse,
+)
 from app.schemas.einheit import (
     EinheitNestedMieter,
     EinheitResponse,
 )
+from app.schemas.kosten import KostenNestedKategorie, KostenResponse
 from app.schemas.mieter import (
     MieterNestedEinheit,
     MieterResponse,
@@ -22,6 +32,11 @@ from app.schemas.mietvertrag import (
     MietvertragNestedEinheit,
     MietvertragNestedMieter,
     MietvertragResponse,
+)
+from app.schemas.mietzahlung import (
+    MietzahlungNestedMieter,
+    MietzahlungNestedVertrag,
+    MietzahlungResponse,
 )
 from app.schemas.objekt import ObjektNestedEinheit, ObjektResponse
 from app.services.crypto import decrypt_value
@@ -181,4 +196,132 @@ async def map_mietvertrag_response(db: AsyncSession, vertrag: Mietvertrag) -> Mi
         deleted_at=vertrag.deleted_at,
         mieter=mieter_info,
         einheit=einheit_info,
+    )
+
+
+async def map_kosten_response(db: AsyncSession, kosten: Kosten) -> KostenResponse:
+    """Mappt eine Kosten-ORM inklusive Kategorie auf das Response-Schema."""
+    await db.refresh(kosten, attribute_names=["kategorie"])
+
+    kategorie_info = None
+    if kosten.kategorie:
+        kategorie_info = KostenNestedKategorie(
+            id=kosten.kategorie.id,
+            name=kosten.kategorie.name,
+            verteilungsschluessel=kosten.kategorie.verteilungsschluessel,
+        )
+
+    return KostenResponse(
+        id=kosten.id,
+        vermieter_id=kosten.vermieter_id,
+        objekt_id=kosten.objekt_id,
+        einheit_id=kosten.einheit_id,
+        kategorie_id=kosten.kategorie_id,
+        betrag=_to_decimal(kosten.betrag) or Decimal("0"),
+        datum=kosten.datum,
+        umlagefaehig=kosten.umlagefaehig,
+        abrechnung_id=kosten.abrechnung_id,
+        abgerechnet_am=kosten.abgerechnet_am,
+        ki_kategorisiert=kosten.ki_kategorisiert,
+        datev_konto=kosten.datev_konto,
+        datev_buchungstext=kosten.datev_buchungstext,
+        created_at=kosten.created_at,
+        deleted_at=kosten.deleted_at,
+        kategorie=kategorie_info,
+    )
+
+
+async def map_abrechnung_position_response(
+    position: AbrechnungPosition,
+) -> AbrechnungPositionResponse:
+    """Mappt eine Abrechnungsposition-ORM auf das Response-Schema."""
+    return AbrechnungPositionResponse(
+        id=position.id,
+        vermieter_id=position.vermieter_id,
+        abrechnung_id=position.abrechnung_id,
+        kategorie_id=position.kategorie_id,
+        kosten_id=position.kosten_id,
+        betrag_total=_to_decimal(position.betrag_total) or Decimal("0"),
+        umlageanteil=_to_decimal(position.umlageanteil) or Decimal("0"),
+        verteilungsschluessel=position.verteilungsschluessel,
+        datev_betrag=_to_decimal(position.datev_betrag),
+        created_at=position.created_at,
+        deleted_at=position.deleted_at,
+    )
+
+
+async def map_abrechnung_response(
+    db: AsyncSession,
+    abrechnung: Abrechnung,
+) -> AbrechnungResponse:
+    """Mappt eine Abrechnung-ORM inklusive Positionen und Einheit auf Response."""
+    await db.refresh(abrechnung, attribute_names=["einheit", "positionen"])
+
+    einheit_info = None
+    if abrechnung.einheit:
+        einheit_info = AbrechnungNestedEinheit(
+            id=abrechnung.einheit.id,
+            name=abrechnung.einheit.name,
+            size_qm=_to_decimal(abrechnung.einheit.size_qm) or Decimal("0"),
+        )
+
+    positionen = [
+        await map_abrechnung_position_response(pos)
+        for pos in abrechnung.positionen
+        if pos.deleted_at is None
+    ]
+
+    return AbrechnungResponse(
+        id=abrechnung.id,
+        vermieter_id=abrechnung.vermieter_id,
+        einheit_id=abrechnung.einheit_id,
+        objekt_id=abrechnung.objekt_id,
+        jahr=abrechnung.jahr,
+        zeitraum_von=abrechnung.zeitraum_von,
+        zeitraum_bis=abrechnung.zeitraum_bis,
+        einwendungsfrist_bis=abrechnung.einwendungsfrist_bis,
+        rechtskraeftig_seit=abrechnung.rechtskraeftig_seit,
+        status=abrechnung.status,
+        created_at=abrechnung.created_at,
+        updated_at=abrechnung.updated_at,
+        deleted_at=abrechnung.deleted_at,
+        positionen=positionen,
+        einheit=einheit_info,
+    )
+
+
+async def map_mietzahlung_response(
+    db: AsyncSession,
+    zahlung: Mietzahlung,
+) -> MietzahlungResponse:
+    """Mappt eine Mietzahlung-ORM inklusive Mieter und Vertrag auf Response."""
+    await db.refresh(zahlung, attribute_names=["mieter", "vertrag"])
+
+    mieter_info = None
+    if zahlung.mieter:
+        mieter_info = MietzahlungNestedMieter(
+            id=zahlung.mieter.id,
+            full_name=zahlung.mieter.full_name,
+        )
+
+    vertrag_info = None
+    if zahlung.vertrag:
+        vertrag_info = MietzahlungNestedVertrag(
+            id=zahlung.vertrag.id,
+            miete_cold=_to_decimal(zahlung.vertrag.miete_cold) or Decimal("0"),
+        )
+
+    return MietzahlungResponse(
+        id=zahlung.id,
+        vermieter_id=zahlung.vermieter_id,
+        mieter_id=zahlung.mieter_id,
+        vertrag_id=zahlung.vertrag_id,
+        betrag_soll=_to_decimal(zahlung.betrag_soll) or Decimal("0"),
+        betrag_ist=_to_decimal(zahlung.betrag_ist),
+        zahlungsdatum=zahlung.zahlungsdatum,
+        mahnstufe=zahlung.mahnstufe,
+        zahlungsreferenz=zahlung.zahlungsreferenz,
+        created_at=zahlung.created_at,
+        mieter=mieter_info,
+        vertrag=vertrag_info,
     )

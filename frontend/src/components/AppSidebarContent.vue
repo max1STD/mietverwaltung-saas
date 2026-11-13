@@ -72,6 +72,9 @@ const navItems: NavItem[] = [
   { to: '/objekte', label: 'Objekte', icon: '🏠' },
   { to: '/mieter', label: 'Mieter', icon: '👤' },
   { to: '/mietvertraege', label: 'Mietverträge', icon: '📄' },
+  { to: '/kosten', label: 'Kosten', icon: '💶' },
+  { to: '/abrechnungen', label: 'Abrechnungen', icon: '📊' },
+  { to: '/mietzahlungen', label: 'Mietzahlungen', icon: '💳' },
   { to: '/tickets', label: 'Tickets', icon: '🎫' },
   { to: '/einstellungen', label: 'Einstellungen', icon: '⚙️' },
 ]

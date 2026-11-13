@@ -38,7 +38,7 @@
   </div>
 </template>
 
-<script setup lang="ts" generic="T extends Record<string, unknown>">
+<script setup lang="ts" generic="T extends object">
 import { ref, computed } from 'vue'
 
 export interface TableColumn<TItem> {
