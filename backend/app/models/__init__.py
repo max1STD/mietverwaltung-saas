@@ -3,6 +3,7 @@ from app.models.abrechnung_positionen import AbrechnungPosition
 from app.models.abrechnungen import Abrechnung
 from app.models.audit import AuditLog
 from app.models.base import Base
+from app.models.bewerbungen import Bewerbung
 from app.models.einheit import Einheit
 from app.models.einwilligung import Einwilligung
 from app.models.fristen import Frist
@@ -13,6 +14,7 @@ from app.models.mieter import Mieter
 from app.models.mietvertraege import Mietvertrag
 from app.models.mietzahlungen import Mietzahlung
 from app.models.objekt import Objekt
+from app.models.onboarding import OnboardingProgress
 from app.models.plan_usage import PlanUsage
 from app.models.subscription import Subscription
 from app.models.session import UserSession
@@ -29,6 +31,7 @@ __all__ = [
     "Einheit",
     "Mieter",
     "Mietvertrag",
+    "Bewerbung",
     "Abrechnung",
     "AbrechnungPosition",
     "Kosten",
@@ -38,6 +41,7 @@ __all__ = [
     "PlanUsage",
     "Subscription",
     "Frist",
+    "OnboardingProgress",
     "Ticket",
     "TicketComment",
     "TicketSLA",

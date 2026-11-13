@@ -90,6 +90,9 @@ app.add_middleware(AuditMiddleware)
 from app.routes import (
     abrechnungen,
     auth,
+    bewerbungen,
+    billing,
+    dashboard,
     dsgvo,
     einheiten,
     einwilligungen,
@@ -99,12 +102,15 @@ from app.routes import (
     mietvertraege,
     mietzahlungen,
     objekte,
+    onboarding,
+    stripe_webhooks,
     tickets,
 )
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(einwilligungen.router, prefix="/api/v1/einwilligungen", tags=["einwilligungen"])
 app.include_router(dsgvo.router, prefix="/api/v1/dsgvo", tags=["dsgvo"])
+app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
 app.include_router(objekte.router, prefix="/api/v1/objekte", tags=["objekte"])
 app.include_router(einheiten.router, prefix="/api/v1/einheiten", tags=["einheiten"])
 app.include_router(mieter.router, prefix="/api/v1/mieter", tags=["mieter"])
@@ -113,4 +119,8 @@ app.include_router(tickets.router, prefix="/api/v1/tickets", tags=["tickets"])
 app.include_router(kosten.router, prefix="/api/v1/kosten", tags=["kosten"])
 app.include_router(abrechnungen.router, prefix="/api/v1/abrechnungen", tags=["abrechnungen"])
 app.include_router(mietzahlungen.router, prefix="/api/v1/mietzahlungen", tags=["mietzahlungen"])
+app.include_router(bewerbungen.router, prefix="/api/v1/bewerbungen", tags=["bewerbungen"])
+app.include_router(onboarding.router, prefix="/api/v1/onboarding", tags=["onboarding"])
+app.include_router(billing.router, prefix="/api/v1/billing", tags=["billing"])
+app.include_router(stripe_webhooks.router, prefix="/api/v1/webhooks", tags=["webhooks"])
 app.include_router(health.router, tags=["health"])

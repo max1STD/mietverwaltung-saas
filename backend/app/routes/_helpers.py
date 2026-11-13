@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.abrechnung_positionen import AbrechnungPosition
 from app.models.abrechnungen import Abrechnung
+from app.models.bewerbungen import Bewerbung
 from app.models.einheit import Einheit
 from app.models.kosten import Kosten
 from app.models.mieter import Mieter
@@ -18,6 +19,10 @@ from app.schemas.abrechnung import (
     AbrechnungNestedEinheit,
     AbrechnungPositionResponse,
     AbrechnungResponse,
+)
+from app.schemas.bewerbungen import (
+    BewerbungNestedEinheit,
+    BewerbungResponse,
 )
 from app.schemas.einheit import (
     EinheitNestedMieter,
@@ -324,4 +329,42 @@ async def map_mietzahlung_response(
         created_at=zahlung.created_at,
         mieter=mieter_info,
         vertrag=vertrag_info,
+    )
+
+
+async def map_bewerbung_response(
+    db: AsyncSession,
+    bewerbung: Bewerbung,
+) -> BewerbungResponse:
+    """Mappt eine Bewerbung-ORM inklusive Einheit-Info auf Response."""
+    await db.refresh(bewerbung, attribute_names=["einheit"])
+    if bewerbung.einheit:
+        await db.refresh(bewerbung.einheit, attribute_names=["objekt"])
+
+    einheit_info = None
+    if bewerbung.einheit:
+        einheit_info = BewerbungNestedEinheit(
+            id=bewerbung.einheit.id,
+            name=bewerbung.einheit.name,
+            objekt_name=bewerbung.einheit.objekt.name if bewerbung.einheit.objekt else "",
+        )
+
+    return BewerbungResponse(
+        id=bewerbung.id,
+        vermieter_id=bewerbung.vermieter_id,
+        einheit_id=bewerbung.einheit_id,
+        first_name=bewerbung.first_name,
+        last_name=bewerbung.last_name,
+        email=bewerbung.email,
+        phone=bewerbung.phone,
+        income_monthly=_to_decimal(bewerbung.income_monthly),
+        schufa_score=bewerbung.schufa_score,
+        documents=bewerbung.documents,
+        status=bewerbung.status,
+        applied_at=bewerbung.applied_at,
+        decided_at=bewerbung.decided_at,
+        created_at=bewerbung.created_at,
+        updated_at=bewerbung.updated_at,
+        deleted_at=bewerbung.deleted_at,
+        einheit=einheit_info,
     )

@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.kostenkategorien import Kostenkategorie
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_kosten_crud(auth_client: AsyncClient) -> None:
     """Erstellt, liest, aktualisiert und löscht eine Kostenposition."""
     session: AsyncSession = auth_client.db_session
@@ -98,7 +98,7 @@ async def test_kosten_crud(auth_client: AsyncClient) -> None:
     assert get_response.status_code == 404
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_kosten_filter_by_objekt(auth_client: AsyncClient) -> None:
     """Filtert Kosten nach Objekt-ID."""
     session: AsyncSession = auth_client.db_session

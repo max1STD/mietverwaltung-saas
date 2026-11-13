@@ -27,6 +27,12 @@ from app.schemas.auth import (
     UserResponse,
     UserUpdateRequest,
 )
+from app.schemas.bewerbungen import (
+    BewerbungCreate,
+    BewerbungDecisionRequest,
+    BewerbungResponse,
+    BewerbungUpdate,
+)
 from app.schemas.einheit import EinheitCreate, EinheitResponse, EinheitUpdate
 from app.schemas.kosten import (
     KostenCreate,
@@ -49,6 +55,11 @@ from app.schemas.mietzahlung import (
     MietzahlungUpdate,
 )
 from app.schemas.objekt import ObjektCreate, ObjektResponse, ObjektUpdate
+from app.schemas.onboarding import (
+    OnboardingCompleteRequest,
+    OnboardingProgressResponse,
+    OnboardingStep,
+)
 from app.schemas.billing import (
     CheckoutSessionRequest,
     CheckoutSessionResponse,
@@ -107,6 +118,13 @@ __all__ = [
     "MietzahlungCreate",
     "MietzahlungUpdate",
     "MietzahlungResponse",
+    "BewerbungCreate",
+    "BewerbungUpdate",
+    "BewerbungResponse",
+    "BewerbungDecisionRequest",
+    "OnboardingProgressResponse",
+    "OnboardingStep",
+    "OnboardingCompleteRequest",
     "PricePreviewRequest",
     "PricePreviewResponse",
     "CheckoutSessionRequest",
