@@ -49,4 +49,4 @@ geoip2>=4.8.0
 # ── Utils ──
 python-dateutil>=2.9.0
 structlog>=24.4.0
-tenacity>=9.0.0
+tenacity>=9.2.1
