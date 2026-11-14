@@ -99,11 +99,11 @@ export const useAuthStore = defineStore('auth', () => {
   /**
    * Login mit E-Mail und Passwort.
    */
-  async function login(email: string, password: string): Promise<LoginResponse> {
+  async function login(email: string, password: string, rememberMe: boolean = false): Promise<LoginResponse> {
     loading.value = true
     error.value = null
     try {
-      const { data } = await apiClient.post<LoginResponse>('/auth/login', { email, password })
+      const { data } = await apiClient.post<LoginResponse>('/auth/login', { email, password, remember_me: rememberMe })
       if (data.user) {
         setAuthenticated(data.user, data.requires_2fa)
       } else if (data.requires_2fa) {

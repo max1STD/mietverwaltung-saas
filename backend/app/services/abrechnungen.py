@@ -177,8 +177,8 @@ async def calculate_positions(
         )
     )
     objekt_einheiten = list(einheiten_result.scalars().all())
-    total_qm = sum(float(e.size_qm) for e in objekt_einheiten)
-    einheit_qm = float(einheit.size_qm)
+    total_qm = sum(float(e.wohnflaeche_qm) for e in objekt_einheiten)
+    einheit_qm = float(einheit.wohnflaeche_qm)
 
     if total_qm == 0:
         raise ValueError("Objekt hat keine gültige Gesamt-Quadratmeter-Zahl")

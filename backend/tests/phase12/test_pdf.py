@@ -52,9 +52,9 @@ async def test_generate_wohnungsgeberbestaetigung(auth_client: AsyncClient):
         vermieter_id=user.id,
         objekt_id=objekt.id,
         name="Wohnung 1",
-        size_qm=55.0,
+        wohnflaeche_qm=55.0,
         rooms=2,
-        rent_cold=500.0,
+        kaltmiete=500.0,
     )
     session.add(einheit)
     await session.flush()

@@ -32,8 +32,9 @@ class Settings(BaseSettings):
     # ── JWT ──
     JWT_SECRET: str = "change-me"  # noqa: S105
     JWT_ALGORITHM: str = "HS256"
-    JWT_EXPIRE_MINUTES: int = 15
+    JWT_EXPIRE_MINUTES: int = 60
     JWT_REFRESH_EXPIRE_DAYS: int = 7
+    JWT_TEMP_EXPIRE_MINUTES: int = 10
 
     # ── KI (Ollama Cloud) ──
     OLLAMA_API_URL: str = "https://ollama.com/v1"

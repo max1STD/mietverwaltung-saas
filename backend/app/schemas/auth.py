@@ -18,6 +18,7 @@ class LoginRequest(BaseModel):
 
     email: EmailStr
     password: str
+    remember_me: bool = False
 
 
 class TwoFactorSetupRequest(BaseModel):
@@ -31,6 +32,7 @@ class TwoFactorVerifyRequest(BaseModel):
     """Abschluss des Logins via TOTP oder E-Mail-Code."""
 
     code: str = Field(..., min_length=6, max_length=10)
+    remember_me: bool = False
 
 
 class PasswordResetRequest(BaseModel):

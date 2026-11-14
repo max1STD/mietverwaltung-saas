@@ -80,7 +80,7 @@ class AbrechnungNestedEinheit(BaseModel):
 
     id: int
     name: str
-    size_qm: Decimal
+    wohnflaeche_qm: Decimal
 
 
 class AbrechnungResponse(AbrechnungBase):

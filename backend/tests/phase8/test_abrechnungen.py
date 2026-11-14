@@ -32,9 +32,9 @@ async def test_abrechnung_berechnung_qm(auth_client: AsyncClient) -> None:
         json={
             "objekt_id": objekt_id,
             "name": "WE-A",
-            "size_qm": "50.00",
-            "rooms": 2,
-            "rent_cold": "500.00",
+            "wohnflaeche_qm": "50.00",
+            "etage": 2,
+            "kaltmiete": "500.00",
         },
     )
     assert ein1_response.status_code == 201
@@ -45,9 +45,9 @@ async def test_abrechnung_berechnung_qm(auth_client: AsyncClient) -> None:
         json={
             "objekt_id": objekt_id,
             "name": "WE-B",
-            "size_qm": "50.00",
-            "rooms": 2,
-            "rent_cold": "500.00",
+            "wohnflaeche_qm": "50.00",
+            "etage": 2,
+            "kaltmiete": "500.00",
         },
     )
     assert ein2_response.status_code == 201
@@ -120,9 +120,9 @@ async def test_abrechnung_update_and_delete(auth_client: AsyncClient) -> None:
         json={
             "objekt_id": objekt_id,
             "name": "WE-C",
-            "size_qm": "60.00",
-            "rooms": 2,
-            "rent_cold": "600.00",
+            "wohnflaeche_qm": "60.00",
+            "etage": 2,
+            "kaltmiete": "600.00",
         },
     )
     einheit_id = ein_response.json()["id"]

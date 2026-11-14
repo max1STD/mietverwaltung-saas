@@ -25,8 +25,10 @@ class Objekt(Base, TimestampMixin, SoftDeleteMixin):
         nullable=False,
     )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    address: Mapped[str] = mapped_column(String(255), nullable=False)
-    typ: Mapped[str] = mapped_column(String(20), nullable=False)
+    address: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    plz: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    ort: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    typ: Mapped[str | None] = mapped_column(String(20), nullable=True)
     baujahr: Mapped[int | None] = mapped_column(Integer, nullable=True)
     foto_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
@@ -38,6 +40,7 @@ class Objekt(Base, TimestampMixin, SoftDeleteMixin):
     zinssatz: Mapped[float | None] = mapped_column(DECIMAL(5, 2), nullable=True)
     tilgung: Mapped[float | None] = mapped_column(DECIMAL(5, 2), nullable=True)
     monatliche_rate: Mapped[float | None] = mapped_column(DECIMAL(10, 2), nullable=True)
+    notizen: Mapped[str | None] = mapped_column(String(2000), nullable=True)
 
     # Beziehungen
     vermieter: Mapped[User] = relationship("User", foreign_keys=[vermieter_id])

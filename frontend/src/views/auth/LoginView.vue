@@ -96,7 +96,7 @@ async function handleSubmit() {
   if (!validate()) return
 
   try {
-    const result = await authStore.login(email.value, password.value)
+    const result = await authStore.login(email.value, password.value, rememberMe.value)
 
     // Bei requires_2fa hat das Backend ein Temp-Token gesetzt.
     if (result.requires_2fa) {

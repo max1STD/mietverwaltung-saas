@@ -44,9 +44,9 @@ async def test_kosten_crud(auth_client: AsyncClient) -> None:
         json={
             "objekt_id": objekt_id,
             "name": "WE-1",
-            "size_qm": "50.00",
-            "rooms": 2,
-            "rent_cold": "500.00",
+            "wohnflaeche_qm": "50.00",
+            "etage": 2,
+            "kaltmiete": "500.00",
         },
     )
     assert ein_response.status_code == 201

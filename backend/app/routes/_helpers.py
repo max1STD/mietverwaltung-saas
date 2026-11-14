@@ -64,9 +64,10 @@ async def map_objekt_response(db: AsyncSession, objekt: Objekt) -> ObjektRespons
         ObjektNestedEinheit(
             id=e.id,
             name=e.name,
-            size_qm=_to_decimal(e.size_qm) or Decimal("0"),
-            rooms=e.rooms,
-            rent_cold=_to_decimal(e.rent_cold) or Decimal("0"),
+            wohnflaeche_qm=_to_decimal(e.wohnflaeche_qm),
+            etage=e.etage,
+            kaltmiete=_to_decimal(e.kaltmiete),
+            nebenkosten_vorschuss=_to_decimal(e.nebenkosten_vorschuss),
             status=None,
         )
         for e in objekt.einheiten
@@ -78,6 +79,8 @@ async def map_objekt_response(db: AsyncSession, objekt: Objekt) -> ObjektRespons
         vermieter_id=objekt.vermieter_id,
         name=objekt.name,
         address=objekt.address,
+        plz=objekt.plz,
+        ort=objekt.ort,
         typ=objekt.typ,
         baujahr=objekt.baujahr,
         foto_url=objekt.foto_url,
@@ -88,6 +91,7 @@ async def map_objekt_response(db: AsyncSession, objekt: Objekt) -> ObjektRespons
         zinssatz=_to_decimal(objekt.zinssatz),
         tilgung=_to_decimal(objekt.tilgung),
         monatliche_rate=_to_decimal(objekt.monatliche_rate),
+        notizen=objekt.notizen,
         created_at=objekt.created_at,
         updated_at=objekt.updated_at,
         deleted_at=objekt.deleted_at,
@@ -115,9 +119,11 @@ async def map_einheit_response(db: AsyncSession, einheit: Einheit) -> EinheitRes
         vermieter_id=einheit.vermieter_id,
         objekt_id=einheit.objekt_id,
         name=einheit.name,
-        size_qm=_to_decimal(einheit.size_qm) or Decimal("0"),
+        wohnflaeche_qm=_to_decimal(einheit.wohnflaeche_qm) or Decimal("0"),
+        etage=einheit.etage,
+        kaltmiete=_to_decimal(einheit.kaltmiete) or Decimal("0"),
+        nebenkosten_vorschuss=_to_decimal(einheit.nebenkosten_vorschuss),
         rooms=einheit.rooms,
-        rent_cold=_to_decimal(einheit.rent_cold) or Decimal("0"),
         floor=einheit.floor,
         energy_class=einheit.energy_class,
         last_renovation=einheit.last_renovation,
@@ -269,7 +275,7 @@ async def map_abrechnung_response(
         einheit_info = AbrechnungNestedEinheit(
             id=abrechnung.einheit.id,
             name=abrechnung.einheit.name,
-            size_qm=_to_decimal(abrechnung.einheit.size_qm) or Decimal("0"),
+            wohnflaeche_qm=_to_decimal(abrechnung.einheit.wohnflaeche_qm) or Decimal("0"),
         )
 
     positionen = [

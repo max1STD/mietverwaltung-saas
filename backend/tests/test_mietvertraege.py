@@ -26,9 +26,9 @@ async def _create_einheit(client: AsyncClient, objekt_id: int) -> int:
         json={
             "objekt_id": objekt_id,
             "name": "WE 1",
-            "size_qm": "60.00",
-            "rooms": 2,
-            "rent_cold": "700.00",
+            "wohnflaeche_qm": "60.00",
+            "etage": 2,
+            "kaltmiete": "700.00",
         },
     )
     assert response.status_code == 201

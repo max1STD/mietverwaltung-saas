@@ -25,9 +25,9 @@ async def test_create_bewerbung(auth_client: AsyncClient, vermieter_user: User) 
         f"/api/v1/objekte/{objekt_id}/einheiten",
         json={
             "name": "Wohnung 1",
-            "size_qm": 75.00,
-            "rooms": 3,
-            "rent_cold": 800.00,
+            "wohnflaeche_qm": 75.00,
+            "etage": 3,
+            "kaltmiete": 800.00,
         },
     )
     assert einheit_resp.status_code == 201
@@ -67,7 +67,7 @@ async def test_list_and_get_bewerbung(auth_client: AsyncClient, vermieter_user: 
     )
     einheit_resp = await auth_client.post(
         f"/api/v1/objekte/{objekt_resp.json()['id']}/einheiten",
-        json={"name": "WE B", "size_qm": 50.00, "rooms": 2, "rent_cold": 500.00},
+        json={"name": "WE B", "wohnflaeche_qm": 50.00, "etage": 2, "kaltmiete": 500.00},
     )
     einheit_id = einheit_resp.json()["id"]
 
@@ -100,7 +100,7 @@ async def test_bewerbung_annehmen(auth_client: AsyncClient, vermieter_user: User
     )
     einheit_resp = await auth_client.post(
         f"/api/v1/objekte/{objekt_resp.json()['id']}/einheiten",
-        json={"name": "WE C", "size_qm": 60.00, "rooms": 2, "rent_cold": 600.00},
+        json={"name": "WE C", "wohnflaeche_qm": 60.00, "etage": 2, "kaltmiete": 600.00},
     )
     einheit_id = einheit_resp.json()["id"]
 
@@ -149,7 +149,7 @@ async def test_bewerbung_ablehnen(auth_client: AsyncClient, vermieter_user: User
     )
     einheit_resp = await auth_client.post(
         f"/api/v1/objekte/{objekt_resp.json()['id']}/einheiten",
-        json={"name": "WE D", "size_qm": 55.00, "rooms": 2, "rent_cold": 550.00},
+        json={"name": "WE D", "wohnflaeche_qm": 55.00, "etage": 2, "kaltmiete": 550.00},
     )
     einheit_id = einheit_resp.json()["id"]
 
@@ -182,7 +182,7 @@ async def test_delete_bewerbung(auth_client: AsyncClient, vermieter_user: User) 
     )
     einheit_resp = await auth_client.post(
         f"/api/v1/objekte/{objekt_resp.json()['id']}/einheiten",
-        json={"name": "WE E", "size_qm": 40.00, "rooms": 1, "rent_cold": 400.00},
+        json={"name": "WE E", "wohnflaeche_qm": 40.00, "etage": 1, "kaltmiete": 400.00},
     )
     einheit_id = einheit_resp.json()["id"]
 

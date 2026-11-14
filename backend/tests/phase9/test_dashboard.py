@@ -51,9 +51,9 @@ async def test_summary_with_objekt_einheit_mieter(
         vermieter_id=vermieter_user.id,
         objekt_id=objekt.id,
         name="Wohnung 1",
-        size_qm=75,
+        wohnflaeche_qm=75,
         rooms=3,
-        rent_cold=800,
+        kaltmiete=800,
     )
     session.add(einheit)
     await session.flush()
@@ -113,9 +113,9 @@ async def test_object_summary_rendite(
         vermieter_id=vermieter_user.id,
         objekt_id=objekt.id,
         name="Wohnung 1",
-        size_qm=80,
+        wohnflaeche_qm=80,
         rooms=3,
-        rent_cold=1000,
+        kaltmiete=1000,
     )
     session.add(einheit)
     await session.flush()
@@ -182,9 +182,9 @@ async def test_financials_12_months(
         vermieter_id=vermieter_user.id,
         objekt_id=objekt.id,
         name="Wohnung 1",
-        size_qm=60,
+        wohnflaeche_qm=60,
         rooms=2,
-        rent_cold=700,
+        kaltmiete=700,
     )
     session.add(einheit)
     await session.flush()
@@ -239,9 +239,9 @@ async def test_insights_leerstand_ticket(
         vermieter_id=vermieter_user.id,
         objekt_id=objekt.id,
         name="Freie Wohnung",
-        size_qm=50,
+        wohnflaeche_qm=50,
         rooms=2,
-        rent_cold=600,
+        kaltmiete=600,
     )
     session.add(einheit)
     await session.flush()

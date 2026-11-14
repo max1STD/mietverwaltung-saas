@@ -12,9 +12,11 @@ class EinheitBase(BaseModel):
 
     objekt_id: int | None = None
     name: str = Field(..., min_length=1, max_length=100)
-    size_qm: Decimal = Field(..., gt=0)
-    rooms: int = Field(..., ge=1)
-    rent_cold: Decimal = Field(..., ge=0)
+    wohnflaeche_qm: Decimal = Field(..., gt=0)
+    etage: int | None = Field(None, ge=0)
+    kaltmiete: Decimal = Field(..., ge=0)
+    nebenkosten_vorschuss: Decimal | None = Field(None, ge=0)
+    rooms: int | None = Field(None, ge=1)
     floor: str | None = Field(None, max_length=20)
     energy_class: str | None = Field(None, max_length=2)
     last_renovation: date | None = None
@@ -31,9 +33,11 @@ class EinheitNestedCreate(BaseModel):
     """Payload für das Anlegen einer Einheit innerhalb eines Objekts (ohne objekt_id)."""
 
     name: str = Field(..., min_length=1, max_length=100)
-    size_qm: Decimal = Field(..., gt=0)
-    rooms: int = Field(..., ge=1)
-    rent_cold: Decimal = Field(..., ge=0)
+    wohnflaeche_qm: Decimal = Field(..., gt=0)
+    etage: int | None = Field(None, ge=0)
+    kaltmiete: Decimal = Field(..., ge=0)
+    nebenkosten_vorschuss: Decimal | None = Field(None, ge=0)
+    rooms: int | None = Field(None, ge=1)
     floor: str | None = Field(None, max_length=20)
     energy_class: str | None = Field(None, max_length=2)
     last_renovation: date | None = None
@@ -46,9 +50,11 @@ class EinheitUpdate(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     name: str | None = Field(None, min_length=1, max_length=100)
-    size_qm: Decimal | None = Field(None, gt=0)
+    wohnflaeche_qm: Decimal | None = Field(None, gt=0)
+    etage: int | None = Field(None, ge=0)
+    kaltmiete: Decimal | None = Field(None, ge=0)
+    nebenkosten_vorschuss: Decimal | None = Field(None, ge=0)
     rooms: int | None = Field(None, ge=1)
-    rent_cold: Decimal | None = Field(None, ge=0)
     floor: str | None = Field(None, max_length=20)
     energy_class: str | None = Field(None, max_length=2)
     last_renovation: date | None = None

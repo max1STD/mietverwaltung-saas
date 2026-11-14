@@ -63,7 +63,7 @@ async def _load_mieter_context(
         "einheit": {
             "id": einheit.id if einheit else None,
             "name": einheit.name if einheit else "",
-            "size_qm": einheit.size_qm if einheit else 0.0,
+            "wohnflaeche_qm": einheit.wohnflaeche_qm if einheit else 0.0,
             "floor": einheit.floor if einheit else "",
         },
         "objekt": {

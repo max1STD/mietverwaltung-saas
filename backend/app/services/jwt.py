@@ -98,16 +98,29 @@ def set_auth_cookies(
     access_token: str,
     refresh_token: str,
     csrf_token: str,
+    remember_me: bool = False,
 ) -> None:
-    """Setzt HTTP-only Secure SameSite=Lax Cookies für Tokens und CSRF."""
+    """Setzt HTTP-only Secure SameSite=Lax Cookies für Tokens und CSRF.
+
+    Args:
+        remember_me: Wenn True, wird das Refresh-Cookie mit längerer
+            Lebensdauer gesetzt (z. B. 7 Tage), damit der Nutzer in Safari
+            und anderen Browsern auch nach Neustart eingeloggt bleibt.
+    """
     secure = settings.ENVIRONMENT != "development"
+    access_max_age = int(timedelta(minutes=settings.JWT_EXPIRE_MINUTES).total_seconds())
+    refresh_max_age = int(
+        timedelta(days=settings.JWT_REFRESH_EXPIRE_DAYS).total_seconds()
+        if remember_me
+        else timedelta(hours=8).total_seconds()
+    )
     response.set_cookie(
         key=ACCESS_COOKIE,
         value=access_token,
         httponly=True,
         secure=secure,
         samesite="Lax",
-        max_age=int(timedelta(minutes=settings.JWT_EXPIRE_MINUTES).total_seconds()),
+        max_age=access_max_age,
         path="/",
     )
     response.set_cookie(
@@ -116,7 +129,7 @@ def set_auth_cookies(
         httponly=True,
         secure=secure,
         samesite="Lax",
-        max_age=int(timedelta(days=settings.JWT_REFRESH_EXPIRE_DAYS).total_seconds()),
+        max_age=refresh_max_age,
         path="/api/v1/auth/refresh",
     )
     # CSRF-Cookie darf nicht HTTP-only sein, damit JS es lesen kann.
@@ -126,7 +139,7 @@ def set_auth_cookies(
         httponly=False,
         secure=secure,
         samesite="Lax",
-        max_age=60 * 60 * 24 * 7,
+        max_age=refresh_max_age,
         path="/",
     )
 

@@ -110,12 +110,12 @@ async def test_all_required_tables_exist(db_session: AsyncSession) -> None:
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_alembic_version_is_expected(db_session: AsyncSession) -> None:
-    """alembic_version enthält die erwartete Revision (0001 oder 0002)."""
+    """alembic_version enthält eine erwartete Revision."""
     result = await db_session.execute(
         text("SELECT version_num FROM alembic_version")
     )
     version = result.scalar_one_or_none()
-    assert version in {"0001", "0002"}, f"Unerwartete Alembic-Version: {version}"
+    assert version in {"0001", "0002", "0003_frontend_aligned_fields"}, f"Unerwartete Alembic-Version: {version}"
 
 
 @pytest.mark.phase0

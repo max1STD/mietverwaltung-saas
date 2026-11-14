@@ -11,8 +11,10 @@ class ObjektBase(BaseModel):
     """Gemeinsame Felder für Objekt-Schemas."""
 
     name: str = Field(..., min_length=1, max_length=100)
-    address: str = Field(..., min_length=1, max_length=255)
-    typ: str = Field(..., max_length=20)
+    address: str | None = Field(None, max_length=255)
+    plz: str | None = Field(None, max_length=10)
+    ort: str | None = Field(None, max_length=100)
+    typ: str | None = Field(None, max_length=20)
     baujahr: int | None = Field(None, ge=1000, le=2100)
     foto_url: str | None = Field(None, max_length=500)
     kaufpreis: Decimal | None = None
@@ -22,6 +24,7 @@ class ObjektBase(BaseModel):
     zinssatz: Decimal | None = Field(None, ge=0, le=100)
     tilgung: Decimal | None = Field(None, ge=0, le=100)
     monatliche_rate: Decimal | None = None
+    notizen: str | None = Field(None, max_length=2000)
 
 
 class ObjektCreate(ObjektBase):
@@ -36,7 +39,9 @@ class ObjektUpdate(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     name: str | None = Field(None, min_length=1, max_length=100)
-    address: str | None = Field(None, min_length=1, max_length=255)
+    address: str | None = Field(None, max_length=255)
+    plz: str | None = Field(None, max_length=10)
+    ort: str | None = Field(None, max_length=100)
     typ: str | None = Field(None, max_length=20)
     baujahr: int | None = Field(None, ge=1000, le=2100)
     foto_url: str | None = Field(None, max_length=500)
@@ -47,6 +52,7 @@ class ObjektUpdate(BaseModel):
     zinssatz: Decimal | None = Field(None, ge=0, le=100)
     tilgung: Decimal | None = Field(None, ge=0, le=100)
     monatliche_rate: Decimal | None = None
+    notizen: str | None = Field(None, max_length=2000)
 
 
 class ObjektNestedEinheit(BaseModel):
@@ -56,9 +62,10 @@ class ObjektNestedEinheit(BaseModel):
 
     id: int
     name: str
-    size_qm: Decimal
-    rooms: int
-    rent_cold: Decimal
+    wohnflaeche_qm: Decimal | None = None
+    etage: int | None = None
+    kaltmiete: Decimal | None = None
+    nebenkosten_vorschuss: Decimal | None = None
     status: str | None = None  # Vermietungsstatus aus Business-Logik
 
 

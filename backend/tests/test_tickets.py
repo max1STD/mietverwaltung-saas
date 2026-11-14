@@ -87,7 +87,7 @@ async def _seed_mieter_einheit(db: AsyncSession, vermieter_id: int) -> tuple[int
     result = await db.execute(
         text(
             """
-            INSERT INTO einheiten (vermieter_id, objekt_id, name, size_qm, rooms, rent_cold)
+            INSERT INTO einheiten (vermieter_id, objekt_id, name, wohnflaeche_qm, etage, kaltmiete)
             VALUES (:vid, :oid, 'Wohnung 1', 75.0, 3, 850.00)
             RETURNING id
             """

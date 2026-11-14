@@ -171,7 +171,7 @@ async def annehmen(
         einheit = await db.get(Einheit, bewerbung.einheit_id)
         mietbeginn = decision.mietbeginn or date.today()
         miete_cold = decision.miete_cold or (
-            Decimal(einheit.rent_cold) if einheit else Decimal("0")
+            Decimal(einheit.kaltmiete) if einheit else Decimal("0")
         )
         nebenkosten_voraus = decision.nebenkosten_voraus or Decimal("0")
         kaution = decision.kaution

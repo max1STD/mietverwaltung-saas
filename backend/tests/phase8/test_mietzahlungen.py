@@ -32,9 +32,9 @@ async def test_mietzahlung_crud_and_mark_paid(auth_client: AsyncClient) -> None:
         json={
             "objekt_id": objekt_id,
             "name": "WE-Z",
-            "size_qm": "55.00",
-            "rooms": 2,
-            "rent_cold": "700.00",
+            "wohnflaeche_qm": "55.00",
+            "etage": 2,
+            "kaltmiete": "700.00",
         },
     )
     einheit_id = ein_response.json()["id"]
@@ -121,9 +121,9 @@ async def test_mietzahlung_filter_by_vertrag(auth_client: AsyncClient) -> None:
         json={
             "objekt_id": objekt_id,
             "name": "WE-F",
-            "size_qm": "40.00",
-            "rooms": 1,
-            "rent_cold": "400.00",
+            "wohnflaeche_qm": "40.00",
+            "etage": 1,
+            "kaltmiete": "400.00",
         },
     )
     einheit_id = ein_response.json()["id"]
