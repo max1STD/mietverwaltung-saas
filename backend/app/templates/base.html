@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 25mm 20mm 25mm 20mm;
+      @bottom-center {
+        content: "Seite " counter(page) " von " counter(pages);
+        font-size: 9pt;
+        color: #888;
+      }
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.5;
+      color: #222;
+    }
+    .briefkopf {
+      border-bottom: 2px solid #0D3B70;
+      padding-bottom: 12px;
+      margin-bottom: 30px;
+    }
+    .briefkopf .firma {
+      font-size: 16pt;
+      font-weight: 700;
+      color: #0D3B70;
+    }
+    .briefkopf .adresse {
+      font-size: 9pt;
+      color: #555;
+      margin-top: 4px;
+    }
+    .meta {
+      margin-bottom: 30px;
+    }
+    .meta .datum {
+      text-align: right;
+      color: #555;
+      font-size: 10pt;
+    }
+    h1 {
+      font-size: 16pt;
+      color: #0D3B70;
+      margin-top: 0;
+    }
+    h2 {
+      font-size: 13pt;
+      color: #0D3B70;
+      margin-top: 24px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+    }
+    th, td {
+      text-align: left;
+      padding: 6px 8px;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background: #f5f5f7;
+      color: #0D3B70;
+      font-weight: 600;
+    }
+    .footer {
+      margin-top: 40px;
+      font-size: 9pt;
+      color: #777;
+      border-top: 1px solid #eee;
+      padding-top: 10px;
+    }
+    .signature {
+      margin-top: 50px;
+    }
+    .signature-line {
+      border-top: 1px solid #222;
+      width: 250px;
+      margin-top: 40px;
+      padding-top: 4px;
+      font-size: 9pt;
+    }
+  </style>
+</head>
+<body>
+  <div class="briefkopf">
+    <div class="firma">{{ vermieter.get('company') or vermieter.get('full_name') }}</div>
+    <div class="adresse">
+      {{ vermieter.get('street', '') }} {{ vermieter.get('house_number', '') }}<br>
+      {{ vermieter.get('zip', '') }} {{ vermieter.get('city', '') }}<br>
+      {% if vermieter.get('phone') %}Tel: {{ vermieter.phone }}<br>{% endif %}
+      {% if vermieter.get('email') %}{{ vermieter.email }}{% endif %}
+    </div>
+  </div>
+
+  <div class="meta">
+    <div class="datum">{{ datum }}</div>
+  </div>
+
+  {% block content %}{% endblock %}
+
+  <div class="footer">
+    {% if bankverbindung.get('iban') %}
+    Bankverbindung: IBAN {{ bankverbindung.iban }} | BIC {{ bankverbindung.bic or '-' }}<br>
+    {% endif %}
+    Dieses Dokument wurde automatisch über MietVerwaltung SaaS erstellt.
+  </div>
+</body>
+</html>

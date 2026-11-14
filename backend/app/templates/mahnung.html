@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Mahnung Stufe {{ stufe }}</h1>
+
+<p><strong>{{ mieter.get('anrede', 'Sehr geehrte Damen und Herren') }} {{ mieter.get('full_name') }},</strong></p>
+
+<p>
+  wir weisen Sie darauf hin, dass Ihre Mietzahlung für die Wohnung
+  <strong>{{ einheit.get('name') }}</strong> in
+  <strong>{{ objekt.get('bezeichnung') }}</strong>
+  noch nicht vollständig bei uns eingegangen ist.</p>
+
+<h2>Offener Betrag</h2>
+<table>
+  <tr><th>Position</th><th style="text-align:right">Betrag</th></tr>
+  <tr><td>Offene Miete, fällig seit {{ faellig_seit }}</td><td style="text-align:right">{{ betrag }} EUR</td></tr>
+  <tr><td><strong>Gesamtsumme</strong></td><td style="text-align:right"><strong>{{ betrag }} EUR</strong></td></tr>
+</table>
+
+<p>Bitte überweisen Sie den offenen Betrag innerhalb von <strong>7 Tagen</strong> auf unten angegebene Bankverbindung. Sollte die Zahlung weiterhin ausbleiben, sind wir gezwungen, weitere rechtliche Schritte einzuleiten.</p>
+
+<p>Mit freundlichen Grüßen<br>{{ vermieter.get('full_name') }}</p>
+{% endblock %}

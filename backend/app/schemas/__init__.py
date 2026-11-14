@@ -43,6 +43,10 @@ from app.schemas.billing import (
     SubscriptionResponse,
     SubscriptionUpdateRequest,
 )
+from app.schemas.dokument import (
+    DokumentGenerateRequest,
+    DokumentGenerateResponse,
+)
 from app.schemas.einheit import EinheitCreate, EinheitResponse, EinheitUpdate
 from app.schemas.kosten import (
     KostenCreate,

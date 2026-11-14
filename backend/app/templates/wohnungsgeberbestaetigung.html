@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Wohnungsgeberbestätigung</h1>
+
+<p>
+  Hiermit bestätige ich, {{ vermieter.get('full_name') }}, dass
+  <strong>{{ mieter.get('full_name') }}</strong>
+  ab dem <strong>{{ mietbeginn }}</strong> in der Wohnung
+  <strong>{{ einheit.get('name') }}</strong> im Objekt
+  <strong>{{ objekt.get('bezeichnung') }}</strong>,
+  {{ objekt.get('adresse') }}, {{ objekt.get('plz') }} {{ objekt.get('ort') }},
+  wohnhaft ist.</p>
+
+<p>Die Wohnung hat eine Wohnfläche von {{ einheit.get('size_qm') }} m² und ist als Hauptwohnsitz gemeldet.</p>
+
+<div class="signature">
+  <div class="signature-line">Ort, Datum, Unterschrift Vermieter</div>
+</div>
+{% endblock %}

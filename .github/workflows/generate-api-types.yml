@@ -21,6 +21,8 @@ jobs:
         with:
           node-version: 22
       - run: pip install -r backend/requirements.txt
+      - name: Ensure shared directories exist
+        run: mkdir -p shared/openapi shared/types
       - name: Export OpenAPI spec
         run: |
           cd backend
@@ -31,5 +33,4 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add shared/openapi/openapi.json shared/types/api.d.ts
-          git diff --staged --quiet && echo "No changes" || git commit -m "chore(shared): regenerate API types from OpenAPI spec"
-          git push
+          git diff --staged --quiet && echo "No changes" || (git commit -m "chore(shared): regenerate API types from OpenAPI spec" && git push)
