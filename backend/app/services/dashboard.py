@@ -289,8 +289,7 @@ async def financials(db: AsyncSession, vermieter_id: int) -> DashboardFinancials
         monats_datum = monats_datum.replace(day=1)
         monat_key = monats_datum.strftime("%Y-%m")
         for v in vertraege:
-            if v.mietbeginn and v.mietbeginn <= monats_datum:
-                if v.mietende is None or v.mietende >= monats_datum:
+            if v.mietbeginn and v.mietbeginn <= monats_datum and (v.mietende is None or v.mietende >= monats_datum):
                     einnahmen_map[monat_key] += _round2(
                         Decimal(str(v.miete_cold or 0))
                         + Decimal(str(v.nebenkosten_voraus or 0))
