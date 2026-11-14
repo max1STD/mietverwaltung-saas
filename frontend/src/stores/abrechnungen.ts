@@ -16,6 +16,7 @@ export type AbrechnungStatus = 'entwurf' | 'berechnet' | 'finalisiert' | 'versen
 
 export interface AbrechnungPosition {
   id: string
+  bezeichnung?: string
   abrechnung_id: string
   kategorie: string
   gesamtbetrag: number
@@ -36,11 +37,13 @@ export interface Abrechnung {
   einheit_id: string
   einheit?: {
     id: string
-    bezeichnung: string
+    name?: string
+    bezeichnung?: string
   }
   objekt?: {
     id: string
-    bezeichnung: string
+    name?: string
+    bezeichnung?: string
   }
   jahr: number
   zeitraum_von: string

@@ -4,7 +4,6 @@ from __future__ import annotations
 import secrets
 from typing import Any
 
-import pyotp
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,7 +14,6 @@ from app.middleware.auth import (
     csrf_protect,
     get_current_user,
     require_role,
-    set_rls_context,
     to_user_response,
 )
 from app.models.session import UserSession
@@ -58,7 +56,6 @@ from app.services.jwt import (
     create_access_token,
     create_temp_token,
     get_cookie_token,
-    get_csrf_token,
     set_auth_cookies,
     set_temp_cookie,
     verify_temp_token,

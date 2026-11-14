@@ -2,23 +2,21 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import UTC, date, datetime, timedelta
-from decimal import Decimal, ROUND_HALF_UP
-from typing import Any
+from datetime import date, timedelta
+from decimal import ROUND_HALF_UP, Decimal
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.einheit import Einheit
+from app.models.fristen import Frist
 from app.models.kosten import Kosten
 from app.models.mieter import Mieter
 from app.models.mietvertraege import Mietvertrag
 from app.models.mietzahlungen import Mietzahlung
 from app.models.objekt import Objekt
-from app.models.plan_usage import PlanUsage  # noqa: TCH001
-from app.models.subscriptions import Subscription  # noqa: TCH001
+from app.models.subscription import Subscription  # noqa: TCH001
 from app.models.tickets import Ticket
-from app.models.user import User
 from app.schemas.dashboard import (
     DashboardFinancials,
     DashboardInsight,
@@ -438,8 +436,6 @@ async def insights(db: AsyncSession, vermieter_id: int) -> DashboardInsights:
         )
 
     # Anstehende Fristen (fristen Tabelle)
-    from app.models.fristen import Frist  # noqa: PLC0415
-
     fristen_result = await db.execute(
         select(Frist).where(
             Frist.vermieter_id == vermieter_id,

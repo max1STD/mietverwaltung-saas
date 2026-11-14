@@ -34,14 +34,14 @@
               class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0D3B70]/20 focus:border-[#0D3B70]"
             >
               <option value="">Alle Objekte</option>
-              <optgroup v-for="objekt in objekteStore.objekte" :key="objekt.id" :label="objekt.bezeichnung">
-                <option :value="objekt.id">{{ objekt.bezeichnung }} (Gesamt)</option>
+              <optgroup v-for="objekt in objekteStore.objekte" :key="objekt.id" :label="objekt.name">
+                <option :value="objekt.id">{{ objekt.name }} (Gesamt)</option>
                 <option
                   v-for="einheit in einheitenFuerObjekt(objekt.id)"
                   :key="einheit.id"
                   :value="`einheit:${einheit.id}`"
                 >
-                  {{ einheit.bezeichnung }}
+                  {{ einheit.name }}
                 </option>
               </optgroup>
             </select>
@@ -80,11 +80,11 @@
                 :to="`/kosten/${item.id}/bearbeiten`"
                 class="font-medium text-[#0D3B70] hover:underline"
               >
-                {{ item.bezeichnung }}
+                {{ item.name }}
               </RouterLink>
             </td>
             <td class="py-3 px-4 text-sm text-gray-600">{{ formatDate(item.datum) }}</td>
-            <td class="py-3 px-4 text-sm text-gray-600">{{ item.kategorie?.bezeichnung || '–' }}</td>
+            <td class="py-3 px-4 text-sm text-gray-600">{{ item.kategorie?.name || '–' }}</td>
             <td class="py-3 px-4 text-sm text-gray-600">{{ formatObjectEinheit(item) }}</td>
             <td class="py-3 px-4 text-sm font-medium text-gray-900 text-right">{{ formatCurrency(item.betrag) }}</td>
             <td class="py-3 px-4">
@@ -143,7 +143,7 @@ const jahre = computed(() => {
 })
 
 const columns = [
-  { key: 'bezeichnung', label: 'Bezeichnung' },
+  { key: 'name', label: 'Bezeichnung' },
   { key: 'datum', label: 'Datum' },
   { key: 'kategorie', label: 'Kategorie' },
   { key: 'objekt', label: 'Objekt / Einheit' },
@@ -190,10 +190,11 @@ function formatCurrency(value?: number): string {
 }
 
 function formatObjectEinheit(kosten: Kosten): string {
-  if (kosten.einheit?.bezeichnung) {
-    return `${kosten.objekt?.bezeichnung || ''} / ${kosten.einheit.bezeichnung}`.replace(/^\s*\/\s*/, '')
+  const einheitName = kosten.einheit?.name ?? kosten.einheit?.bezeichnung
+  if (einheitName) {
+    return `${kosten.objekt?.name || kosten.objekt?.bezeichnung || ''} / ${einheitName}`.replace(/^\s*\/\s*/, '')
   }
-  return kosten.objekt?.bezeichnung || '–'
+  return kosten.objekt?.name ?? kosten.objekt?.bezeichnung ?? '–'
 }
 
 function resetFilters(): boolean {

@@ -1,7 +1,8 @@
 """Audit-Logging Middleware: protokolliert sicherheitsrelevante Auth-Aktionen."""
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from fastapi import Request, Response
 from sqlalchemy import text
@@ -9,7 +10,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
 from app.database import async_session
-from app.middleware.auth import decode_access_cookie, _get_client_ip
+from app.middleware.auth import _get_client_ip, decode_access_cookie
 from app.models.audit import AuditLog
 
 

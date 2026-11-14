@@ -10,6 +10,8 @@ from pydantic import BaseModel, ConfigDict, Field
 class DashboardSubscriptionInfo(BaseModel):
     """Abo-Status für das Dashboard-Widget."""
 
+    model_config = ConfigDict(json_encoders={Decimal: lambda v: float(v)})
+
     status: str = "trial"  # trial | active | past_due | cancelled
     billing_cycle: str = "monthly"
     wohnungen_count: int = 0
@@ -22,6 +24,8 @@ class DashboardSubscriptionInfo(BaseModel):
 class DashboardSummary(BaseModel):
     """Gesamtübersicht eines Vermieters."""
 
+    model_config = ConfigDict(json_encoders={Decimal: lambda v: float(v)})
+
     objekte_count: int
     einheiten_count: int
     mieter_count: int
@@ -33,6 +37,8 @@ class DashboardSummary(BaseModel):
 
 class ObjectRendite(BaseModel):
     """Rendite-Kennzahlen pro Objekt."""
+
+    model_config = ConfigDict(json_encoders={Decimal: lambda v: float(v)})
 
     objekt_id: int
     name: str
@@ -49,6 +55,8 @@ class ObjectRendite(BaseModel):
 class MonthlyFinance(BaseModel):
     """Ein Monat im Finanz-Chart."""
 
+    model_config = ConfigDict(json_encoders={Decimal: lambda v: float(v)})
+
     monat: str  # z. B. "2026-11"
     label: str  # z. B. "Nov 26"
     einnahmen: Decimal
@@ -58,6 +66,8 @@ class MonthlyFinance(BaseModel):
 
 class DashboardFinancials(BaseModel):
     """12-Monats-Finanzverlauf."""
+
+    model_config = ConfigDict(json_encoders={Decimal: lambda v: float(v)})
 
     monate: list[MonthlyFinance]
     summe_einnahmen: Decimal
@@ -84,6 +94,8 @@ class DashboardInsights(BaseModel):
 
 class DashboardObjectSummary(BaseModel):
     """Detail-Kennzahlen für ein einzelnes Objekt."""
+
+    model_config = ConfigDict(json_encoders={Decimal: lambda v: float(v)})
 
     objekt_id: int
     name: str

@@ -43,7 +43,7 @@ class AuditLog(Base):
         default=lambda: datetime.now(UTC),
     )
 
-    user: Mapped["User | None"] = relationship(
+    user: Mapped[User | None] = relationship(
         "User",
         foreign_keys=[user_id],
         back_populates="audit_logs",

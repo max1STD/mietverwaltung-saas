@@ -36,4 +36,4 @@ class PlanUsage(Base):
     )
 
     # Beziehungen
-    user: Mapped["User"] = relationship("User", back_populates="plan_usage")
+    user: Mapped[User] = relationship("User", back_populates="plan_usage")

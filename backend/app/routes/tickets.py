@@ -2,14 +2,13 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy import func, select, text
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.middleware.auth import _get_client_ip, csrf_protect, get_current_user
+from app.middleware.auth import csrf_protect, get_current_user
 from app.models.mieter import Mieter
 from app.models.tickets import Ticket, TicketComment, TicketSLA, TicketTrigger
 from app.models.user import User

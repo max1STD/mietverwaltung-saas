@@ -3,12 +3,13 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.middleware.auth import _get_client_ip, csrf_protect as auth_csrf, get_current_user
+from app.middleware.auth import _get_client_ip, get_current_user
+from app.middleware.auth import csrf_protect as auth_csrf
 from app.models.abrechnungen import Abrechnung  # noqa: F401
 from app.models.einwilligung import Einwilligung
 from app.models.mietvertraege import Mietvertrag  # noqa: F401
@@ -63,8 +64,6 @@ async def _gather_counts(db: AsyncSession, user: User) -> dict:
     )
 
     # Mietverträge und Abrechnungen zählen (nur für Vermieter sichtbar).
-    from app.models.mietvertraege import Mietvertrag
-    from app.models.abrechnungen import Abrechnung
 
     mietvertraege = 0
     abrechnungen = 0
@@ -90,7 +89,6 @@ async def _retention_blockers(db: AsyncSession, user: User) -> list[dict]:
     now = datetime.now(UTC)
 
     # Mietvertragsdaten: 10 Jahre nach Mietbeginn (§147 AO)
-    from app.models.mietvertraege import Mietvertrag
 
     if user.role == "vermieter":
         ten_years_ago = now - timedelta(days=365 * 10)

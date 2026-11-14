@@ -34,13 +34,13 @@
               class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0D3B70]/20 focus:border-[#0D3B70]"
             >
               <option value="">Alle Einheiten</option>
-              <optgroup v-for="objekt in objekteStore.objekte" :key="objekt.id" :label="objekt.bezeichnung">
+              <optgroup v-for="objekt in objekteStore.objekte" :key="objekt.id" :label="objekt.name">
                 <option
                   v-for="einheit in einheitenFuerObjekt(objekt.id)"
                   :key="einheit.id"
                   :value="einheit.id"
                 >
-                  {{ einheit.bezeichnung }}
+                  {{ einheit.name }}
                 </option>
               </optgroup>
             </select>
@@ -79,10 +79,10 @@
                 :to="`/abrechnungen/${item.id}`"
                 class="font-medium text-[#0D3B70] hover:underline"
               >
-                {{ item.einheit?.bezeichnung || 'Einheit' }} / {{ item.jahr }}
+                {{ item.einheit?.name || 'Einheit' }} / {{ item.jahr }}
               </RouterLink>
             </td>
-            <td class="py-3 px-4 text-sm text-gray-600">{{ item.objekt?.bezeichnung || '–' }}</td>
+            <td class="py-3 px-4 text-sm text-gray-600">{{ item.objekt?.name || '–' }}</td>
             <td class="py-3 px-4 text-sm text-gray-600">{{ formatDate(item.zeitraum_von) }} – {{ formatDate(item.zeitraum_bis) }}</td>
             <td class="py-3 px-4 text-sm font-medium text-gray-900 text-right">{{ formatCurrency(item.umlageanteil) }}</td>
             <td class="py-3 px-4">
@@ -138,13 +138,13 @@
               class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0D3B70]/20 focus:border-[#0D3B70]"
             >
               <option value="">Bitte wählen</option>
-              <optgroup v-for="objekt in objekteStore.objekte" :key="objekt.id" :label="objekt.bezeichnung">
+              <optgroup v-for="objekt in objekteStore.objekte" :key="objekt.id" :label="objekt.name">
                 <option
                   v-for="einheit in einheitenFuerObjekt(objekt.id)"
                   :key="einheit.id"
                   :value="einheit.id"
                 >
-                  {{ einheit.bezeichnung }}
+                  {{ einheit.name }}
                 </option>
               </optgroup>
             </select>

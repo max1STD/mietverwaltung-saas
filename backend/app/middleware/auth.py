@@ -1,7 +1,6 @@
 """Auth-Dependency: User aus JWT-Cookie laden + RLS-Kontext setzen + Rollenprüfung."""
 from __future__ import annotations
 
-from functools import partial
 from typing import Any
 
 from fastapi import Depends, HTTPException, Request, status

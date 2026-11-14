@@ -190,3 +190,25 @@ b274128 docs: DB-Schema v4.1 (5 CRITICAL fixes) + Build-Plan v3 (16 phases, nati
 ---
 
 *Controller-Log wird mit jeder Pruefrunde aktualisiert (max. alle 5 Minuten).*
+
+
+## Erstellte/GitHub-Issues in dieser Runde
+
+- **#32** Backend-Routen Kosten/Abrechnungen/Mietzahlungen fehlen
+- **#33** TypeScript Build-Fehler in AbrechnungPositionTable.vue
+- **#34** Dashboard-Service + Route + Datenaggregation
+- **#35** Stripe-Abos + WE-basiertes Billing
+- **#36** Onboarding + Setup-Checkliste
+
+## Dispatch-Empfehlung
+
+1. **Fix-Agent Phase 8a** → Issue #32 (Backend-Routen + main.py)
+2. **Fix-Agent Phase 8b** → Issue #33 (Frontend TS-Fix + Router/Sidebar)
+3. **QA-Agent** → nach 8a+8b: `pytest` + `vue-tsc && vite build` + Integrationstests
+4. **Sub-Agent Phase 9** → nach QA-Grün: Issue #34
+5. **Sub-Agent Phase 2** → parallel zu Phase 9 (keine starke Abhängigkeit)
+6. **Sub-Agent Phase 3** → parallel zu Phase 2 (starten sobald Phase 8a/8b grün)
+
+---
+
+*Controller-Runde abgeschlossen.*

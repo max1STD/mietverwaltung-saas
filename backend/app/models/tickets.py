@@ -17,7 +17,6 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
-from app.models.handwerker import Handwerker
 
 if TYPE_CHECKING:
     from app.models.user import User
@@ -87,11 +86,11 @@ class Ticket(Base, TimestampMixin):
     )
 
     # Beziehungen
-    vermieter: Mapped["User"] = relationship(
+    vermieter: Mapped[User] = relationship(
         "User",
         foreign_keys=[vermieter_id],
     )
-    comments: Mapped[list["TicketComment"]] = relationship(
+    comments: Mapped[list[TicketComment]] = relationship(
         "TicketComment",
         back_populates="ticket",
         cascade="all, delete-orphan",
@@ -140,11 +139,11 @@ class TicketComment(Base):
     )
 
     # Beziehungen
-    ticket: Mapped["Ticket"] = relationship(
+    ticket: Mapped[Ticket] = relationship(
         "Ticket",
         back_populates="comments",
     )
-    author: Mapped["User | None"] = relationship(
+    author: Mapped[User | None] = relationship(
         "User",
         foreign_keys=[author_id],
     )

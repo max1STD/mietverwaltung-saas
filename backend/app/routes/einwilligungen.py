@@ -8,7 +8,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.middleware.auth import _get_client_ip, csrf_protect as auth_csrf, get_current_user
+from app.middleware.auth import _get_client_ip, get_current_user
+from app.middleware.auth import csrf_protect as auth_csrf
 from app.models.einwilligung import Einwilligung
 from app.models.user import User
 from app.schemas.auth import ConsentRequest, ConsentResponse, MessageResponse

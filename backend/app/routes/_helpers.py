@@ -100,13 +100,15 @@ async def map_einheit_response(db: AsyncSession, einheit: Einheit) -> EinheitRes
     vertrag = await get_aktueller_mieter(db, einheit.id)
     aktueller_mieter = None
     vermietungsstatus = "frei"
-    if vertrag and vertrag.mieter:
-        aktueller_mieter = EinheitNestedMieter(
-            id=vertrag.mieter.id,
-            full_name=vertrag.mieter.full_name,
-            status=vertrag.mieter.status,
-        )
-        vermietungsstatus = "vermietet"
+    if vertrag:
+        await db.refresh(vertrag, attribute_names=["mieter"])
+        if vertrag.mieter:
+            aktueller_mieter = EinheitNestedMieter(
+                id=vertrag.mieter.id,
+                full_name=vertrag.mieter.full_name,
+                status=vertrag.mieter.status,
+            )
+            vermietungsstatus = "vermietet"
 
     return EinheitResponse(
         id=einheit.id,

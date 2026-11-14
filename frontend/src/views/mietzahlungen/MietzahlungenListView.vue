@@ -97,7 +97,7 @@
           <template #row="{ item }">
             <td class="py-3 px-4">
               <div class="font-medium text-gray-900">{{ item.mieter?.name || '–' }}</div>
-              <div class="text-xs text-gray-500">{{ item.einheit?.bezeichnung || '–' }}</div>
+              <div class="text-xs text-gray-500">{{ item.einheit?.name || '–' }}</div>
             </td>
             <td class="py-3 px-4 text-sm text-gray-600">{{ formatDate(item.faellig_am) }}</td>
             <td class="py-3 px-4 text-sm font-medium text-gray-900 text-right">{{ formatCurrency(item.betrag_soll) }}</td>
@@ -198,13 +198,13 @@
               class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0D3B70]/20 focus:border-[#0D3B70]"
             >
               <option value="">Bitte wählen</option>
-              <optgroup v-for="objekt in objekteStore.objekte" :key="objekt.id" :label="objekt.bezeichnung">
+              <optgroup v-for="objekt in objekteStore.objekte" :key="objekt.id" :label="objekt.name">
                 <option
                   v-for="einheit in einheitenFuerObjekt(objekt.id)"
                   :key="einheit.id"
                   :value="einheit.id"
                 >
-                  {{ einheit.bezeichnung }}
+                  {{ einheit.name }}
                 </option>
               </optgroup>
             </select>
@@ -279,8 +279,8 @@ const filteredZahlungen = computed(() => {
   if (query) {
     result = result.filter(
       (z) =>
-        (z.mieter?.name.toLowerCase().includes(query) ?? false) ||
-        (z.einheit?.bezeichnung.toLowerCase().includes(query) ?? false) ||
+        ((z.mieter?.name ?? '').toLowerCase().includes(query) ?? false) ||
+        ((z.einheit?.name ?? '').toLowerCase().includes(query) ?? false) ||
         (z.referenz?.toLowerCase().includes(query) ?? false),
     )
   }

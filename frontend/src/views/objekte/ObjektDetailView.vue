@@ -18,7 +18,7 @@
             </button>
             <div>
               <h1 class="text-2xl sm:text-3xl font-bold text-[#0D3B70]">
-                {{ objekteStore.currentObjekt.bezeichnung }}
+                {{ objekteStore.currentObjekt.name }}
               </h1>
               <p class="text-gray-500">{{ formatAddress(objekteStore.currentObjekt) }}</p>
             </div>
@@ -79,7 +79,7 @@
 
             <AppTable v-else :items="objekteStore.einheiten" :columns="einheitColumns">
               <template #row="{ item }">
-                <td class="py-3 px-4 font-medium text-gray-900">{{ item.bezeichnung }}</td>
+                <td class="py-3 px-4 font-medium text-gray-900">{{ item.name }}</td>
                 <td class="py-3 px-4 text-sm text-gray-600">{{ item.etage ?? '–' }}</td>
                 <td class="py-3 px-4 text-sm text-gray-600">{{ item.wohnflaeche_qm ? `${item.wohnflaeche_qm} m²` : '–' }}</td>
                 <td class="py-3 px-4 text-sm text-gray-600">{{ formatCurrency(item.kaltmiete) }}</td>
@@ -107,8 +107,8 @@
     <AppModal v-model="showAddEinheit" title="Neue Wohneinheit">
       <form class="space-y-4" @submit.prevent="addEinheit">
         <AppInput
-          id="einheit-bezeichnung"
-          v-model="einheitForm.bezeichnung"
+          id="einheit-name"
+          v-model="einheitForm.name"
           label="Bezeichnung"
           placeholder="z. B. Wohnung 1"
           required
@@ -181,7 +181,7 @@ const objektId = computed(() => String(route.params.id))
 const showAddEinheit = ref(false)
 
 const einheitForm = reactive({
-  bezeichnung: '',
+  name: '',
   etage: '',
   wohnflaeche_qm: '',
   kaltmiete: '',
@@ -189,7 +189,7 @@ const einheitForm = reactive({
 })
 
 const einheitColumns = [
-  { key: 'bezeichnung', label: 'Bezeichnung' },
+  { key: 'name', label: 'Bezeichnung' },
   { key: 'etage', label: 'Etage' },
   { key: 'wohnflaeche_qm', label: 'Fläche' },
   { key: 'kaltmiete', label: 'Kaltmiete' },
@@ -197,11 +197,11 @@ const einheitColumns = [
 ]
 
 function formatAddress(objekt: Objekt): string {
-  const parts = [objekt.adresse, [objekt.plz, objekt.ort].filter(Boolean).join(' ')]
+  const parts = [objekt.address, [objekt.plz, objekt.ort].filter(Boolean).join(' ')]
   return parts.filter(Boolean).join(', ') || 'Keine Adresse'
 }
 
-function formatCurrency(value?: number | string): string {
+function formatCurrency(value?: number | string | null): string {
   if (value == null || value === '') return '–'
   return new Intl.NumberFormat('de-DE', {
     style: 'currency',
@@ -209,8 +209,8 @@ function formatCurrency(value?: number | string): string {
   }).format(Number(value))
 }
 
-function formatDate(value?: string): string {
-  if (!value) return '–'
+function formatDate(value?: string | number | null): string {
+  if (!value || value === '') return '–'
   return new Date(value).toLocaleDateString('de-DE')
 }
 
@@ -229,13 +229,13 @@ function badgeForStatus(status?: string): 'green' | 'yellow' | 'red' | 'gray' {
 }
 
 async function addEinheit(): Promise<void> {
-  if (!einheitForm.bezeichnung.trim()) {
+  if (!einheitForm.name.trim()) {
     showToast('Bitte gib eine Bezeichnung ein.', 'warning')
     return
   }
 
   const payload: Partial<Einheit> = {
-    bezeichnung: einheitForm.bezeichnung,
+    name: einheitForm.name,
     etage: einheitForm.etage ? Number(einheitForm.etage) : undefined,
     wohnflaeche_qm: einheitForm.wohnflaeche_qm ? Number(einheitForm.wohnflaeche_qm) : undefined,
     kaltmiete: einheitForm.kaltmiete ? Number(einheitForm.kaltmiete) : undefined,
@@ -255,7 +255,7 @@ async function addEinheit(): Promise<void> {
 }
 
 function resetEinheitForm(): void {
-  einheitForm.bezeichnung = ''
+  einheitForm.name = ''
   einheitForm.etage = ''
   einheitForm.wohnflaeche_qm = ''
   einheitForm.kaltmiete = ''

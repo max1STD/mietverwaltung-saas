@@ -2,19 +2,17 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import BYTEA, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, SoftDeleteMixin, TimestampMixin
-
 from app.models.audit import AuditLog
+from app.models.base import Base, SoftDeleteMixin, TimestampMixin
 from app.models.einwilligung import Einwilligung
+from app.models.plan_usage import PlanUsage
 from app.models.session import UserSession
 from app.models.subscription import Subscription
-from app.models.plan_usage import PlanUsage
 
 
 class User(Base, TimestampMixin, SoftDeleteMixin):
@@ -73,33 +71,33 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     ust_id: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     # Beziehungen
-    sessions: Mapped[list["UserSession"]] = relationship(
+    sessions: Mapped[list[UserSession]] = relationship(
         "UserSession",
         back_populates="user",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
-    einwilligungen: Mapped[list["Einwilligung"]] = relationship(
+    einwilligungen: Mapped[list[Einwilligung]] = relationship(
         "Einwilligung",
         back_populates="user",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
-    audit_logs: Mapped[list["AuditLog"]] = relationship(
+    audit_logs: Mapped[list[AuditLog]] = relationship(
         "AuditLog",
         foreign_keys=[AuditLog.user_id],
         back_populates="user",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
-    subscription: Mapped["Subscription | None"] = relationship(
+    subscription: Mapped[Subscription | None] = relationship(
         "Subscription",
         back_populates="user",
         cascade="all, delete-orphan",
         lazy="selectin",
         uselist=False,
     )
-    plan_usage: Mapped["PlanUsage | None"] = relationship(
+    plan_usage: Mapped[PlanUsage | None] = relationship(
         "PlanUsage",
         back_populates="user",
         cascade="all, delete-orphan",

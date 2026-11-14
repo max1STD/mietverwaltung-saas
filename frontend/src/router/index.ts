@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useOnboardingStore } from '@/stores/onboarding'
 
 /**
  * Router — zentrale Routen-Definition
@@ -46,6 +47,12 @@ const router = createRouter({
       path: '/dashboard',
       name: 'dashboard',
       component: () => import('../views/dashboard/DashboardView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/onboarding',
+      name: 'onboarding-welcome',
+      component: () => import('../views/onboarding/OnboardingWelcomeView.vue'),
       meta: { requiresAuth: true },
     },
     {
@@ -121,6 +128,18 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/preise',
+      name: 'preise',
+      component: () => import('../views/billing/PricingView.vue'),
+      meta: { public: true },
+    },
+    {
+      path: '/abo',
+      name: 'subscription',
+      component: () => import('../views/billing/SubscriptionView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/einstellungen',
       name: 'einstellungen',
       component: () => import('../views/settings/SettingsView.vue'),
@@ -162,6 +181,18 @@ const router = createRouter({
       component: () => import('../views/mietzahlungen/MietzahlungenListView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/bewerbungen',
+      name: 'bewerbungen',
+      component: () => import('../views/bewerbungen/BewerbungenListView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/bewerbungen/:id',
+      name: 'bewerbung-detail',
+      component: () => import('../views/bewerbungen/BewerbungDetailView.vue'),
+      meta: { requiresAuth: true },
+    },
   ],
 })
 
@@ -180,6 +211,19 @@ router.beforeEach(async (to, from, next) => {
   // Geschützte Route ohne Auth -> Login
   if (to.meta.requiresAuth && !isAuthenticated) {
     return next({ name: 'login', query: { redirect: to.fullPath } })
+  }
+
+  // Onboarding-Redirect für neue Vermieter: einmalig beim Dashboard prüfen
+  if (isAuthenticated && to.name === 'dashboard') {
+    const onboardingStore = useOnboardingStore()
+    try {
+      await onboardingStore.fetchProgress()
+      if (onboardingStore.progressPercent > 0 && onboardingStore.progressPercent < 100 && !onboardingStore.isDone) {
+        return next({ name: 'onboarding-welcome', query: { redirect: to.fullPath } })
+      }
+    } catch {
+      // Onboarding-Fehler sollten den App-Start nicht blockieren
+    }
   }
 
   // Authentifiziert, aber 2FA noch ausstehend -> 2FA-Setup

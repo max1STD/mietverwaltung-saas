@@ -1,10 +1,6 @@
 """Redis-basiertes Rate-Limiting für öffentliche Auth-Endpunkte."""
 from __future__ import annotations
 
-import math
-from datetime import UTC, datetime, timedelta
-from typing import Any
-
 import redis.asyncio as aioredis
 
 from app.config import settings

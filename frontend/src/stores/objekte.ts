@@ -24,18 +24,29 @@ export type ObjektTyp =
 export interface Objekt {
   id: string
   vermieter_id: string
-  bezeichnung: string
+  name: string
+  /** Alias für ältere Komponenten */
+  bezeichnung?: string
+  address: string
+  /** Alias für ältere Komponenten */
   adresse?: string
   plz?: string
   ort?: string
   typ?: ObjektTyp | string
-  baujahr?: number
-  kaufpreis?: number
-  kaufdatum?: string
+  baujahr?: number | null
+  kaufpreis?: number | null
+  kaufdatum?: string | null
+  eigenkapital?: number | null
+  darlehen_betrag?: number | null
+  zinssatz?: number | null
+  tilgung?: number | null
+  monatliche_rate?: number | null
+  foto_url?: string | null
   notizen?: string
-  foto_url?: string
   created_at?: string
   updated_at?: string
+  deleted_at?: string | null
+  einheiten?: Einheit[]
   einheiten_count?: number
 }
 
@@ -44,7 +55,7 @@ export type EinheitStatus = 'vermietet' | 'frei' | 'renovierung' | 'gesperrt'
 export interface Einheit {
   id: string
   objekt_id: string
-  bezeichnung: string
+  name: string
   etage?: number
   wohnflaeche_qm?: number
   zimmer?: number

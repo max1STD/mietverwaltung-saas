@@ -18,9 +18,8 @@ from app.models.audit import AuditLog
 from app.models.einwilligung import Einwilligung
 from app.models.session import UserSession
 from app.models.user import User
-from app.services.crypto import decrypt_value, encrypt_value
-from app.services.jwt import create_access_token, create_temp_token
-from app.services.rate_limit import check_rate_limit, record_failed_attempt, reset_rate_limit
+from app.services.crypto import encrypt_value
+from app.services.rate_limit import check_rate_limit, record_failed_attempt
 
 if TYPE_CHECKING:
     from fastapi import Request

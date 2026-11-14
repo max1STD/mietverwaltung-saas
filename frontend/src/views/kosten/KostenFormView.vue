@@ -16,12 +16,12 @@
         <AppCard class="lg:col-span-2" padding="lg" shadow="md">
           <form class="space-y-5" @submit.prevent="handleSubmit">
             <AppInput
-              id="bezeichnung"
-              v-model="form.bezeichnung"
+              id="name"
+              v-model="form.name"
               label="Bezeichnung"
               placeholder="z. B. Müllgebühren 2026"
               required
-              :error="errors.bezeichnung"
+              :error="errors.name"
             />
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -58,7 +58,7 @@
                     :key="kat.id"
                     :value="kat.id"
                   >
-                    {{ kat.bezeichnung }}
+                    {{ kat.name }}
                   </option>
                 </select>
               </div>
@@ -74,15 +74,15 @@
                   <optgroup
                     v-for="objekt in objekteStore.objekte"
                     :key="objekt.id"
-                    :label="objekt.bezeichnung"
+                    :label="objekt.name"
                   >
-                    <option :value="`objekt:${objekt.id}`">{{ objekt.bezeichnung }} (Gesamt)</option>
+                    <option :value="`objekt:${objekt.id}`">{{ objekt.name }} (Gesamt)</option>
                     <option
                       v-for="einheit in einheitenFuerObjekt(objekt.id)"
                       :key="einheit.id"
                       :value="`einheit:${einheit.id}:${objekt.id}`"
                     >
-                      {{ einheit.bezeichnung }}
+                      {{ einheit.name }}
                     </option>
                   </optgroup>
                 </select>
@@ -181,7 +181,7 @@ const schluesselOptions: { value: Umlageschluessel; label: string }[] = [
 ]
 
 const form = reactive({
-  bezeichnung: '',
+  name: '',
   betrag: '',
   datum: '',
   kategorie_id: '',
@@ -195,7 +195,7 @@ const form = reactive({
 const selectedObjektEinheit = ref('')
 
 const errors = reactive({
-  bezeichnung: '',
+  name: '',
   betrag: '',
 })
 
@@ -227,7 +227,7 @@ function einheitenFuerObjekt(objektId: string): Einheit[] {
 }
 
 function populateForm(kosten: Kosten): void {
-  form.bezeichnung = kosten.bezeichnung
+  form.name = kosten.name || ''
   form.betrag = kosten.betrag ? String(kosten.betrag) : ''
   form.datum = kosten.datum ? kosten.datum.split('T')[0] : ''
   form.kategorie_id = kosten.kategorie_id || ''
@@ -247,12 +247,12 @@ function populateForm(kosten: Kosten): void {
 }
 
 function validate(): boolean {
-  errors.bezeichnung = ''
+  errors.name = ''
   errors.betrag = ''
 
   let valid = true
-  if (!form.bezeichnung.trim()) {
-    errors.bezeichnung = 'Bitte gib eine Bezeichnung ein.'
+  if (!form.name.trim()) {
+    errors.name = 'Bitte gib eine Bezeichnung ein.'
     valid = false
   }
 
@@ -267,7 +267,7 @@ function validate(): boolean {
 
 function buildPayload(): Partial<Kosten> {
   return {
-    bezeichnung: form.bezeichnung.trim(),
+    name: form.name.trim(),
     betrag: Number(form.betrag.replace(',', '.')),
     datum: form.datum,
     kategorie_id: form.kategorie_id || undefined,
@@ -323,7 +323,7 @@ function onScanApply(scanResult: { betrag_vorschlag?: number; kategorie_vorschla
   }
   if (scanResult.kategorie_vorschlag) {
     const kategorie = kostenStore.kategorien.find(
-      (k) => k.bezeichnung.toLowerCase() === scanResult.kategorie_vorschlag?.toLowerCase(),
+      (k) => (k.name ?? k.bezeichnung ?? '').toLowerCase() === scanResult.kategorie_vorschlag?.toLowerCase(),
     )
     form.kategorie_id = kategorie?.id || ''
   }

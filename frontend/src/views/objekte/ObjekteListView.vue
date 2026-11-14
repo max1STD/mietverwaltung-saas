@@ -54,12 +54,12 @@
                 :to="`/objekte/${item.id}`"
                 class="font-medium text-[#0D3B70] hover:underline"
               >
-                {{ item.bezeichnung }}
+                {{ item.name }}
               </RouterLink>
             </td>
             <td class="py-3 px-4 text-sm text-gray-600">{{ formatAddress(item) }}</td>
             <td class="py-3 px-4 text-sm text-gray-600">{{ item.typ || '–' }}</td>
-            <td class="py-3 px-4 text-sm text-gray-600">{{ item.einheiten_count || 0 }}</td>
+            <td class="py-3 px-4 text-sm text-gray-600">{{ item.einheiten?.length || 0 }}</td>
           </template>
 
           <template #actions="{ item }">
@@ -103,10 +103,10 @@ const { showToast } = useToast()
 const searchQuery = ref('')
 
 const columns = [
-  { key: 'bezeichnung', label: 'Bezeichnung' },
-  { key: 'adresse', label: 'Adresse' },
+  { key: 'name', label: 'Bezeichnung' },
+  { key: 'address', label: 'Adresse' },
   { key: 'typ', label: 'Typ' },
-  { key: 'einheiten_count', label: 'Einheiten' },
+  { key: 'einheiten?.length', label: 'Einheiten' },
 ]
 
 const filteredObjekte = computed(() => {
@@ -115,14 +115,14 @@ const filteredObjekte = computed(() => {
 
   return objekteStore.objekte.filter(
     (objekt) =>
-      objekt.bezeichnung.toLowerCase().includes(query) ||
-      (objekt.adresse && objekt.adresse.toLowerCase().includes(query)) ||
+      objekt.name.toLowerCase().includes(query) ||
+      (objekt.address && objekt.address.toLowerCase().includes(query)) ||
       (objekt.ort && objekt.ort.toLowerCase().includes(query)),
   )
 })
 
 function formatAddress(objekt: Objekt): string {
-  const parts = [objekt.adresse, [objekt.plz, objekt.ort].filter(Boolean).join(' ')]
+  const parts = [objekt.address, [objekt.plz, objekt.ort].filter(Boolean).join(' ')]
   return parts.filter(Boolean).join(', ') || '–'
 }
 

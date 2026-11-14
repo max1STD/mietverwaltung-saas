@@ -1,7 +1,7 @@
 """Abrechnungs-Modell — Nebenkostenabrechnung pro Einheit/Jahr."""
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Date, ForeignKey, Integer, String

@@ -73,4 +73,4 @@ class Subscription(Base, TimestampMixin):
     )
 
     # Beziehungen
-    user: Mapped["User"] = relationship("User", back_populates="subscription")
+    user: Mapped[User] = relationship("User", back_populates="subscription")

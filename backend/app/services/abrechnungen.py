@@ -1,7 +1,7 @@
 """Abrechnungen-Service — CRUD, Positionsberechnung und Finalisierung."""
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from sqlalchemy import select

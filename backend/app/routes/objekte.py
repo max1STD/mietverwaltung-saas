@@ -7,8 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.middleware.auth import _get_client_ip, csrf_protect, require_role
 from app.models.user import User
-from app.routes._helpers import map_objekt_response
+from app.routes._helpers import map_einheit_response, map_objekt_response
+from app.schemas.einheit import EinheitCreate, EinheitNestedCreate, EinheitResponse
 from app.schemas.objekt import ObjektCreate, ObjektResponse, ObjektUpdate
+from app.services.einheiten import create_einheit, list_einheiten
 from app.services.objekte import create_objekt, delete_objekt, get_objekt, list_objekte, update_objekt
 
 router = APIRouter()
@@ -120,3 +122,55 @@ async def delete_objekt_route(
         ip=_get_client_ip(request),
     )
     return None
+
+
+@router.post(
+    "/{objekt_id}/einheiten",
+    response_model=EinheitResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(csrf_protect)],
+)
+async def create_einheit_nested_route(
+    objekt_id: int,
+    data: EinheitNestedCreate,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_role("vermieter")),
+) -> EinheitResponse:
+    """Erstellt eine Einheit innerhalb eines bestimmten Objekts."""
+    objekt = await get_objekt(db, vermieter_id=user.id, objekt_id=objekt_id)
+    if not objekt:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Objekt nicht gefunden",
+        )
+    payload = data.model_dump()
+    payload["objekt_id"] = objekt_id
+    einheit = await create_einheit(
+        db,
+        vermieter_id=user.id,
+        user_id=user.id,
+        data=EinheitCreate(**payload),
+        ip=_get_client_ip(request),
+    )
+    return await map_einheit_response(db, einheit)
+
+
+@router.get(
+    "/{objekt_id}/einheiten",
+    response_model=list[EinheitResponse],
+)
+async def list_einheiten_nested_route(
+    objekt_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_role("vermieter")),
+) -> list[EinheitResponse]:
+    """Listet alle Einheiten eines Objekts auf."""
+    objekt = await get_objekt(db, vermieter_id=user.id, objekt_id=objekt_id)
+    if not objekt:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Objekt nicht gefunden",
+        )
+    einheiten = await list_einheiten(db, vermieter_id=user.id, objekt_id=objekt_id)
+    return [await map_einheit_response(db, e) for e in einheiten]

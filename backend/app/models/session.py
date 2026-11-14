@@ -37,4 +37,4 @@ class UserSession(Base):
         nullable=True,
     )
 
-    user: Mapped["User"] = relationship("User", back_populates="sessions")
+    user: Mapped[User] = relationship("User", back_populates="sessions")

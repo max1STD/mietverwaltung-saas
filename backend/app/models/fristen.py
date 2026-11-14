@@ -1,10 +1,10 @@
 """Fristen-Modell — verwaltet anstehende Deadlines für Vermieter."""
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from datetime import date
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Date, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin

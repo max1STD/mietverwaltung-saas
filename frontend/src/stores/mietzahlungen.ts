@@ -15,17 +15,20 @@ export type MietzahlungStatus = 'offen' | 'teilweise' | 'bezahlt' | 'ueberfaelli
 
 export interface Mietzahlung {
   id: string
+  bezeichnung?: string
   vermieter_id?: string
   mieter_id: string
   mietvertrag_id?: string
   einheit_id?: string
   mieter?: {
     id: string
-    name: string
+    name?: string
+    bezeichnung?: string
   }
   einheit?: {
     id: string
-    bezeichnung: string
+    name?: string
+    bezeichnung?: string
   }
   betrag_soll: number
   betrag_ist?: number

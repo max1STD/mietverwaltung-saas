@@ -1,6 +1,5 @@
 """AES-256-GCM Verschlüsselung für sensitive Felder (IBAN, Steuernr, Geburtsdatum)."""
 import base64
-import os
 import secrets
 from typing import cast
 

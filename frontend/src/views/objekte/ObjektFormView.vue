@@ -14,20 +14,20 @@
       <AppCard padding="lg" shadow="md">
         <form class="space-y-5" @submit.prevent="handleSubmit">
           <AppInput
-            id="bezeichnung"
-            v-model="form.bezeichnung"
+            id="name"
+            v-model="form.name"
             label="Bezeichnung"
             placeholder="z. B. Musterstraße 12"
             required
-            :error="errors.bezeichnung"
+            :error="errors.name"
           />
 
           <AppInput
-            id="adresse"
-            v-model="form.adresse"
+            id="address"
+            v-model="form.address"
             label="Adresse"
             placeholder="Straße und Hausnummer"
-            :error="errors.adresse"
+            :error="errors.address"
           />
 
           <div class="grid grid-cols-2 gap-4">
@@ -140,8 +140,8 @@ const typOptions: { value: ObjektTyp | ''; label: string }[] = [
 ]
 
 const form = reactive({
-  bezeichnung: '',
-  adresse: '',
+  name: '',
+  address: '',
   plz: '',
   ort: '',
   typ: '' as ObjektTyp | '',
@@ -152,13 +152,13 @@ const form = reactive({
 })
 
 const errors = reactive({
-  bezeichnung: '',
-  adresse: '',
+  name: '',
+  address: '',
 })
 
 function populateForm(objekt: Objekt): void {
-  form.bezeichnung = objekt.bezeichnung
-  form.adresse = objekt.adresse || ''
+  form.name = objekt.name
+  form.address = objekt.address || ''
   form.plz = objekt.plz || ''
   form.ort = objekt.ort || ''
   form.typ = (objekt.typ as ObjektTyp) || ''
@@ -169,12 +169,12 @@ function populateForm(objekt: Objekt): void {
 }
 
 function validate(): boolean {
-  errors.bezeichnung = ''
-  errors.adresse = ''
+  errors.name = ''
+  errors.address = ''
 
   let valid = true
-  if (!form.bezeichnung.trim()) {
-    errors.bezeichnung = 'Bitte gib eine Bezeichnung ein.'
+  if (!form.name.trim()) {
+    errors.name = 'Bitte gib eine Bezeichnung ein.'
     valid = false
   }
 
@@ -183,8 +183,8 @@ function validate(): boolean {
 
 function buildPayload(): Partial<Objekt> {
   return {
-    bezeichnung: form.bezeichnung.trim(),
-    adresse: form.adresse.trim() || undefined,
+    name: form.name.trim(),
+    address: form.address.trim() || undefined,
     plz: form.plz.trim() || undefined,
     ort: form.ort.trim() || undefined,
     typ: form.typ || undefined,

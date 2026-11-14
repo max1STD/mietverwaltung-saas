@@ -16,8 +16,8 @@ from app.models.mietzahlungen import Mietzahlung
 from app.models.objekt import Objekt
 from app.models.onboarding import OnboardingProgress
 from app.models.plan_usage import PlanUsage
-from app.models.subscription import Subscription
 from app.models.session import UserSession
+from app.models.subscription import Subscription
 from app.models.tickets import Ticket, TicketComment, TicketSLA, TicketTrigger
 from app.models.user import User
 

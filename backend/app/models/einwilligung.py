@@ -39,4 +39,4 @@ class Einwilligung(Base):
         default=lambda: datetime.now(UTC),
     )
 
-    user: Mapped["User"] = relationship("User", back_populates="einwilligungen")
+    user: Mapped[User] = relationship("User", back_populates="einwilligungen")

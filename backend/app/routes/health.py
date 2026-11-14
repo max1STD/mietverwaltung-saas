@@ -2,7 +2,6 @@
 
 Gibt detaillierten Status zurück für Monitoring und Deploy-Health-Checks.
 """
-import asyncio
 from datetime import UTC, datetime
 
 import redis.asyncio as aioredis

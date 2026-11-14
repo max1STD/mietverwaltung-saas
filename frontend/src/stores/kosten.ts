@@ -16,7 +16,8 @@ export type Umlageschluessel = 'nach_qm' | 'nach_personen' | 'nach_verbrauch' | 
 
 export interface Kostenkategorie {
   id: string
-  bezeichnung: string
+  name?: string
+  bezeichnung?: string
   beschreibung?: string
   umlagefaehig_standard?: boolean
 }
@@ -31,6 +32,7 @@ export interface ScanErgebnis {
 
 export interface Kosten {
   id: string
+  name?: string
   vermieter_id?: string
   objekt_id?: string
   einheit_id?: string
@@ -38,11 +40,13 @@ export interface Kosten {
   kategorie?: Kostenkategorie
   objekt?: {
     id: string
-    bezeichnung: string
+    name?: string
+    bezeichnung?: string
   }
   einheit?: {
     id: string
-    bezeichnung: string
+    name?: string
+    bezeichnung?: string
   }
   bezeichnung: string
   betrag: number
