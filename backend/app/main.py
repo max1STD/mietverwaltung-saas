@@ -93,6 +93,7 @@ from app.routes import (
     bewerbungen,
     billing,
     dashboard,
+    dokumente,
     dsgvo,
     einheiten,
     einwilligungen,
@@ -126,3 +127,4 @@ app.include_router(billing.router, prefix="/api/v1/billing", tags=["billing"])
 app.include_router(stripe_webhooks.router, prefix="/api/v1/webhooks", tags=["webhooks"])
 app.include_router(health.router, tags=["health"])
 app.include_router(ki.router, prefix="/api/v1/ki", tags=["ki"])
+app.include_router(dokumente.router, prefix="/api/v1/dokumente", tags=["dokumente"])
