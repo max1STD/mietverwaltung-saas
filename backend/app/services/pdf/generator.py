@@ -14,7 +14,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from weasyprint import HTML
 
 # Basis-Verzeichnis für Templates
-TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
+TEMPLATES_DIR = Path(__file__).parent.parent.parent / "templates"
 
 # Jinja2-Environment mit HTML-Escaping
 _jinja_env = Environment(

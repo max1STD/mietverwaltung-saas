@@ -68,10 +68,10 @@ async def _load_mieter_context(
         },
         "objekt": {
             "id": objekt.id if objekt else None,
-            "bezeichnung": objekt.bezeichnung if objekt else "",
-            "adresse": f"{objekt.strasse} {objekt.hausnr}" if objekt else "",
-            "plz": objekt.plz if objekt else "",
-            "ort": objekt.ort if objekt else "",
+            "bezeichnung": objekt.name if objekt else "",
+            "adresse": objekt.address if objekt else "",
+            "plz": "",
+            "ort": "",
         },
     }
 
@@ -82,16 +82,17 @@ async def _vermieter_dict(db: AsyncSession, vermieter_id: int) -> dict[str, Any]
     if not user:
         raise ValueError("Vermieter nicht gefunden")
 
+    company = getattr(user, "firma", None) or user.full_name
     return {
         "id": user.id,
         "full_name": user.full_name,
-        "company": user.company or user.full_name,
+        "company": company,
         "email": user.email,
         "phone": user.phone,
-        "street": getattr(user, "street", ""),
-        "house_number": getattr(user, "house_number", ""),
-        "zip": getattr(user, "zip", ""),
-        "city": getattr(user, "city", ""),
+        "street": getattr(user, "rechnungs_strasse", ""),
+        "house_number": getattr(user, "rechnungs_hausnr", ""),
+        "zip": getattr(user, "rechnungs_plz", ""),
+        "city": getattr(user, "rechnungs_ort", ""),
         "logo_path": getattr(user, "logo_path", None),
     }
 
