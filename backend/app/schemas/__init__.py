@@ -53,6 +53,15 @@ from app.schemas.kosten import (
     KostenScanResponse,
     KostenUpdate,
 )
+from app.schemas.ki import (
+    KIMahnungRequest,
+    KIReceiptResponse,
+    KISimpleRequest,
+    KISimpleResponse,
+    KISmartInsightRequest,
+    KITicketCategorizeRequest,
+    KITicketCategorizeResponse,
+)
 from app.schemas.mieter import MieterCreate, MieterResponse, MieterUpdate
 from app.schemas.mietvertrag import (
     MietvertragCreate,
@@ -133,4 +142,11 @@ __all__ = [
     "SubscriptionCancelRequest",
     "SubscriptionResponse",
     "PortalResponse",
+    "KITicketCategorizeRequest",
+    "KITicketCategorizeResponse",
+    "KISimpleRequest",
+    "KISimpleResponse",
+    "KIMahnungRequest",
+    "KISmartInsightRequest",
+    "KIReceiptResponse",
 ]

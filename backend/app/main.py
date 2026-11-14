@@ -97,6 +97,7 @@ from app.routes import (
     einheiten,
     einwilligungen,
     health,
+    ki,
     kosten,
     mieter,
     mietvertraege,
@@ -124,3 +125,4 @@ app.include_router(onboarding.router, prefix="/api/v1/onboarding", tags=["onboar
 app.include_router(billing.router, prefix="/api/v1/billing", tags=["billing"])
 app.include_router(stripe_webhooks.router, prefix="/api/v1/webhooks", tags=["webhooks"])
 app.include_router(health.router, tags=["health"])
+app.include_router(ki.router, prefix="/api/v1/ki", tags=["ki"])
