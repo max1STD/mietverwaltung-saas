@@ -48,15 +48,6 @@ from app.schemas.dokument import (
     DokumentGenerateResponse,
 )
 from app.schemas.einheit import EinheitCreate, EinheitResponse, EinheitUpdate
-from app.schemas.kosten import (
-    KostenCreate,
-    KostenkategorieCreate,
-    KostenkategorieResponse,
-    KostenkategorieUpdate,
-    KostenResponse,
-    KostenScanResponse,
-    KostenUpdate,
-)
 from app.schemas.ki import (
     KIMahnungRequest,
     KIReceiptResponse,
@@ -65,6 +56,15 @@ from app.schemas.ki import (
     KISmartInsightRequest,
     KITicketCategorizeRequest,
     KITicketCategorizeResponse,
+)
+from app.schemas.kosten import (
+    KostenCreate,
+    KostenkategorieCreate,
+    KostenkategorieResponse,
+    KostenkategorieUpdate,
+    KostenResponse,
+    KostenScanResponse,
+    KostenUpdate,
 )
 from app.schemas.mieter import MieterCreate, MieterResponse, MieterUpdate
 from app.schemas.mietvertrag import (

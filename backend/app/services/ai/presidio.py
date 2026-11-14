@@ -12,7 +12,6 @@ Unterstützte Entitäten:
 from __future__ import annotations
 
 import re
-from typing import Any
 
 from presidio_analyzer import AnalyzerEngine, RecognizerRegistry
 from presidio_analyzer.nlp_engine import NlpEngineProvider

@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from weasyprint import HTML, CSS
+from weasyprint import HTML
 
 # Basis-Verzeichnis für Templates
 TEMPLATES_DIR = Path(__file__).parent.parent / "templates"

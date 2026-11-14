@@ -52,10 +52,7 @@ def get_user_id_from_cookie(request: Request) -> int | None:
 
 async def set_rls_context(db: AsyncSession, user: User) -> None:
     """Setzt PostgreSQL-Session-Variablen für Row-Level Security."""
-    if user.role == "mieter":
-        vermieter_id = user.vermieter_id
-    else:
-        vermieter_id = user.id
+    vermieter_id = user.vermieter_id if user.role == "mieter" else user.id
 
     # Sichere Typ-Casts, bevor wir in das SQL-Statement einbauen.
     user_id = int(user.id)

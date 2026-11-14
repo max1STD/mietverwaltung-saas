@@ -97,9 +97,7 @@ async def _get_user_by_email(db: AsyncSession, email: str) -> User | None:
 
 
 async def _is_account_locked(user: User) -> bool:
-    if user.locked_until and user.locked_until > datetime.now(UTC):
-        return True
-    return False
+    return bool(user.locked_until and user.locked_until > datetime.now(UTC))
 
 
 async def _audit(
@@ -299,13 +297,12 @@ async def verify_2fa(
     if code and user.totp_secret and verify_totp(user.totp_secret, code):
         verified = True
         method = "totp"
-    elif code and user.email_code and user.email_code_expires_at:
-        if (
-            user.email_code == code
-            and user.email_code_expires_at > datetime.now(UTC)
-        ):
-            verified = True
-            method = "email_code"
+    elif code and user.email_code and user.email_code_expires_at and (
+        user.email_code == code
+        and user.email_code_expires_at > datetime.now(UTC)
+    ):
+        verified = True
+        method = "email_code"
 
     if not verified:
         await record_failed_attempt("2fa", ip or "unknown")

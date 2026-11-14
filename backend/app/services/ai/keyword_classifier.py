@@ -5,8 +5,6 @@ Vorgeschaltet vor der teuren KI, um ~60 % der Fälle ohne API-Call zu lösen.
 from __future__ import annotations
 
 import re
-from typing import Any
-
 
 # ── Ticket-Kategorie ────────────────────────────────────────────────
 _TICKET_KEYWORDS: dict[str, list[str]] = {
@@ -94,6 +92,4 @@ def suggest_cost_umlagefaehig(category_name: str) -> bool:
     name = category_name.lower()
     if any(x in name for x in ["versicherung", "muell", "grundsteuer", "garten", "schornstein", "wartung", "reparatur"]):
         return True
-    if any(x in name for x in ["heizkosten", "wasserkosten", "stromkosten", "abwasser"]):
-        return True
-    return False
+    return bool(any(x in name for x in ["heizkosten", "wasserkosten", "stromkosten", "abwasser"]))

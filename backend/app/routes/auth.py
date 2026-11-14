@@ -205,7 +205,7 @@ async def two_fa_verify(
 
     # Finale Session anlegen.
     refresh_plain = secrets.token_urlsafe(48)
-    session = await create_refresh_session(
+    await create_refresh_session(
         db,
         user,
         refresh_plain,
@@ -343,10 +343,9 @@ async def password_reset_route(
         ) from exc
 
     # Code wird nur intern zurückgegeben (in echter App per E-Mail versenden).
-    code = await request_password_reset(db, data.email, ip)
+    await request_password_reset(db, data.email, ip)
     await db.commit()
     # Demo/Tests: Code in Response zurückgeben, in Produktion entfernen.
-    detail = {"code": code} if code else {}
     return PasswordResetResponse(message="Wenn die E-Mail existiert, wurde ein Code versandt.")
 
 

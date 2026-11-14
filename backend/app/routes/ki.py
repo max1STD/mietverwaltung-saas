@@ -3,13 +3,12 @@ from __future__ import annotations
 
 import json
 import tempfile
-from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.middleware.auth import _get_client_ip, csrf_protect, get_current_user, require_role
+from app.middleware.auth import _get_client_ip, csrf_protect, require_role
 from app.models.user import User
 from app.schemas.ki import (
     KIMahnungRequest,
@@ -20,6 +19,7 @@ from app.schemas.ki import (
     KITicketCategorizeRequest,
     KITicketCategorizeResponse,
 )
+from app.services.ai import prompts
 from app.services.ai.keyword_classifier import (
     classify_ticket,
     classify_ticket_priority,
@@ -28,7 +28,6 @@ from app.services.ai.keyword_classifier import (
 )
 from app.services.ai.ollama_client import KIResult, generate_text
 from app.services.ai.presidio import anonymize, deanonymize
-from app.services.ai import prompts
 from app.services.audit_log import audit_log
 from app.services.ocr.tesseract import extract_text
 
