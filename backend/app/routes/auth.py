@@ -154,11 +154,27 @@ async def login_route(
     temp_token = create_temp_token(user.id)
     set_temp_cookie(response, temp_token)
 
-    if not requires_2fa:
-        # Noch kein TOTP eingerichtet → Setup erzwingen.
+    if requires_2fa:
         return Pre2FAResponse(requires_2fa=True, temp_token=temp_token)
 
-    return Pre2FAResponse(requires_2fa=True, temp_token=temp_token)
+    await db.commit()
+    refresh_plain = secrets.token_urlsafe(48)
+    await create_refresh_session(
+        db,
+        user,
+        refresh_plain,
+        ip,
+        request.headers.get("user-agent"),
+    )
+    access_token = create_access_token(
+        user.id,
+        user.role,
+        user.vermieter_id if user.role == "mieter" else user.id,
+    )
+    csrf_token = _generate_csrf()
+    set_auth_cookies(response, access_token, refresh_plain, csrf_token)
+    await reset_rate_limit("login", ip)
+    return TokenResponse(access_token=access_token, user=await to_user_response(user))
 
 
 @router.post("/2fa/setup", dependencies=[Depends(csrf_protect)])

@@ -48,6 +48,50 @@ async def _register_and_login(client: AsyncClient, email: str, password: str) ->
     )
     assert login.status_code == 200, login.text
 
+    if login.json().get("requires_2fa"):
+        setup = await client.post(
+            "/api/v1/auth/2fa/setup",
+            json={},
+            headers={"X-CSRF-Token": await _ensure_csrf(client)},
+        )
+        assert setup.status_code == 200, setup.text
+        secret = setup.json()["secret"]
+
+        verify = await client.post(
+            "/api/v1/auth/2fa/verify",
+            json={"code": pyotp.TOTP(secret).now()},
+            headers={"X-CSRF-Token": await _ensure_csrf(client)},
+        )
+        assert verify.status_code == 200, verify.text
+        return verify.json()
+
+    return login.json()
+
+
+async def _register_and_login_with_2fa(client: AsyncClient, email: str, password: str) -> tuple[dict, str]:
+    """Registriert, loggt ein, richtet 2FA ein und verifiziert.
+
+    Gibt (verify_response, secret) zurück.
+    """
+    csrf = await _ensure_csrf(client)
+    register = await client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": email,
+            "password": password,
+            "full_name": "Test Vermieter",
+            "consent_text": CONSENT_TEXT,
+        },
+        headers={"X-CSRF-Token": csrf},
+    )
+    assert register.status_code == 201, register.text
+
+    login = await client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": password},
+    )
+    assert login.status_code == 200, login.text
+
     setup = await client.post(
         "/api/v1/auth/2fa/setup",
         json={},
@@ -62,7 +106,7 @@ async def _register_and_login(client: AsyncClient, email: str, password: str) ->
         headers={"X-CSRF-Token": await _ensure_csrf(client)},
     )
     assert verify.status_code == 200, verify.text
-    return verify.json()
+    return verify.json(), secret
 
 
 @pytest.mark.phase1
@@ -95,7 +139,7 @@ async def test_logout_clears_cookies_and_invalidates_session(async_client: Async
     """Logout löscht Cookies und widerruft die Session."""
     email = _unique_email("jwt_logout")
     password = "SicheresPasswort123!"
-    await _register_and_login(async_client, email, password)
+    await _register_and_login_with_2fa(async_client, email, password)
 
     db: AsyncSession = async_client.db_session
     result = await db.execute(select(User).where(User.email == email))
@@ -107,7 +151,8 @@ async def test_logout_clears_cookies_and_invalidates_session(async_client: Async
             UserSession.revoked_at.is_(None),
         )
     )
-    assert sessions_before.scalar_one_or_none() is not None
+    active_before = sessions_before.scalars().all()
+    assert active_before
 
     logout = await async_client.post(
         "/api/v1/auth/logout",
@@ -124,7 +169,8 @@ async def test_logout_clears_cookies_and_invalidates_session(async_client: Async
             UserSession.revoked_at.is_(None),
         )
     )
-    assert sessions_after.scalar_one_or_none() is None
+    active_after = sessions_after.scalars().all()
+    assert not active_after
 
 
 @pytest.mark.phase1

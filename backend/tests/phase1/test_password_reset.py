@@ -165,4 +165,6 @@ async def test_login_with_new_password_after_reset(async_client: AsyncClient) ->
         json={"email": email, "password": new_password},
     )
     assert login.status_code == 200, login.text
-    assert login.json()["requires_2fa"] is True
+    # 2FA ist optional: erster Login ohne TOTP liefert TokenResponse.
+    payload = login.json()
+    assert payload.get("requires_2fa") is False or "access_token" in payload

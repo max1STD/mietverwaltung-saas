@@ -51,6 +51,30 @@ async def _login_step(client: AsyncClient, email: str, password: str) -> dict:
     return resp.json()
 
 
+async def _ensure_authenticated(
+    client: AsyncClient, email: str, password: str, setup_2fa: bool = True
+) -> dict:
+    """Hilfsfunktion: Login + optional 2FA-Setup/Verify.
+
+    Bei optionaler 2FA kann der Login direkt ein vollwertiges TokenResponse
+    zurückgeben. Wenn setup_2fa=True wird im Anschluss TOTP eingerichtet und
+    verifiziert.
+    """
+    login_data = await _login_step(client, email, password)
+    csrf = _csrf(client)
+
+    if not login_data.get("requires_2fa", False):
+        # Direkter Login ohne 2FA: TokenResponse
+        assert "access_token" in login_data
+        return login_data
+
+    # 2FA ist noch nicht eingerichtet, aber vom Backend erzwungen worden.
+    setup = await _setup_2fa(client, csrf)
+    token_resp = await _verify_2fa(client, setup["secret"], csrf)
+    assert "access_token" in token_resp
+    return token_resp
+
+
 async def _setup_2fa(client: AsyncClient, csrf: str) -> dict:
     resp = await client.post(
         "/api/v1/auth/2fa/setup",
@@ -86,14 +110,28 @@ async def test_register_login_2fa_logout_flow(async_client: AsyncClient) -> None
     assert user["email"] == email
     assert user["role"] == "vermieter"
 
-    pre2fa = await _login_step(async_client, email, password)
-    assert pre2fa["requires_2fa"] is True
+    token = await _login_step(async_client, email, password)
+    assert token.get("requires_2fa", False) is False
+    assert "access_token" in token
+    assert token["user"]["email"] == email
     csrf = _csrf(async_client)
 
+    # 2FA optional einrichten und dann ausprobieren.
     setup = await _setup_2fa(async_client, csrf)
     secret = setup["secret"]
     assert len(setup["backup_codes"]) == 8
 
+    # Logout, damit der nächste Login 2FA erzwingt.
+    logout = await async_client.post(
+        "/api/v1/auth/logout",
+        headers={"X-CSRF-Token": csrf},
+    )
+    assert logout.status_code == 200
+
+    # Zweiter Login: jetzt ist 2FA aktiv und muss verifiziert werden.
+    pre2fa = await _login_step(async_client, email, password)
+    assert pre2fa["requires_2fa"] is True
+    csrf = _csrf(async_client)
     token_resp = await _verify_2fa(async_client, secret, csrf)
     assert "access_token" in token_resp
     assert token_resp["user"]["email"] == email
@@ -187,7 +225,6 @@ async def test_rls_mieter_sees_only_own_data(
     # Login als Mieter 1.
     m1_email = f"mieter1-{vermieter.id}@example.com"
     pre2fa = await _login_step(async_client, m1_email, mieter_pw)
-    assert pre2fa["requires_2fa"] is True
     csrf = _csrf(async_client)
     setup = await _setup_2fa(async_client, csrf)
     await _verify_2fa(async_client, setup["secret"], csrf)

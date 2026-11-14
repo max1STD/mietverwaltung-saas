@@ -4,6 +4,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
+import pyotp
 import pytest
 from httpx import AsyncClient, Response
 from sqlalchemy import select
@@ -46,7 +47,7 @@ async def _register(
     assert response.status_code == 201, response.text
 
 
-async def _login(client: AsyncClient, email: str, password: str) -> dict:
+async def _login(client: AsyncClient, email: str, password: str) -> Response:
     response = await client.post(
         "/api/v1/auth/login",
         json={"email": email, "password": password},
@@ -58,7 +59,7 @@ async def _login(client: AsyncClient, email: str, password: str) -> dict:
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_login_success(async_client: AsyncClient) -> None:
-    """Login mit korrekten Daten liefert 200, requires_2fa und temp_token."""
+    """Login mit korrekten Daten liefert 200. Bei erstem Login ohne 2FA kommt TokenResponse."""
     email = _unique_email("login_ok")
     password = "SicheresPasswort123!"
     await _register(async_client, email, password)
@@ -66,9 +67,63 @@ async def test_login_success(async_client: AsyncClient) -> None:
     response = await _login(async_client, email, password)
     assert response.status_code == 200, response.text
     payload = response.json()
+    # 2FA ist optional: erster Login ohne TOTP liefert direkt vollen TokenResponse.
+    if payload.get("requires_2fa"):
+        assert "temp_token" in payload
+        assert payload["temp_token"]
+    else:
+        assert "access_token" in payload
+        assert payload["access_token"]
+        assert payload["user"]["email"] == email
+
+
+@pytest.mark.phase1
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_login_and_2fa_verify(async_client: AsyncClient) -> None:
+    """Login, dann 2FA-Setup/Verify, dann geschützte Route."""
+    import pyotp
+
+    email = _unique_email("login_2fa")
+    password = "SicheresPasswort123!"
+    await _register(async_client, email, password)
+
+    # Erster Login ohne 2FA → direkter TokenResponse.
+    resp = await _login(async_client, email, password)
+    assert resp.status_code == 200
+    csrf = await _ensure_csrf(async_client)
+
+    # 2FA einrichten.
+    setup_resp = await async_client.post(
+        "/api/v1/auth/2fa/setup",
+        json={},
+        headers={"X-CSRF-Token": csrf},
+    )
+    assert setup_resp.status_code == 200, setup_resp.text
+    secret = setup_resp.json()["secret"]
+
+    # Logout.
+    await async_client.post("/api/v1/auth/logout", headers={"X-CSRF-Token": csrf})
+
+    # Nun Login → 2FA erforderlich.
+    pre2fa = await _login(async_client, email, password)
+    assert pre2fa.status_code == 200
+    payload = pre2fa.json()
     assert payload["requires_2fa"] is True
-    assert "temp_token" in payload
-    assert payload["temp_token"]
+    csrf = await _ensure_csrf(async_client)
+
+    verify_resp = await async_client.post(
+        "/api/v1/auth/2fa/verify",
+        json={"code": pyotp.TOTP(secret).now()},
+        headers={"X-CSRF-Token": csrf},
+    )
+    assert verify_resp.status_code == 200, verify_resp.text
+    assert "access_token" in verify_resp.json()
+    assert verify_resp.json()["user"]["email"] == email
+
+    me = await async_client.get("/api/v1/auth/users/me")
+    assert me.status_code == 200
+    assert me.json()["email"] == email
 
 
 @pytest.mark.phase1
