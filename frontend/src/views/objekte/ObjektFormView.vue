@@ -28,7 +28,23 @@
             label="Adresse"
             placeholder="Straße und Hausnummer"
             :error="errors.address"
+            @input="debouncedStreetSearch"
           />
+
+          <!-- Straßen-Autocomplete-Vorschläge -->
+          <ul
+            v-if="streetSuggestions.length > 0"
+            class="-mt-2 mb-2 bg-white border border-gray-200 rounded-xl shadow-sm max-h-48 overflow-auto"
+          >
+            <li
+              v-for="(suggestion, index) in streetSuggestions"
+              :key="index"
+              class="px-4 py-2 text-sm text-gray-700 hover:bg-[#0D3B70]/5 cursor-pointer"
+              @click="selectStreet(suggestion)"
+            >
+              {{ suggestion }}
+            </li>
+          </ul>
 
           <div class="grid grid-cols-2 gap-4">
             <AppInput
@@ -38,6 +54,7 @@
               placeholder="12345"
               maxlength="5"
               inputmode="numeric"
+              @blur="lookupOrt"
             />
             <AppInput
               id="ort"
@@ -113,10 +130,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useObjekteStore, type Objekt, type ObjektTyp } from '@/stores/objekte'
 import { useToast } from '@/composables/useToast'
+import apiClient from '@/api/client'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -156,6 +174,9 @@ const errors = reactive({
   address: '',
 })
 
+const streetSuggestions = ref<string[]>([])
+let streetSearchTimeout: ReturnType<typeof setTimeout> | null = null
+
 function populateForm(objekt: Objekt): void {
   form.name = objekt.name
   form.address = objekt.address || ''
@@ -166,6 +187,54 @@ function populateForm(objekt: Objekt): void {
   form.kaufpreis = objekt.kaufpreis ? String(objekt.kaufpreis) : ''
   form.kaufdatum = objekt.kaufdatum || ''
   form.notizen = objekt.notizen || ''
+}
+
+async function lookupOrt(): Promise<void> {
+  const plz = form.plz.trim()
+  if (plz.length !== 5 || !/^\d{5}$/.test(plz)) return
+
+  try {
+    const { data } = await apiClient.get<{ plz: string; orte: string[] }>(`/geo/plz/${plz}`)
+    if (data.orte.length === 1) {
+      form.ort = data.orte[0]
+    }
+  } catch {
+    // Offline-Fallback: Eingabe bleibt erhalten.
+  }
+}
+
+function debouncedStreetSearch(): void {
+  if (streetSearchTimeout) {
+    clearTimeout(streetSearchTimeout)
+  }
+  streetSearchTimeout = setTimeout(() => {
+    searchStreets()
+  }, 300)
+}
+
+async function searchStreets(): Promise<void> {
+  const q = form.address.trim()
+  const plz = form.plz.trim()
+  const ort = form.ort.trim()
+  if (!q || q.length < 2) {
+    streetSuggestions.value = []
+    return
+  }
+
+  try {
+    const params: Record<string, string> = { q }
+    if (plz) params.plz = plz
+    if (ort) params.ort = ort
+    const { data } = await apiClient.get<{ strassen: string[] }>('/geo/strassen', { params })
+    streetSuggestions.value = data.strassen
+  } catch {
+    streetSuggestions.value = []
+  }
+}
+
+function selectStreet(street: string): void {
+  form.address = street
+  streetSuggestions.value = []
 }
 
 function validate(): boolean {
