@@ -109,7 +109,7 @@ async def map_einheit_response(db: AsyncSession, einheit: Einheit) -> EinheitRes
         if vertrag.mieter:
             aktueller_mieter = EinheitNestedMieter(
                 id=vertrag.mieter.id,
-                full_name=vertrag.mieter.full_name,
+                name=vertrag.mieter.full_name,
                 status=vertrag.mieter.status,
             )
             vermietungsstatus = "vermietet"
@@ -157,12 +157,12 @@ async def map_mieter_response(
     return MieterResponse(
         id=mieter.id,
         vermieter_id=mieter.vermieter_id,
-        first_name=mieter.first_name,
-        last_name=mieter.last_name,
-        full_name=mieter.full_name,
+        name=mieter.full_name,
         email=mieter.email,
-        phone=mieter.phone,
-        birth_date=birth_date,
+        telefon=mieter.phone,
+        geburtsdatum=birth_date,
+        adresse=mieter.address,
+        notizen=mieter.notes,
         status=mieter.status,
         since=mieter.since,
         created_at=mieter.created_at,
@@ -181,7 +181,7 @@ async def map_mietvertrag_response(db: AsyncSession, vertrag: Mietvertrag) -> Mi
     if vertrag.mieter:
         mieter_info = MietvertragNestedMieter(
             id=vertrag.mieter.id,
-            full_name=vertrag.mieter.full_name,
+            name=vertrag.mieter.full_name,
         )
 
     einheit_info = None
@@ -314,7 +314,7 @@ async def map_mietzahlung_response(
     if zahlung.mieter:
         mieter_info = MietzahlungNestedMieter(
             id=zahlung.mieter.id,
-            full_name=zahlung.mieter.full_name,
+            name=zahlung.mieter.full_name,
         )
 
     vertrag_info = None

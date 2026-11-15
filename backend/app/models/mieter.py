@@ -29,6 +29,8 @@ class Mieter(Base, TimestampMixin, SoftDeleteMixin):
     last_name: Mapped[str] = mapped_column(String(50), nullable=False)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    address: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(2000), nullable=True)
     birth_date_enc: Mapped[bytes | None] = mapped_column(BYTEA, nullable=True)
     status: Mapped[str] = mapped_column(
         String(20),
@@ -50,3 +52,28 @@ class Mieter(Base, TimestampMixin, SoftDeleteMixin):
     def full_name(self) -> str:
         """Vollständiger Name für Anzeige und Audit-Logs."""
         return f"{self.first_name} {self.last_name}".strip()
+
+    @property
+    def name(self) -> str:
+        """Frontend-kompatibler Name."""
+        return self.full_name
+
+    @property
+    def telefon(self) -> str | None:
+        return self.phone
+
+    @property
+    def geburtsdatum(self) -> date | None:
+        from app.services.crypto import decrypt_value
+        if self.birth_date_enc:
+            decrypted = decrypt_value(self.birth_date_enc)
+            return date.fromisoformat(decrypted) if decrypted else None
+        return None
+
+    @property
+    def adresse(self) -> str | None:
+        return self.address
+
+    @property
+    def notizen(self) -> str | None:
+        return self.notes

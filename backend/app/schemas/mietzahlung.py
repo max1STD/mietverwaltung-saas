@@ -45,7 +45,7 @@ class MietzahlungNestedMieter(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    full_name: str
+    name: str
 
 
 class MietzahlungNestedVertrag(BaseModel):

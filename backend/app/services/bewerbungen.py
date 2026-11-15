@@ -249,13 +249,15 @@ def __bewerbung_to_mieter_data(bewerbung: Bewerbung):
     """Wandelt Bewerbungs-Stammdaten in MieterCreate-kompatibles Dict um."""
     from app.schemas.mieter import MieterCreate
 
+    name = f"{bewerbung.first_name or ''} {bewerbung.last_name or ''}".strip()
     return MieterCreate(
-        first_name=bewerbung.first_name,
-        last_name=bewerbung.last_name,
+        name=name or "Unbekannt",
         email=bewerbung.email,
-        phone=bewerbung.phone,
+        telefon=bewerbung.phone,
         status="aktiv",
         since=date.today(),
+        adresse=None,
+        notizen=None,
     )
 
 

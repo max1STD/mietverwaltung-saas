@@ -107,7 +107,7 @@ def set_auth_cookies(
             Lebensdauer gesetzt (z. B. 7 Tage), damit der Nutzer in Safari
             und anderen Browsern auch nach Neustart eingeloggt bleibt.
     """
-    secure = settings.ENVIRONMENT != "development"
+    secure = True  # HTTPS erzwungen für persistente Cookies in Safari
     access_max_age = int(timedelta(minutes=settings.JWT_EXPIRE_MINUTES).total_seconds())
     refresh_max_age = int(
         timedelta(days=settings.JWT_REFRESH_EXPIRE_DAYS).total_seconds()
@@ -146,7 +146,7 @@ def set_auth_cookies(
 
 def set_temp_cookie(response: Response, temp_token: str) -> None:
     """Setzt das kurzlebige Pre-2FA Cookie."""
-    secure = settings.ENVIRONMENT != "development"
+    secure = True
     response.set_cookie(
         key=TEMP_COOKIE,
         value=temp_token,

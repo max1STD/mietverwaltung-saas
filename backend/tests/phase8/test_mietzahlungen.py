@@ -72,7 +72,7 @@ async def test_mietzahlung_crud_and_mark_paid(auth_client: AsyncClient) -> None:
     assert create_response.status_code == 201
     data = create_response.json()
     assert data["betrag_soll"] == "850.00"
-    assert data["mieter"]["full_name"] == "Max Zahler"
+    assert data["mieter"]["name"] == "Max Zahler"
     zahlung_id = data["id"]
 
     # mark-paid

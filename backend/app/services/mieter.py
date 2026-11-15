@@ -11,6 +11,15 @@ from app.services.audit_log import audit_log
 from app.services.crypto import encrypt_value
 
 
+def _split_name(name: str | None) -> tuple[str, str]:
+    """Teilt einen vollen Namen in Vor- und Nachname auf."""
+    if not name:
+        return ("", "")
+    name = name.strip()
+    parts = name.rsplit(" ", 1)
+    return (parts[0], parts[1] if len(parts) > 1 else "")
+
+
 async def create_mieter(
     db: AsyncSession,
     vermieter_id: int,
@@ -20,14 +29,22 @@ async def create_mieter(
 ) -> Mieter:
     """Legt einen neuen Mieter für einen Vermieter an."""
     payload = data.model_dump()
-    birth_date = payload.pop("birth_date", None)
+
+    # Frontend-kompatible Namen auf interne Felder mappen
+    first_name, last_name = _split_name(payload.get("name"))
+    birth_date = payload.get("geburtsdatum")
+    phone = payload.get("telefon")
+    address = payload.get("adresse")
+    notes = payload.get("notizen")
 
     mieter = Mieter(
         vermieter_id=vermieter_id,
-        first_name=payload["first_name"],
-        last_name=payload["last_name"],
+        first_name=first_name,
+        last_name=last_name,
         email=payload.get("email"),
-        phone=payload.get("phone"),
+        phone=phone,
+        address=address,
+        notes=notes,
         birth_date_enc=encrypt_value(birth_date.isoformat() if birth_date else None),
         status=payload.get("status", "aktiv"),
         since=payload.get("since"),
@@ -93,15 +110,31 @@ async def update_mieter(
     """Aktualisiert einen Mieter mit den übergebenen Feldern."""
     update_fields = data.model_dump(exclude_unset=True)
 
-    # Geburtsdatum wird verschlüsselt in der DB abgelegt.
-    if "birth_date" in update_fields:
-        birth_date = update_fields.pop("birth_date")
+    # Frontend-kompatible Namen auf interne Felder mappen
+    if "geburtsdatum" in update_fields:
+        birth_date = update_fields.pop("geburtsdatum")
         mieter.birth_date_enc = encrypt_value(
             birth_date.isoformat() if birth_date else None
         )
 
-    for field, value in update_fields.items():
-        setattr(mieter, field, value)
+    if "name" in update_fields:
+        first_name, last_name = _split_name(update_fields.pop("name"))
+        mieter.first_name = first_name
+        mieter.last_name = last_name
+
+    field_map = {
+        "telefon": "phone",
+        "adresse": "address",
+        "notizen": "notes",
+    }
+    for frontend_field, db_field in field_map.items():
+        if frontend_field in update_fields:
+            setattr(mieter, db_field, update_fields[frontend_field])
+
+    # email / status / since sind identisch benannt
+    for field in ("email", "status", "since"):
+        if field in update_fields:
+            setattr(mieter, field, update_fields[field])
 
     await audit_log(
         db,

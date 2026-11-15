@@ -169,7 +169,7 @@ async def async_client(engine) -> AsyncIterator[AsyncClient]:
 
         async with AsyncClient(
             transport=ASGITransport(app=app),
-            base_url="http://test",
+            base_url="https://test",
         ) as client:
             client.db_session = session  # für Tests mit direkten DB-Abfragen
             yield client

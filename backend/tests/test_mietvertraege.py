@@ -39,8 +39,8 @@ async def _create_mieter(client: AsyncClient) -> int:
     response = await client.post(
         "/api/v1/mieter",
         json={
-            "first_name": "Max",
-            "last_name": "Mustermann",
+            "name": "Max Mustermann",
+            
             "email": "max@example.de",
         },
     )
@@ -70,7 +70,7 @@ async def test_create_mietvertrag(auth_client: AsyncClient, vermieter_user: User
     assert data["einheit_id"] == einheit_id
     assert data["miete_cold"] == "750.00"
     assert data["vermieter_id"] == vermieter_user.id
-    assert data["mieter"]["full_name"] == "Max Mustermann"
+    assert data["mieter"]["name"] == "Max Mustermann"
     assert data["einheit"]["name"] == "WE 1"
 
 
