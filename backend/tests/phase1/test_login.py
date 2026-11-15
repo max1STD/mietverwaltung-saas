@@ -47,10 +47,10 @@ async def _register(
     assert response.status_code == 201, response.text
 
 
-async def _login(client: AsyncClient, email: str, password: str) -> Response:
+async def _login(client: AsyncClient, email: str, password: str, remember_me: bool = False) -> Response:
     response = await client.post(
         "/api/v1/auth/login",
-        json={"email": email, "password": password},
+        json={"email": email, "password": password, "remember_me": remember_me},
     )
     return response
 
@@ -75,6 +75,26 @@ async def test_login_success(async_client: AsyncClient) -> None:
         assert "access_token" in payload
         assert payload["access_token"]
         assert payload["user"]["email"] == email
+
+
+@pytest.mark.phase1
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_login_remember_me_sets_longer_refresh_cookie(async_client: AsyncClient) -> None:
+    """Bei remember_me=True erhält das Refresh-Cookie eine längere Lebensdauer."""
+    email = _unique_email("login_remember")
+    await _register(async_client, email, "SicheresPasswort123!")
+
+    response = await _login(async_client, email, "SicheresPasswort123!", remember_me=True)
+    assert response.status_code == 200, response.text
+
+    set_cookie_headers = response.headers.get_list("set-cookie")
+    refresh_cookie_header = next(
+        (h for h in set_cookie_headers if h.startswith("refresh_token=")), None
+    )
+    assert refresh_cookie_header is not None
+    # Max-Age sollte ca. 7 Tage sein (604800 Sekunden)
+    assert "Max-Age=604800" in refresh_cookie_header or "max-age=604800" in refresh_cookie_header.lower()
 
 
 @pytest.mark.phase1

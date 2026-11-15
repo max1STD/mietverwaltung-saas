@@ -93,6 +93,16 @@ def verify_temp_token(token: str) -> dict[str, Any] | None:
     return payload
 
 
+def _cookie_secure() -> bool:
+    """Gibt zurück, ob Cookies das Secure-Flag gesetzt bekommen sollen.
+
+    In Produktion immer True (Safari erfordert Secure für persistente Cookies).
+    In Entwicklung False, damit lokale HTTP-Tests und Cloudflare-HTTP-Tunnels
+    funktionieren.
+    """
+    return settings.ENVIRONMENT.lower() == "production"
+
+
 def set_auth_cookies(
     response: Response,
     access_token: str,
@@ -107,7 +117,7 @@ def set_auth_cookies(
             Lebensdauer gesetzt (z. B. 7 Tage), damit der Nutzer in Safari
             und anderen Browsern auch nach Neustart eingeloggt bleibt.
     """
-    secure = True  # HTTPS erzwungen für persistente Cookies in Safari
+    secure = _cookie_secure()
     access_max_age = int(timedelta(minutes=settings.JWT_EXPIRE_MINUTES).total_seconds())
     refresh_max_age = int(
         timedelta(days=settings.JWT_REFRESH_EXPIRE_DAYS).total_seconds()
@@ -146,12 +156,11 @@ def set_auth_cookies(
 
 def set_temp_cookie(response: Response, temp_token: str) -> None:
     """Setzt das kurzlebige Pre-2FA Cookie."""
-    secure = True
     response.set_cookie(
         key=TEMP_COOKIE,
         value=temp_token,
         httponly=True,
-        secure=secure,
+        secure=_cookie_secure(),
         samesite="Lax",
         max_age=60 * 10,
         path="/api/v1/auth/2fa",
@@ -160,10 +169,11 @@ def set_temp_cookie(response: Response, temp_token: str) -> None:
 
 def clear_auth_cookies(response: Response) -> None:
     """Entfernt alle Auth-Cookies."""
-    response.delete_cookie(key=ACCESS_COOKIE, path="/")
-    response.delete_cookie(key=REFRESH_COOKIE, path="/api/v1/auth/refresh")
-    response.delete_cookie(key=TEMP_COOKIE, path="/api/v1/auth/2fa")
-    response.delete_cookie(key=CSRF_COOKIE, path="/")
+    secure = _cookie_secure()
+    response.delete_cookie(key=ACCESS_COOKIE, path="/", secure=secure, samesite="lax", httponly=True)
+    response.delete_cookie(key=REFRESH_COOKIE, path="/api/v1/auth/refresh", secure=secure, samesite="lax", httponly=True)
+    response.delete_cookie(key=TEMP_COOKIE, path="/api/v1/auth/2fa", secure=secure, samesite="lax", httponly=True)
+    response.delete_cookie(key=CSRF_COOKIE, path="/", secure=secure, samesite="lax", httponly=False)
 
 
 def get_cookie_token(request: Request, name: str) -> str | None:
