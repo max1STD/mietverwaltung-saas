@@ -17,8 +17,14 @@ async def create_objekt(
     ip: str | None = None,
 ) -> Objekt:
     """Legt ein neues Objekt für einen Vermieter an."""
+    from sqlalchemy import text
+
+    result = await db.execute(text("SELECT nextval('objekte_public_id_seq')"))
+    public_id = result.scalar()
+
     objekt = Objekt(
         vermieter_id=vermieter_id,
+        public_id=public_id,
         **data.model_dump(),
     )
     db.add(objekt)
@@ -32,7 +38,7 @@ async def create_objekt(
         action="objekt_create",
         entity="objekte",
         entity_id=objekt.id,
-        details={"name": objekt.name},
+        details={"name": objekt.name, "public_id": public_id},
         ip=ip,
         risk_level="niedrig",
     )

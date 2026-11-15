@@ -18,8 +18,14 @@ async def create_einheit(
     ip: str | None = None,
 ) -> Einheit:
     """Legt eine neue Wohneinheit innerhalb eines Objekts an."""
+    from sqlalchemy import text
+
+    result = await db.execute(text("SELECT nextval('einheiten_public_id_seq')"))
+    public_id = result.scalar()
+
     einheit = Einheit(
         vermieter_id=vermieter_id,
+        public_id=public_id,
         **data.model_dump(),
     )
     db.add(einheit)
@@ -33,7 +39,7 @@ async def create_einheit(
         action="einheit_create",
         entity="einheiten",
         entity_id=einheit.id,
-        details={"name": einheit.name, "objekt_id": einheit.objekt_id},
+        details={"name": einheit.name, "objekt_id": einheit.objekt_id, "public_id": public_id},
         ip=ip,
         risk_level="niedrig",
     )

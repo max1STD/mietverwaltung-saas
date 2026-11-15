@@ -61,6 +61,7 @@ class ObjektNestedEinheit(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    public_id: int | None = None
     name: str
     wohnflaeche_qm: Decimal | None = None
     etage: int | None = None
@@ -75,6 +76,7 @@ class ObjektResponse(ObjektBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    public_id: int | None = None
     vermieter_id: int
     created_at: datetime
     updated_at: datetime

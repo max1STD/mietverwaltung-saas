@@ -115,7 +115,7 @@ async def test_alembic_version_is_expected(db_session: AsyncSession) -> None:
         text("SELECT version_num FROM alembic_version")
     )
     version = result.scalar_one_or_none()
-    assert version in {"0001", "0002", "0003_frontend_aligned_fields"}, f"Unerwartete Alembic-Version: {version}"
+    assert version in {"0001", "0002", "0003_frontend_aligned_fields", "0004_public_ids"}, f"Unerwartete Alembic-Version: {version}"
 
 
 @pytest.mark.phase0

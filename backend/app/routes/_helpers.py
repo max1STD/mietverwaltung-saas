@@ -63,6 +63,7 @@ async def map_objekt_response(db: AsyncSession, objekt: Objekt) -> ObjektRespons
     einheiten = [
         ObjektNestedEinheit(
             id=e.id,
+            public_id=e.public_id,
             name=e.name,
             wohnflaeche_qm=_to_decimal(e.wohnflaeche_qm),
             etage=e.etage,
@@ -76,6 +77,7 @@ async def map_objekt_response(db: AsyncSession, objekt: Objekt) -> ObjektRespons
 
     return ObjektResponse(
         id=objekt.id,
+        public_id=objekt.public_id,
         vermieter_id=objekt.vermieter_id,
         name=objekt.name,
         address=objekt.address,
@@ -116,6 +118,7 @@ async def map_einheit_response(db: AsyncSession, einheit: Einheit) -> EinheitRes
 
     return EinheitResponse(
         id=einheit.id,
+        public_id=einheit.public_id,
         vermieter_id=einheit.vermieter_id,
         objekt_id=einheit.objekt_id,
         name=einheit.name,

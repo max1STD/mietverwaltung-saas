@@ -75,8 +75,8 @@ async def _seed_mieter_einheit(db: AsyncSession, vermieter_id: int) -> tuple[int
     result = await db.execute(
         text(
             """
-            INSERT INTO objekte (vermieter_id, name, address, typ)
-            VALUES (:vid, 'Testobjekt', 'Musterstraße 1, 12345 Musterstadt', 'mehrfamilienhaus')
+            INSERT INTO objekte (vermieter_id, public_id, name, address, typ)
+            VALUES (:vid, nextval('objekte_public_id_seq'), 'Testobjekt', 'Musterstraße 1, 12345 Musterstadt', 'mehrfamilienhaus')
             RETURNING id
             """
         ),
@@ -87,8 +87,8 @@ async def _seed_mieter_einheit(db: AsyncSession, vermieter_id: int) -> tuple[int
     result = await db.execute(
         text(
             """
-            INSERT INTO einheiten (vermieter_id, objekt_id, name, wohnflaeche_qm, etage, kaltmiete)
-            VALUES (:vid, :oid, 'Wohnung 1', 75.0, 3, 850.00)
+            INSERT INTO einheiten (vermieter_id, public_id, objekt_id, name, wohnflaeche_qm, etage, kaltmiete)
+            VALUES (:vid, nextval('einheiten_public_id_seq'), :oid, 'Wohnung 1', 75.0, 3, 850.00)
             RETURNING id
             """
         ),
