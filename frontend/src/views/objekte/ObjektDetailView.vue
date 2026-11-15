@@ -86,6 +86,11 @@
                 <td class="py-3 px-4">
                   <AppBadge :variant="badgeForStatus(item.status)">{{ item.status || 'frei' }}</AppBadge>
                 </td>
+                <td class="py-3 px-4 text-right">
+                  <AppButton size="sm" variant="ghost" @click="editEinheit(item)">
+                    ✎
+                  </AppButton>
+                </td>
               </template>
             </AppTable>
           </AppCard>
@@ -104,8 +109,8 @@
     </div>
 
     <!-- Modal: Neue Einheit -->
-    <AppModal v-model="showAddEinheit" title="Neue Wohneinheit">
-      <form class="space-y-4" @submit.prevent="addEinheit">
+    <AppModal v-model="showAddEinheit" :title="editingEinheit ? 'Wohneinheit bearbeiten' : 'Neue Wohneinheit'">
+      <form class="space-y-4" @submit.prevent="saveEinheit">
         <AppInput
           id="einheit-name"
           v-model="einheitForm.name"
@@ -147,11 +152,11 @@
         </div>
 
         <div class="flex justify-end gap-3 pt-2">
-          <AppButton type="button" variant="ghost" @click="showAddEinheit = false">
+          <AppButton type="button" variant="ghost" @click="closeEinheitModal">
             Abbrechen
           </AppButton>
           <AppButton type="submit" :loading="objekteStore.saving">
-            Einheit speichern
+            {{ editingEinheit ? 'Änderungen speichern' : 'Einheit speichern' }}
           </AppButton>
         </div>
       </form>
@@ -179,6 +184,7 @@ const { showToast } = useToast()
 
 const objektId = computed(() => String(route.params.id))
 const showAddEinheit = ref(false)
+const editingEinheit = ref<Einheit | null>(null)
 
 const einheitForm = reactive({
   name: '',
@@ -194,6 +200,7 @@ const einheitColumns = [
   { key: 'wohnflaeche_qm', label: 'Fläche' },
   { key: 'kaltmiete', label: 'Kaltmiete' },
   { key: 'status', label: 'Status' },
+  { key: 'actions', label: '' },
 ]
 
 function formatAddress(objekt: Objekt): string {
@@ -228,7 +235,23 @@ function badgeForStatus(status?: string): 'green' | 'yellow' | 'red' | 'gray' {
   }
 }
 
-async function addEinheit(): Promise<void> {
+function editEinheit(einheit: Einheit): void {
+  editingEinheit.value = einheit
+  einheitForm.name = einheit.name
+  einheitForm.etage = einheit.etage != null ? String(einheit.etage) : ''
+  einheitForm.wohnflaeche_qm = einheit.wohnflaeche_qm != null ? String(einheit.wohnflaeche_qm) : ''
+  einheitForm.kaltmiete = einheit.kaltmiete != null ? String(einheit.kaltmiete) : ''
+  einheitForm.nebenkosten_vorschuss = einheit.nebenkosten_vorschuss != null ? String(einheit.nebenkosten_vorschuss) : ''
+  showAddEinheit.value = true
+}
+
+function closeEinheitModal(): void {
+  showAddEinheit.value = false
+  editingEinheit.value = null
+  resetEinheitForm()
+}
+
+async function saveEinheit(): Promise<void> {
   if (!einheitForm.name.trim()) {
     showToast('Bitte gib eine Bezeichnung ein.', 'warning')
     return
@@ -244,13 +267,22 @@ async function addEinheit(): Promise<void> {
       : undefined,
   }
 
-  const einheit = await objekteStore.createEinheit(objektId.value, payload)
-  if (einheit) {
-    showToast('Wohneinheit hinzugefügt.', 'success')
-    showAddEinheit.value = false
-    resetEinheitForm()
+  if (editingEinheit.value) {
+    const updated = await objekteStore.updateEinheit(editingEinheit.value.id, payload)
+    if (updated) {
+      showToast('Wohneinheit aktualisiert.', 'success')
+      closeEinheitModal()
+    } else {
+      showToast(objekteStore.error?.message || 'Fehler beim Aktualisieren.', 'error')
+    }
   } else {
-    showToast(objekteStore.error?.message || 'Fehler beim Speichern.', 'error')
+    const einheit = await objekteStore.createEinheit(objektId.value, payload)
+    if (einheit) {
+      showToast('Wohneinheit hinzugefügt.', 'success')
+      closeEinheitModal()
+    } else {
+      showToast(objekteStore.error?.message || 'Fehler beim Speichern.', 'error')
+    }
   }
 }
 
