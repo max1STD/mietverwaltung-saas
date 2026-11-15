@@ -54,6 +54,7 @@
               placeholder="12345"
               maxlength="5"
               inputmode="numeric"
+              :error="errors.plz"
               @blur="lookupOrt"
             />
             <AppInput
@@ -61,6 +62,7 @@
               v-model="form.ort"
               label="Ort"
               placeholder="Berlin"
+              :error="errors.ort"
             />
           </div>
 
@@ -71,12 +73,14 @@
                 id="typ"
                 v-model="form.typ"
                 class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0D3B70]/20 focus:border-[#0D3B70]"
+                :class="{ 'border-red-500': errors.typ }"
               >
                 <option value="">Bitte wählen</option>
                 <option v-for="option in typOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
               </select>
+              <p v-if="errors.typ" class="mt-1 text-xs text-red-600">{{ errors.typ }}</p>
             </div>
 
             <AppInput
@@ -85,6 +89,7 @@
               label="Baujahr"
               type="number"
               placeholder="1990"
+              :error="errors.baujahr"
             />
           </div>
 
@@ -95,12 +100,14 @@
               label="Kaufpreis (€)"
               type="number"
               placeholder="250000"
+              :error="errors.kaufpreis"
             />
             <AppInput
               id="kaufdatum"
               v-model="form.kaufdatum"
               label="Kaufdatum"
               type="date"
+              :error="errors.kaufdatum"
             />
           </div>
 
@@ -110,9 +117,11 @@
               id="notizen"
               v-model="form.notizen"
               rows="4"
-              class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0D3B70]/20 focus:border-[#0D3B70]"
-              placeholder="Interne Notizen zum Objekt …"
-            />
+              class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0D3B70]/20 focus:border-[#0D3B70]"
+              :class="{ 'border-red-500': errors.notizen }"
+              placeholder="Interne Notizen …"
+            ></textarea>
+            <p v-if="errors.notizen" class="mt-1 text-xs text-red-600">{{ errors.notizen }}</p>
           </div>
 
           <div class="flex items-center justify-end gap-3 pt-4">
@@ -172,7 +181,37 @@ const form = reactive({
 const errors = reactive({
   name: '',
   address: '',
+  plz: '',
+  ort: '',
+  typ: '',
+  baujahr: '',
+  kaufpreis: '',
+  kaufdatum: '',
+  notizen: '',
 })
+
+function clearErrors(): void {
+  errors.name = ''
+  errors.address = ''
+  errors.plz = ''
+  errors.ort = ''
+  errors.typ = ''
+  errors.baujahr = ''
+  errors.kaufpreis = ''
+  errors.kaufdatum = ''
+  errors.notizen = ''
+}
+
+function mapApiErrors(details?: Record<string, string[]>): void {
+  clearErrors()
+  if (!details) return
+  for (const [field, messages] of Object.entries(details)) {
+    const target = field as keyof typeof errors
+    if (target in errors && messages.length > 0) {
+      errors[target] = messages.join('. ')
+    }
+  }
+}
 
 const streetSuggestions = ref<string[]>([])
 let streetSearchTimeout: ReturnType<typeof setTimeout> | null = null
@@ -238,13 +277,34 @@ function selectStreet(street: string): void {
 }
 
 function validate(): boolean {
-  errors.name = ''
-  errors.address = ''
+  clearErrors()
 
   let valid = true
   if (!form.name.trim()) {
     errors.name = 'Bitte gib eine Bezeichnung ein.'
     valid = false
+  }
+
+  if (form.plz && !/^\d{5}$/.test(form.plz)) {
+    errors.plz = 'PLZ muss aus 5 Ziffern bestehen.'
+    valid = false
+  }
+
+  if (form.baujahr) {
+    const year = Number(form.baujahr)
+    const currentYear = new Date().getFullYear()
+    if (Number.isNaN(year) || year < 1500 || year > currentYear + 5) {
+      errors.baujahr = `Baujahr muss zwischen 1500 und ${currentYear + 5} liegen.`
+      valid = false
+    }
+  }
+
+  if (form.kaufpreis) {
+    const price = Number(form.kaufpreis)
+    if (Number.isNaN(price) || price < 0) {
+      errors.kaufpreis = 'Kaufpreis darf nicht negativ sein.'
+      valid = false
+    }
   }
 
   return valid
@@ -265,6 +325,7 @@ function buildPayload(): Partial<Objekt> {
 }
 
 async function handleSubmit(): Promise<void> {
+  clearErrors()
   if (!validate()) return
 
   const payload = buildPayload()
@@ -275,6 +336,7 @@ async function handleSubmit(): Promise<void> {
       showToast('Objekt aktualisiert.', 'success')
       router.push(`/objekte/${updated.id}`)
     } else {
+      mapApiErrors(objekteStore.error?.details)
       showToast(objekteStore.error?.message || 'Fehler beim Speichern.', 'error')
     }
   } else {
@@ -283,6 +345,7 @@ async function handleSubmit(): Promise<void> {
       showToast('Objekt erfolgreich angelegt.', 'success')
       router.push(`/objekte/${created.id}`)
     } else {
+      mapApiErrors(objekteStore.error?.details)
       showToast(objekteStore.error?.message || 'Fehler beim Anlegen.', 'error')
     }
   }

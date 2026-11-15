@@ -117,6 +117,7 @@
           label="Bezeichnung"
           placeholder="z. B. Wohnung 1"
           required
+          :error="einheitErrors.name"
         />
         <div class="grid grid-cols-2 gap-4">
           <AppInput
@@ -125,6 +126,7 @@
             label="Etage"
             type="number"
             placeholder="0"
+            :error="einheitErrors.etage"
           />
           <AppInput
             id="einheit-wohnflaeche"
@@ -132,6 +134,7 @@
             label="Wohnfläche (m²)"
             type="number"
             placeholder="75"
+            :error="einheitErrors.wohnflaeche_qm"
           />
         </div>
         <div class="grid grid-cols-2 gap-4">
@@ -141,6 +144,7 @@
             label="Kaltmiete (€)"
             type="number"
             placeholder="800"
+            :error="einheitErrors.kaltmiete"
           />
           <AppInput
             id="einheit-nebenkosten"
@@ -148,6 +152,7 @@
             label="NK-Vorschuss (€)"
             type="number"
             placeholder="150"
+            :error="einheitErrors.nebenkosten_vorschuss"
           />
         </div>
 
@@ -203,6 +208,43 @@ const einheitColumns = [
   { key: 'actions', label: '' },
 ]
 
+const einheitErrors = reactive({
+  name: '',
+  etage: '',
+  wohnflaeche_qm: '',
+  kaltmiete: '',
+  nebenkosten_vorschuss: '',
+})
+
+function clearEinheitErrors(): void {
+  einheitErrors.name = ''
+  einheitErrors.etage = ''
+  einheitErrors.wohnflaeche_qm = ''
+  einheitErrors.kaltmiete = ''
+  einheitErrors.nebenkosten_vorschuss = ''
+}
+
+function mapEinheitApiErrors(details?: Record<string, string[]>): void {
+  clearEinheitErrors()
+  if (!details) return
+  for (const [field, messages] of Object.entries(details)) {
+    const target = field as keyof typeof einheitErrors
+    if (target in einheitErrors && messages.length > 0) {
+      einheitErrors[target] = messages.join('. ')
+    }
+  }
+}
+
+function validateEinheit(): boolean {
+  clearEinheitErrors()
+  let valid = true
+  if (!einheitForm.name.trim()) {
+    einheitErrors.name = 'Bezeichnung ist erforderlich.'
+    valid = false
+  }
+  return valid
+}
+
 function formatAddress(objekt: Objekt): string {
   const parts = [objekt.address, [objekt.plz, objekt.ort].filter(Boolean).join(' ')]
   return parts.filter(Boolean).join(', ') || 'Keine Adresse'
@@ -249,13 +291,11 @@ function closeEinheitModal(): void {
   showAddEinheit.value = false
   editingEinheit.value = null
   resetEinheitForm()
+  clearEinheitErrors()
 }
 
 async function saveEinheit(): Promise<void> {
-  if (!einheitForm.name.trim()) {
-    showToast('Bitte gib eine Bezeichnung ein.', 'warning')
-    return
-  }
+  if (!validateEinheit()) return
 
   const payload: Partial<Einheit> = {
     name: einheitForm.name,
@@ -273,6 +313,7 @@ async function saveEinheit(): Promise<void> {
       showToast('Wohneinheit aktualisiert.', 'success')
       closeEinheitModal()
     } else {
+      mapEinheitApiErrors(objekteStore.error?.details)
       showToast(objekteStore.error?.message || 'Fehler beim Aktualisieren.', 'error')
     }
   } else {
@@ -281,6 +322,7 @@ async function saveEinheit(): Promise<void> {
       showToast('Wohneinheit hinzugefügt.', 'success')
       closeEinheitModal()
     } else {
+      mapEinheitApiErrors(objekteStore.error?.details)
       showToast(objekteStore.error?.message || 'Fehler beim Speichern.', 'error')
     }
   }
