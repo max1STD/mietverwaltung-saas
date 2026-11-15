@@ -30,12 +30,13 @@ async def create_mieter(
     """Legt einen neuen Mieter für einen Vermieter an."""
     payload = data.model_dump()
 
-    # Frontend-kompatible Namen auf interne Felder mappen
-    first_name, last_name = _split_name(payload.get("name"))
+    first_name = payload.get("first_name", "")
+    last_name = payload.get("last_name", "")
     birth_date = payload.get("geburtsdatum")
     phone = payload.get("telefon")
-    address = payload.get("adresse")
     notes = payload.get("notizen")
+    adressen = payload.get("adressen", [])
+    buergschaften = payload.get("buergschaften", [])
 
     mieter = Mieter(
         vermieter_id=vermieter_id,
@@ -43,13 +44,66 @@ async def create_mieter(
         last_name=last_name,
         email=payload.get("email"),
         phone=phone,
-        address=address,
         notes=notes,
         birth_date_enc=encrypt_value(birth_date.isoformat() if birth_date else None),
         status=payload.get("status", "aktiv"),
         since=payload.get("since"),
     )
     db.add(mieter)
+    await db.flush()
+
+    # Adressen anlegen
+    from app.models.adresse import Adresse
+
+    for i, a in enumerate(adressen):
+        adresse = Adresse(
+            mieter_id=mieter.id,
+            typ=a["typ"],
+            strasse=a["strasse"],
+            hausnummer=a.get("hausnummer"),
+            plz=a["plz"],
+            ort=a["ort"],
+            land=a.get("land", "DE"),
+            is_primary=a.get("is_primary", i == 0),
+        )
+        db.add(adresse)
+
+    # Bürgschaften anlegen
+    from app.models.buergschaft import Buergschaft
+
+    for b in buergschaften:
+        buerger_adresse = None
+        if b.get("buerge_adresse"):
+            ba = b["buerge_adresse"]
+            buerger_adresse = Adresse(
+                mieter_id=mieter.id,
+                typ="guarantor",
+                strasse=ba["strasse"],
+                hausnummer=ba.get("hausnummer"),
+                plz=ba["plz"],
+                ort=ba["ort"],
+                land=ba.get("land", "DE"),
+                is_primary=False,
+            )
+            db.add(buerger_adresse)
+            await db.flush()
+
+        buergschaft = Buergschaft(
+            mieter_id=mieter.id,
+            vermieter_id=vermieter_id,
+            buerge_first_name=b["buerge_first_name"],
+            buerge_last_name=b["buerge_last_name"],
+            buerge_geburtsdatum=b.get("buerge_geburtsdatum"),
+            buerge_adresse_id=buerger_adresse.id if buerger_adresse else None,
+            buerge_phone=b.get("buerge_phone"),
+            buerge_email=b.get("buerge_email"),
+            hoechstbetrag=b.get("hoechstbetrag"),
+            gueltig_bis=b.get("gueltig_bis"),
+            status=b.get("status", "aktiv"),
+            notizen=b.get("notizen"),
+        )
+        db.add(buergschaft)
+
     await db.flush()
     await db.refresh(mieter)
 
@@ -60,7 +114,7 @@ async def create_mieter(
         action="mieter_create",
         entity="mieter",
         entity_id=mieter.id,
-        details={"name": mieter.full_name},
+        details={"name": mieter.full_name, "adressen": len(adressen), "buergschaften": len(buergschaften)},
         ip=ip,
         risk_level="niedrig",
     )
@@ -117,14 +171,13 @@ async def update_mieter(
             birth_date.isoformat() if birth_date else None
         )
 
-    if "name" in update_fields:
-        first_name, last_name = _split_name(update_fields.pop("name"))
-        mieter.first_name = first_name
-        mieter.last_name = last_name
+    if "first_name" in update_fields:
+        mieter.first_name = update_fields.pop("first_name")
+    if "last_name" in update_fields:
+        mieter.last_name = update_fields.pop("last_name")
 
     field_map = {
         "telefon": "phone",
-        "adresse": "address",
         "notizen": "notes",
     }
     for frontend_field, db_field in field_map.items():

@@ -246,17 +246,16 @@ async def ablehnen(
 
 
 def __bewerbung_to_mieter_data(bewerbung: Bewerbung):
-    """Wandelt Bewerbungs-Stammdaten in MieterCreate-kompatibles Dict um."""
+    """Wandelt Bewerbungs-Stammdaten in MieterCreate-kompatibles Objekt um."""
     from app.schemas.mieter import MieterCreate
 
-    name = f"{bewerbung.first_name or ''} {bewerbung.last_name or ''}".strip()
     return MieterCreate(
-        name=name or "Unbekannt",
+        first_name=bewerbung.first_name or "",
+        last_name=bewerbung.last_name or "",
         email=bewerbung.email,
         telefon=bewerbung.phone,
         status="aktiv",
         since=date.today(),
-        adresse=None,
         notizen=None,
     )
 

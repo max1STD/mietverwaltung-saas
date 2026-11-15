@@ -30,6 +30,8 @@ from app.schemas.einheit import (
 )
 from app.schemas.kosten import KostenNestedKategorie, KostenResponse
 from app.schemas.mieter import (
+    AdresseResponse,
+    BuergschaftResponse,
     MieterNestedEinheit,
     MieterResponse,
 )
@@ -148,6 +150,65 @@ async def map_mieter_response(
     birth_date_str = decrypt_value(mieter.birth_date_enc)
     birth_date = date.fromisoformat(birth_date_str) if birth_date_str else None
 
+    await db.refresh(mieter, attribute_names=["adressen", "buergschaften"])
+
+    adressen = [
+        AdresseResponse(
+            id=a.id,
+            mieter_id=a.mieter_id,
+            typ=a.typ,
+            strasse=a.strasse,
+            hausnummer=a.hausnummer,
+            plz=a.plz,
+            ort=a.ort,
+            land=a.land,
+            is_primary=a.is_primary,
+            created_at=a.created_at,
+            updated_at=a.updated_at,
+        )
+        for a in mieter.adressen
+    ]
+
+    buergschaften = []
+    for b in mieter.buergschaften:
+        buerge_adresse = None
+        if b.buerge_adresse_id:
+            await db.refresh(b, attribute_names=["buerge_adresse"])
+            ba = b.buerge_adresse
+            if ba:
+                buerge_adresse = AdresseResponse(
+                    id=ba.id,
+                    mieter_id=ba.mieter_id,
+                    typ=ba.typ,
+                    strasse=ba.strasse,
+                    hausnummer=ba.hausnummer,
+                    plz=ba.plz,
+                    ort=ba.ort,
+                    land=ba.land,
+                    is_primary=ba.is_primary,
+                    created_at=ba.created_at,
+                    updated_at=ba.updated_at,
+                )
+        buergschaften.append(
+            BuergschaftResponse(
+                id=b.id,
+                mieter_id=b.mieter_id,
+                vermieter_id=b.vermieter_id,
+                buerge_first_name=b.buerge_first_name,
+                buerge_last_name=b.buerge_last_name,
+                buerge_geburtsdatum=b.buerge_geburtsdatum,
+                buerge_phone=b.buerge_phone,
+                buerge_email=b.buerge_email,
+                hoechstbetrag=_to_decimal(b.hoechstbetrag),
+                gueltig_bis=b.gueltig_bis,
+                status=b.status,
+                notizen=b.notizen,
+                buerge_adresse=buerge_adresse,
+                created_at=b.created_at,
+                updated_at=b.updated_at,
+            )
+        )
+
     aktuelle_einheit_resp = None
     if aktuelle_einheit:
         await db.refresh(aktuelle_einheit, attribute_names=["objekt"])
@@ -160,6 +221,8 @@ async def map_mieter_response(
     return MieterResponse(
         id=mieter.id,
         vermieter_id=mieter.vermieter_id,
+        first_name=mieter.first_name,
+        last_name=mieter.last_name,
         name=mieter.full_name,
         email=mieter.email,
         telefon=mieter.phone,
@@ -168,6 +231,8 @@ async def map_mieter_response(
         notizen=mieter.notes,
         status=mieter.status,
         since=mieter.since,
+        adressen=adressen,
+        buergschaften=buergschaften,
         created_at=mieter.created_at,
         updated_at=mieter.updated_at,
         deleted_at=mieter.deleted_at,

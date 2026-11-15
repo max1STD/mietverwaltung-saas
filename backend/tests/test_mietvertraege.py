@@ -39,8 +39,8 @@ async def _create_mieter(client: AsyncClient) -> int:
     response = await client.post(
         "/api/v1/mieter",
         json={
-            "name": "Max Mustermann",
-            
+            "first_name": "Max",
+            "last_name": "Mustermann",
             "email": "max@example.de",
         },
     )

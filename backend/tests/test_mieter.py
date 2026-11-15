@@ -11,22 +11,23 @@ from app.models.user import User
 async def test_create_mieter(auth_client: AsyncClient, vermieter_user: User) -> None:
     """Ein Vermieter kann einen Mieter anlegen."""
     payload = {
-        "name": "Max Mustermann",
+        "first_name": "Max",
+        "last_name": "Mustermann",
         "email": "max@example.de",
         "telefon": "+49 170 1234567",
         "geburtsdatum": "1985-06-15",
-        "adresse": "Musterstraße 1, 12345 Musterstadt",
         "notizen": "Testnotizen",
         "status": "aktiv",
     }
     response = await auth_client.post("/api/v1/mieter", json=payload)
     assert response.status_code == 201
     data = response.json()
+    assert data["first_name"] == "Max"
+    assert data["last_name"] == "Mustermann"
     assert data["name"] == "Max Mustermann"
     assert data["email"] == "max@example.de"
     assert data["telefon"] == "+49 170 1234567"
     assert data["geburtsdatum"] == "1985-06-15"
-    assert data["adresse"] == "Musterstraße 1, 12345 Musterstadt"
     assert data["notizen"] == "Testnotizen"
     assert data["vermieter_id"] == vermieter_user.id
 
@@ -38,7 +39,8 @@ async def test_list_mieter(auth_client: AsyncClient) -> None:
         await auth_client.post(
             "/api/v1/mieter",
             json={
-                "name": f"Mieter{i} Test",
+                "first_name": f"Mieter{i}",
+                "last_name": "Test",
                 "email": f"mieter{i}@example.de",
             },
         )
@@ -55,7 +57,8 @@ async def test_update_mieter(auth_client: AsyncClient) -> None:
     create_resp = await auth_client.post(
         "/api/v1/mieter",
         json={
-            "name": "Erika Musterfrau",
+            "first_name": "Erika",
+            "last_name": "Musterfrau",
             "email": "erika@example.de",
         },
     )
@@ -77,7 +80,8 @@ async def test_delete_mieter(auth_client: AsyncClient) -> None:
     create_resp = await auth_client.post(
         "/api/v1/mieter",
         json={
-            "name": "Lösch Mieter",
+            "first_name": "Lösch",
+            "last_name": "Mieter",
             "email": "loesch@example.de",
         },
     )
