@@ -39,8 +39,16 @@
                 <dd class="text-sm font-medium text-gray-900">{{ formatDate(mieterStore.currentMieter.geburtsdatum) }}</dd>
               </div>
               <div class="flex justify-between">
-                <dt class="text-sm text-gray-500">Adresse</dt>
-                <dd class="text-sm font-medium text-gray-900">{{ mieterStore.currentMieter.adresse || '–' }}</dd>
+                <dt class="text-sm text-gray-500">Adresse(n)</dt>
+                <dd class="text-sm font-medium text-gray-900 text-right">
+                  <span v-if="!mieterStore.currentMieter.adressen?.length">–</span>
+                  <div v-else class="space-y-1">
+                    <div v-for="a in mieterStore.currentMieter.adressen" :key="a.id">
+                      {{ a.strasse }} {{ a.hausnummer }}, {{ a.plz }} {{ a.ort }}
+                      <span v-if="a.is_primary" class="ml-1 text-[#0D3B70]">(Primär)</span>
+                    </div>
+                  </div>
+                </dd>
               </div>
             </dl>
             <div v-if="mieterStore.currentMieter.notizen" class="mt-6">

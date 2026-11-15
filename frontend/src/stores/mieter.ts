@@ -14,14 +14,46 @@ export interface Mieter {
   id: string
   vermieter_id?: string
   user_id?: string
+  first_name: string
+  last_name: string
   name: string
   email?: string
   telefon?: string
   geburtsdatum?: string
-  adresse?: string
   notizen?: string
+  status?: 'aktiv' | 'ehemalig' | 'bewerber'
+  since?: string
+  adressen?: Adresse[]
+  buergschaften?: Buergschaft[]
   created_at?: string
   updated_at?: string
+}
+
+export interface Adresse {
+  id?: string
+  mieter_id?: string
+  typ: 'postal' | 'residential' | 'rental_object' | 'guarantor'
+  strasse: string
+  hausnummer?: string
+  plz: string
+  ort: string
+  land?: string
+  is_primary?: boolean
+}
+
+export interface Buergschaft {
+  id?: string
+  mieter_id?: string
+  buerge_first_name: string
+  buerge_last_name: string
+  buerge_geburtsdatum?: string
+  buerge_phone?: string
+  buerge_email?: string
+  buerge_adresse: Adresse
+  hoechstbetrag?: number | string
+  gueltig_bis?: string
+  status?: 'aktiv' | 'inaktiv'
+  notizen?: string
 }
 
 export const useMieterStore = defineStore('mieter', () => {
