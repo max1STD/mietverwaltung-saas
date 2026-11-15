@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class PricePreviewRequest(BaseModel):
     """Eingabe für die Preisvorschau."""
 
-    we: int = Field(..., ge=1, le=49)
+    we: int = Field(..., ge=1, le=50)
     interval: str = Field(..., pattern="^(monthly|yearly)$")
 
 
@@ -24,12 +24,14 @@ class PricePreviewResponse(BaseModel):
     total_yearly: Decimal
     yearly_discount_percent: int = 20
     currency: str = "eur"
+    is_individual: bool = False
+    message: str | None = None
 
 
 class CheckoutSessionRequest(BaseModel):
     """Startet eine Stripe-Checkout-Session."""
 
-    we_count: int = Field(..., ge=1, le=49)
+    we_count: int = Field(..., ge=1, le=50)
     interval: str = Field(..., pattern="^(monthly|yearly)$")
     success_url: str | None = Field(None, max_length=1024)
     cancel_url: str | None = Field(None, max_length=1024)
@@ -47,7 +49,7 @@ class CheckoutSessionResponse(BaseModel):
 class SubscriptionUpdateRequest(BaseModel):
     """Änderung der Abo-Parameter."""
 
-    we_count: int = Field(..., ge=1, le=49)
+    we_count: int = Field(..., ge=1, le=50)
     interval: str = Field(..., pattern="^(monthly|yearly)$")
 
 

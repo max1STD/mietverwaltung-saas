@@ -36,17 +36,30 @@ except Exception:  # pragma: no cover
 PRICE_TIERS: list[tuple[int, int, Decimal]] = [
     (1, 5, Decimal("9.75")),
     (6, 25, Decimal("7.50")),
-    (26, 49, Decimal("5.90")),
+    (26, 50, Decimal("5.90")),
 ]
-MAX_WE_SELF_SERVICE = 49
+MAX_WE_SELF_SERVICE = 50
+INDIVIDUAL_PRICE_MESSAGE = "Ab 51 Wohneinheiten erstellen wir dir ein individuelles Angebot."
+
+
+class IndividualPriceResult:
+    """Ergebnis für Preisberechnungen über 50 WE."""
+
+    def __init__(self, we_count: int) -> None:
+        self.price_per_we = Decimal("0")
+        self.total_monthly = Decimal("0")
+        self.total_yearly = Decimal("0")
+        self.is_individual = True
+        self.message = INDIVIDUAL_PRICE_MESSAGE
+        self.we_count = we_count
 
 
 def _tier_for_we(we_count: int) -> Decimal:
-    """Ermittelt den Preis pro WE für eine gegebene Anzahl."""
+    """Ermittelt den Preis pro WE für eine gegebene Anzahl (1-50)."""
     if we_count < 1:
         raise ValueError("Wohnungsanzahl muss mindestens 1 sein")
     if we_count > MAX_WE_SELF_SERVICE:
-        raise ValueError(f"Ab {MAX_WE_SELF_SERVICE + 1} Wohneinheiten bitte Angebot anfragen")
+        raise ValueError(INDIVIDUAL_PRICE_MESSAGE)
     for low, high, price in PRICE_TIERS:
         if low <= we_count <= high:
             return price
@@ -60,7 +73,7 @@ def calculate_we_price(
     """Berechnet Preis pro WE, monatlichen und jährlichen Gesamtbetrag.
 
     Args:
-        we_count: Anzahl Wohneinheiten (1-49).
+        we_count: Anzahl Wohneinheiten (1-50, Self-Service).
         interval: 'monthly' oder 'yearly'.
 
     Returns:
@@ -77,6 +90,11 @@ def calculate_we_price(
     # Jährlich = 10 Monate zahlen (2 Monate geschenkt ≈ 16,67% Rabatt).
     total_yearly = total_monthly * Decimal("10")
     return price_per_we, total_monthly, total_yearly
+
+
+def is_individual_price(we_count: int) -> bool:
+    """Gibt zurück, ob für diese WE-Anzahl ein individuelles Angebot nötig ist."""
+    return we_count > MAX_WE_SELF_SERVICE
 
 
 def _to_decimal(value: Decimal | float | int | str | None) -> Decimal:
@@ -221,6 +239,18 @@ def get_price_preview(
     interval: str,
 ) -> PricePreviewResponse:
     """Berechnet eine Preisvorschau ohne DB-Zugriff."""
+    if is_individual_price(we_count):
+        return PricePreviewResponse(
+            wohnungen_count=we_count,
+            price_per_we=Decimal("0"),
+            interval=interval,
+            total_monthly=Decimal("0"),
+            total_yearly=Decimal("0"),
+            yearly_discount_percent=17 if interval == "yearly" else 0,
+            currency="eur",
+            is_individual=True,
+            message=INDIVIDUAL_PRICE_MESSAGE,
+        )
     price_per_we, total_monthly, total_yearly = calculate_we_price(we_count, interval)
     return PricePreviewResponse(
         wohnungen_count=we_count,
@@ -230,6 +260,8 @@ def get_price_preview(
         total_yearly=total_yearly,
         yearly_discount_percent=17 if interval == "yearly" else 0,
         currency="eur",
+        is_individual=False,
+        message=None,
     )
 
 async def _ensure_stripe_customer(

@@ -30,6 +30,8 @@ export interface PricePreview {
   total_yearly: string
   yearly_discount_percent: number
   currency: string
+  is_individual: boolean
+  message: string | null
 }
 
 export interface CheckoutSession {

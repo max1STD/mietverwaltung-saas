@@ -41,10 +41,10 @@ async def test_price_tier_26_to_49() -> None:
 
 @pytest.mark.phase2
 @pytest.mark.asyncio
-async def test_price_50_plus_raises() -> None:
-    """Ab 50 WE wird ein Fehler geworfen (Custom Pricing)."""
-    with pytest.raises(ValueError, match="Angebot anfragen"):
-        calculate_we_price(50, "yearly")
+async def test_price_51_plus_raises() -> None:
+    """Ab 51 WE wird ein Fehler geworfen (Custom Pricing)."""
+    with pytest.raises(ValueError, match="individuelles Angebot"):
+        calculate_we_price(51, "yearly")
 
 
 @pytest.mark.phase2

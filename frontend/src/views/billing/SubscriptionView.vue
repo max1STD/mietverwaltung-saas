@@ -27,17 +27,20 @@
           <div class="bg-gray-50 rounded-xl p-4">
             <div class="flex items-baseline justify-between">
               <span class="text-gray-600">Preis pro WE / Monat</span>
-              <span class="text-lg font-semibold text-gray-900">{{ formatCurrency(billingStore.subscription.price_per_we) }}</span>
+              <span class="text-lg font-semibold text-gray-900">{{ isIndividual ? 'Individuell' : formatCurrency(billingStore.subscription.price_per_we) }}</span>
             </div>
             <div class="flex items-baseline justify-between mt-2">
               <span class="text-gray-600">Gesamtbetrag / Monat</span>
-              <span class="text-xl font-bold text-[#0D3B70]">{{ formatCurrency(billingStore.subscription.total_monthly) }}</span>
+              <span class="text-xl font-bold text-[#0D3B70]">{{ isIndividual ? '—' : formatCurrency(billingStore.subscription.total_monthly) }}</span>
             </div>
             <div class="flex items-baseline justify-between mt-2">
               <span class="text-gray-600">Gesamtbetrag / Jahr</span>
-              <span class="text-xl font-bold text-[#0D3B70]">{{ formatCurrency(billingStore.subscription.total_yearly) }}</span>
+              <span class="text-xl font-bold text-[#0D3B70]">{{ isIndividual ? '—' : formatCurrency(billingStore.subscription.total_yearly) }}</span>
             </div>
-            <p class="text-xs text-gray-500 mt-2">Jährliche Zahlung = 2 Monate geschenkt.</p>
+            <p class="text-xs text-gray-500 mt-2">
+              Jährliche Zahlung = 2 Monate geschenkt.
+              <a href="/agb" target="_blank" class="text-[#0D3B70] underline">AGB</a>
+            </p>
           </div>
 
           <!-- WE-Anzahl & Intervall anpassen -->
@@ -47,9 +50,15 @@
               v-model.number="weCount"
               type="range"
               min="1"
-              max="49"
+              max="50"
               class="w-full accent-[#0D3B70]"
             />
+
+            <div v-if="isIndividual" class="bg-amber-50 rounded-lg p-3 text-sm text-amber-800">
+              {{ individualMessage }}
+              <a href="mailto:vertrieb@mietverwaltung.example?subject=Individuelles%20Angebot" class="font-medium underline">Angebot anfragen</a>.
+            </div>
+
             <div class="flex gap-2">
               <button
                 type="button"
@@ -72,9 +81,10 @@
               variant="primary"
               full-width
               :loading="billingStore.loading"
+              :disabled="isIndividual"
               @click="applyChanges"
             >
-              Änderung übernehmen
+              {{ isIndividual ? 'Individuelles Angebot erforderlich' : 'Änderung übernehmen' }}
             </AppButton>
           </div>
 
@@ -106,7 +116,7 @@
 /**
  * SubscriptionView — Verwaltung des eigenen Abonnements.
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useBillingStore } from '@/stores/billing'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -115,6 +125,8 @@ const billingStore = useBillingStore()
 
 const weCount = ref(1)
 const interval = ref<'monthly' | 'yearly'>('yearly')
+const isIndividual = ref(false)
+const individualMessage = ref('')
 
 onMounted(async () => {
   await billingStore.fetchSubscription()
@@ -141,6 +153,19 @@ const statusClasses = computed(() => {
   if (status === 'cancelled') return 'bg-red-100 text-red-800'
   return 'bg-gray-100 text-gray-800'
 })
+
+const maxWe = 50
+const showIndividualInfo = computed(() => weCount.value > maxWe)
+
+async function updatePricePreview(): Promise<void> {
+  const preview = await billingStore.fetchPricePreview(weCount.value, interval.value)
+  if (preview) {
+    isIndividual.value = preview.is_individual
+    individualMessage.value = preview.message || ''
+  }
+}
+
+watch([weCount, interval], updatePricePreview, { immediate: true })
 
 function formatCurrency(value: string | number): string {
   const num = typeof value === 'string' ? parseFloat(value) : value
