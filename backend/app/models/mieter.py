@@ -11,6 +11,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, SoftDeleteMixin, TimestampMixin
 
 if TYPE_CHECKING:
+    from app.models.adresse import Adresse
+    from app.models.buergschaft import Buergschaft
     from app.models.mietvertraege import Mietvertrag
     from app.models.user import User
 
@@ -43,6 +45,18 @@ class Mieter(Base, TimestampMixin, SoftDeleteMixin):
     vermieter: Mapped[User] = relationship("User", foreign_keys=[vermieter_id])
     mietvertraege: Mapped[list[Mietvertrag]] = relationship(
         "Mietvertrag",
+        back_populates="mieter",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    adressen: Mapped[list[Adresse]] = relationship(
+        "Adresse",
+        back_populates="mieter",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    buergschaften: Mapped[list[Buergschaft]] = relationship(
+        "Buergschaft",
         back_populates="mieter",
         cascade="all, delete-orphan",
         lazy="selectin",
