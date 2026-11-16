@@ -139,6 +139,33 @@ async def test_update_mietvertrag(auth_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
+async def test_list_mietvertraege_shows_objekt_and_einheit(auth_client: AsyncClient) -> None:
+    """Die Listenansicht liefert Mieter-, Einheit- und Objektnamen (#46)."""
+    objekt_id = await _create_objekt(auth_client)
+    einheit_id = await _create_einheit(auth_client, objekt_id)
+    mieter_id = await _create_mieter(auth_client)
+
+    await auth_client.post(
+        "/api/v1/mietvertraege",
+        json={
+            "mieter_id": mieter_id,
+            "einheit_id": einheit_id,
+            "mietbeginn": "2024-01-01",
+            "miete_cold": "700.00",
+            "nebenkosten_voraus": "150.00",
+        },
+    )
+
+    response = await auth_client.get("/api/v1/mietvertraege")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["mieter"]["name"] == "Max Mustermann"
+    assert data[0]["einheit"]["name"] == "WE 1"
+    assert data[0]["einheit"]["objekt_name"] == "Test-Objekt"
+
+
+@pytest.mark.asyncio
 async def test_delete_mietvertrag(auth_client: AsyncClient) -> None:
     """Ein Mietvertrag kann gelöscht werden."""
     objekt_id = await _create_objekt(auth_client)
