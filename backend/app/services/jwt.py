@@ -93,14 +93,23 @@ def verify_temp_token(token: str) -> dict[str, Any] | None:
     return payload
 
 
-def _cookie_secure() -> bool:
+def _cookie_secure(request: Request | None = None) -> bool:
     """Gibt zurück, ob Cookies das Secure-Flag gesetzt bekommen sollen.
 
-    In Produktion immer True (Safari erfordert Secure für persistente Cookies).
-    In Entwicklung False, damit lokale HTTP-Tests und Cloudflare-HTTP-Tunnels
-    funktionieren.
+    - Wenn X-Forwarded-Proto == https, setzen wir Secure (Cloudflare-Tunnel etc.).
+    - In Produktion immer True.
+    - Lokal bei HTTP bleibt es False.
     """
+    if request is not None:
+        forwarded_proto = request.headers.get("x-forwarded-proto")
+        if forwarded_proto and forwarded_proto.lower() == "https":
+            return True
     return settings.ENVIRONMENT.lower() == "production"
+
+
+def _cookie_host(request: Request | None = None) -> str | None:
+    """Bestimmt den Domain-/Host-Wert für Cookies."""
+    return None  # Default: Cookie gilt für die aktuelle Domain
 
 
 def set_auth_cookies(

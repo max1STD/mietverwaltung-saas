@@ -25,14 +25,13 @@
 
         <AppTable v-else :items="mietvertraegeStore.mietvertraege" :columns="columns"
         >
-          <template #row="{ item }"
-          >
+          <template #row="{ item }">
             <td class="py-3 px-4 font-medium text-gray-900"
             >{{ item.mieter?.name || '–' }}</td>
             <td class="py-3 px-4 text-sm text-gray-600"
-            >{{ item.objekt?.bezeichnung || '–' }}</td>
+            >{{ item.einheit?.objekt_name || '–' }}</td>
             <td class="py-3 px-4 text-sm text-gray-600"
-            >{{ item.einheit?.bezeichnung || '–' }}</td>
+            >{{ item.einheit?.bezeichnung || item.einheit?.name || '–' }}</td>
             <td class="py-3 px-4 text-sm text-gray-600"
             >{{ formatDate(item.mietbeginn) }}</td>
             <td class="py-3 px-4 text-sm text-gray-600"

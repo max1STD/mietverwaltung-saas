@@ -31,7 +31,9 @@ export interface Mietvertrag {
   }
   einheit?: {
     id: string
-    bezeichnung: string
+    bezeichnung?: string
+    name?: string
+    objekt_name?: string
   }
   objekt?: {
     id: string

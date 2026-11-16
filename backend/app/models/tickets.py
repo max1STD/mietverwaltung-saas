@@ -40,6 +40,10 @@ class Ticket(Base, TimestampMixin):
         ForeignKey("einheiten.id"),
         nullable=True,
     )
+    objekt_id: Mapped[int | None] = mapped_column(
+        ForeignKey("objekte.id"),
+        nullable=True,
+    )
     ticket_number: Mapped[str] = mapped_column(
         String(20),
         nullable=False,

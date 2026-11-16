@@ -6,6 +6,7 @@ from app.models.audit import AuditLog
 from app.models.base import Base
 from app.models.bewerbungen import Bewerbung
 from app.models.buergschaft import Buergschaft
+from app.models.dokument import Dokument
 from app.models.einheit import Einheit
 from app.models.einwilligung import Einwilligung
 from app.models.fristen import Frist
@@ -34,6 +35,7 @@ __all__ = [
     "Mieter",
     "Adresse",
     "Buergschaft",
+    "Dokument",
     "Mietvertrag",
     "Bewerbung",
     "Abrechnung",

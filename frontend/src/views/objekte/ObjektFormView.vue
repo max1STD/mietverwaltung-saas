@@ -94,12 +94,11 @@
           </div>
 
           <div class="grid grid-cols-2 gap-4">
-            <AppInput
+            <AppCurrencyInput
               id="kaufpreis"
               v-model="form.kaufpreis"
-              label="Kaufpreis (€)"
-              type="number"
-              placeholder="250000"
+              label="Kaufpreis"
+              placeholder="250.000,00"
               :error="errors.kaufpreis"
             />
             <AppInput
@@ -147,6 +146,7 @@ import apiClient from '@/api/client'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppButton from '@/components/ui/AppButton.vue'
+import AppCurrencyInput from '@/components/ui/AppCurrencyInput.vue'
 
 const route = useRoute()
 const router = useRouter()

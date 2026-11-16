@@ -75,7 +75,7 @@
                 variant="danger"
                 size="sm"
                 :loading="objekteStore.saving"
-                @click="deleteObjekt(item.id)"
+                @click="openDeleteModal(item.id)"
               >
                 Löschen
               </AppButton>
@@ -83,6 +83,29 @@
           </template>
         </AppTable>
       </AppCard>
+
+      <!-- Lösch-Bestätigung -->
+      <AppModal
+        v-model="showDeleteModal"
+        title="Objekt löschen"
+        size="sm"
+      >
+        <p class="text-gray-700">
+          Möchtest du dieses Objekt wirklich löschen? Alle zugehörigen Einheiten werden mitgelöscht.
+        </p>
+        <template #footer>
+          <AppButton variant="ghost" @click="closeDeleteModal">
+            Abbrechen
+          </AppButton>
+          <AppButton
+            variant="danger"
+            :loading="objekteStore.saving"
+            @click="confirmDelete"
+          >
+            Löschen
+          </AppButton>
+        </template>
+      </AppModal>
     </div>
   </div>
 </template>
@@ -96,11 +119,14 @@ import AppInput from '@/components/ui/AppInput.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppTable from '@/components/ui/AppTable.vue'
 import AppEmptyState from '@/components/ui/AppEmptyState.vue'
+import AppModal from '@/components/ui/AppModal.vue'
 
 const objekteStore = useObjekteStore()
 const { showToast } = useToast()
 
 const searchQuery = ref('')
+const showDeleteModal = ref(false)
+const objektToDelete = ref<string | null>(null)
 
 const columns = [
   { key: 'name', label: 'Bezeichnung' },
@@ -126,18 +152,26 @@ function formatAddress(objekt: Objekt): string {
   return parts.filter(Boolean).join(', ') || '–'
 }
 
-async function deleteObjekt(id: string): Promise<void> {
-  const confirmed = window.confirm(
-    'Möchtest du dieses Objekt wirklich löschen? Alle zugehörigen Einheiten werden mitgelöscht.',
-  )
-  if (!confirmed) return
+function openDeleteModal(id: string): void {
+  objektToDelete.value = id
+  showDeleteModal.value = true
+}
 
-  const success = await objekteStore.deleteObjekt(id)
+function closeDeleteModal(): void {
+  showDeleteModal.value = false
+  objektToDelete.value = null
+}
+
+async function confirmDelete(): Promise<void> {
+  if (!objektToDelete.value) return
+
+  const success = await objekteStore.deleteObjekt(objektToDelete.value)
   if (success) {
     showToast('Objekt erfolgreich gelöscht.', 'success')
   } else {
     showToast(objekteStore.error?.message || 'Fehler beim Löschen.', 'error')
   }
+  closeDeleteModal()
 }
 
 onMounted(() => {

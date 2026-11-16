@@ -213,12 +213,14 @@ router.beforeEach(async (to, from, next) => {
     return next({ name: 'login', query: { redirect: to.fullPath } })
   }
 
-  // Onboarding-Redirect für neue Vermieter: einmalig beim Dashboard prüfen
+  // Onboarding-Redirect für neue Vermieter: nur beim allerersten Login (0% Fortschritt)
+  // oder wenn explizit gewünscht. Sobald einmal begonnen wurde, landet man im Dashboard.
   if (isAuthenticated && to.name === 'dashboard') {
     const onboardingStore = useOnboardingStore()
     try {
       await onboardingStore.fetchProgress()
-      if (onboardingStore.progressPercent > 0 && onboardingStore.progressPercent < 100 && !onboardingStore.isDone) {
+      // Nur umleiten, wenn noch gar nichts erledigt ist UND der Nutzer nicht schon "isDone" ist
+      if (onboardingStore.progressPercent === 0 && !onboardingStore.isDone) {
         return next({ name: 'onboarding-welcome', query: { redirect: to.fullPath } })
       }
     } catch {

@@ -63,6 +63,7 @@ def _to_ticket_response(ticket: Ticket, include_comments: bool = True) -> Ticket
     return TicketResponse(
         id=ticket.id,
         vermieter_id=ticket.vermieter_id,
+        objekt_id=ticket.objekt_id,
         mieter_id=ticket.mieter_id,
         einheit_id=ticket.einheit_id,
         ticket_number=ticket.ticket_number,
@@ -297,6 +298,7 @@ async def create_ticket(
 
     ticket = Ticket(
         vermieter_id=vermieter_id,
+        objekt_id=data.objekt_id,
         mieter_id=mieter_id,
         einheit_id=data.einheit_id,
         ticket_number=ticket_number,

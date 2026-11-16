@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 # Gültige Werte aus DB-Schema und Geschäftslogik
 TICKET_STATUS = Literal[
@@ -15,12 +15,15 @@ TICKET_STATUS = Literal[
     "geschlossen",
     "abgelehnt",
 ]
-TICKET_PRIORITY = Literal["niedrig", "normal", "dringend"]
+TICKET_PRIORITY = Literal["niedrig", "normal", "hoch", "dringend"]
 TICKET_CATEGORY = Literal[
     "heizung",
     "wasser",
     "elektrik",
     "schimmel",
+    "sanitaer",
+    "schluessel",
+    "sauberkeit",
     "sonstiges",
 ]
 AUTHOR_ROLE = Literal["vermieter", "mieter", "handwerker", "system"]
@@ -58,10 +61,34 @@ class TicketCommentInternalCreate(BaseModel):
 class TicketCreate(BaseModel):
     """Schema zum Erstellen eines neuen Tickets."""
 
-    title: str = Field(..., min_length=3, max_length=200)
-    description: str | None = Field(None, max_length=5000)
-    category: TICKET_CATEGORY | None = None
-    priority: TICKET_PRIORITY = "normal"
+    title: str = Field(
+        ...,
+        min_length=3,
+        max_length=200,
+        alias="titel",
+        validation_alias=AliasChoices("titel", "title"),
+        serialization_alias="titel",
+    )
+    description: str | None = Field(
+        None,
+        max_length=5000,
+        alias="beschreibung",
+        validation_alias=AliasChoices("beschreibung", "description"),
+        serialization_alias="beschreibung",
+    )
+    category: TICKET_CATEGORY | None = Field(
+        None,
+        alias="kategorie",
+        validation_alias=AliasChoices("kategorie", "category"),
+        serialization_alias="kategorie",
+    )
+    priority: TICKET_PRIORITY = Field(
+        default="normal",
+        alias="prioritaet",
+        validation_alias=AliasChoices("prioritaet", "priority"),
+        serialization_alias="prioritaet",
+    )
+    objekt_id: int | None = None
     mieter_id: int | None = None
     einheit_id: int | None = None
     assigned_to: int | None = None
@@ -72,11 +99,35 @@ class TicketCreate(BaseModel):
 class TicketUpdate(BaseModel):
     """Schema zum Aktualisieren eines bestehenden Tickets."""
 
-    title: str | None = Field(None, min_length=3, max_length=200)
-    description: str | None = Field(None, max_length=5000)
-    category: TICKET_CATEGORY | None = None
-    priority: TICKET_PRIORITY | None = None
+    title: str | None = Field(
+        None,
+        min_length=3,
+        max_length=200,
+        alias="titel",
+        validation_alias=AliasChoices("titel", "title"),
+        serialization_alias="titel",
+    )
+    description: str | None = Field(
+        None,
+        max_length=5000,
+        alias="beschreibung",
+        validation_alias=AliasChoices("beschreibung", "description"),
+        serialization_alias="beschreibung",
+    )
+    category: TICKET_CATEGORY | None = Field(
+        None,
+        alias="kategorie",
+        validation_alias=AliasChoices("kategorie", "category"),
+        serialization_alias="kategorie",
+    )
+    priority: TICKET_PRIORITY | None = Field(
+        None,
+        alias="prioritaet",
+        validation_alias=AliasChoices("prioritaet", "priority"),
+        serialization_alias="prioritaet",
+    )
     status: TICKET_STATUS | None = None
+    objekt_id: int | None = None
     mieter_id: int | None = None
     einheit_id: int | None = None
     assigned_to: int | None = None
@@ -91,6 +142,7 @@ class TicketResponse(BaseModel):
 
     id: int
     vermieter_id: int
+    objekt_id: int | None
     mieter_id: int | None
     einheit_id: int | None
     ticket_number: str

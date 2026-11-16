@@ -57,6 +57,12 @@ class Settings(BaseSettings):
     # ── Encryption (AES-256-GCM) ──
     DB_ENCRYPTION_KEY: str = ""  # Base64-encoded 32-byte key
 
+    # ── Paperless-ngx DMS ──
+    PAPERLESS_ENABLED: bool = False
+    PAPERLESS_URL: str = "http://127.0.0.1:8001"
+    PAPERLESS_ADMIN_TOKEN: str = ""  # für automatische User-Erstellung
+    PAPERLESS_DEFAULT_USER_PASSWORD: str = ""  # temporär, wird bei Erstellung gesetzt
+
     # ── CORS ──
     CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 

@@ -70,6 +70,21 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     rechnungs_ort: Mapped[str | None] = mapped_column(String(100), nullable=True)
     ust_id: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
+    # Paperless-ngx DMS-Integration (pro Vermieter eigener Account)
+    paperless_user_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    paperless_token_enc: Mapped[bytes | None] = mapped_column(BYTEA, nullable=True)
+
+    @property
+    def paperless_token(self) -> str | None:
+        """Entschlüsselter Paperless-API-Token."""
+        from app.services.crypto import decrypt_value
+        return decrypt_value(self.paperless_token_enc)
+
+    def set_paperless_token(self, token: str | None) -> None:
+        """Verschlüsselt und speichert den Paperless-API-Token."""
+        from app.services.crypto import encrypt_value
+        self.paperless_token_enc = encrypt_value(token)
+
     # Beziehungen
     sessions: Mapped[list[UserSession]] = relationship(
         "UserSession",
