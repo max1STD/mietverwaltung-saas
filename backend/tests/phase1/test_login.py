@@ -93,8 +93,8 @@ async def test_login_remember_me_sets_longer_refresh_cookie(async_client: AsyncC
         (h for h in set_cookie_headers if h.startswith("refresh_token=")), None
     )
     assert refresh_cookie_header is not None
-    # Max-Age sollte ca. 7 Tage sein (604800 Sekunden)
-    assert "Max-Age=604800" in refresh_cookie_header or "max-age=604800" in refresh_cookie_header.lower()
+    # Max-Age sollte ca. 30 Tage sein (2592000 Sekunden)
+    assert "Max-Age=2592000" in refresh_cookie_header or "max-age=2592000" in refresh_cookie_header.lower()
 
 
 @pytest.mark.phase1

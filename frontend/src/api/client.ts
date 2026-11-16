@@ -29,21 +29,11 @@ interface ValidationErrorItem {
   type?: string
 }
 
-let isRefreshing = false
-let refreshSubscribers: Array<(token: string) => void> = []
+let refreshPromise: Promise<void> | null = null
 
 function getCsrfToken(): string | null {
   const match = document.cookie.match(/(?:^|; )csrf_token=([^;]*)/)
   return match ? decodeURIComponent(match[1]) : null
-}
-
-function subscribeTokenRefresh(cb: (token: string) => void): void {
-  refreshSubscribers.push(cb)
-}
-
-function onTokenRefreshed(token: string): void {
-  refreshSubscribers.forEach((cb) => cb(token))
-  refreshSubscribers = []
 }
 
 function redirectToLogin(): void {
@@ -140,27 +130,23 @@ apiClient.interceptors.response.use(
 
     originalRequest._retry = true
 
-    if (isRefreshing) {
-      // Warten bis Refresh durch ist, dann Retry
-      return new Promise((resolve) => {
-        subscribeTokenRefresh(() => {
-          resolve(apiClient(originalRequest))
+    if (!refreshPromise) {
+      refreshPromise = apiClient
+        .post('/auth/refresh', {}, { _retry: true } as AxiosRequestConfig)
+        .then(() => {
+          // Refresh erfolgreich; Cookie-Set erfolgt vom Backend
         })
-      })
+        .catch((refreshError) => {
+          refreshPromise = null
+          redirectToLogin()
+          throw refreshError
+        })
+        .finally(() => {
+          refreshPromise = null
+        })
     }
 
-    isRefreshing = true
-
-    try {
-      await apiClient.post('/auth/refresh', {}, { _retry: true } as AxiosRequestConfig)
-      onTokenRefreshed('refreshed')
-      isRefreshing = false
-      return apiClient(originalRequest)
-    } catch (refreshError) {
-      isRefreshing = false
-      redirectToLogin()
-      return Promise.reject(normalizeError(refreshError as AxiosError | Error))
-    }
+    return refreshPromise.then(() => apiClient(originalRequest))
   },
 )
 

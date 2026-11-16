@@ -172,7 +172,7 @@ async def login_route(
         user.vermieter_id if user.role == "mieter" else user.id,
     )
     csrf_token = _generate_csrf()
-    set_auth_cookies(response, access_token, refresh_plain, csrf_token, remember_me=data.remember_me)
+    set_auth_cookies(response, access_token, refresh_plain, csrf_token, remember_me=data.remember_me, request=request)
     await reset_rate_limit("login", ip)
     return TokenResponse(access_token=access_token, user=await to_user_response(user))
 
@@ -234,7 +234,7 @@ async def two_fa_verify(
         user.vermieter_id if user.role == "mieter" else user.id,
     )
     csrf_token = _generate_csrf()
-    set_auth_cookies(response, access_token, refresh_plain, csrf_token, remember_me=data.remember_me)
+    set_auth_cookies(response, access_token, refresh_plain, csrf_token, remember_me=data.remember_me, request=request)
     await reset_rate_limit("login", ip)
     await db.commit()
     return TokenResponse(access_token=access_token, user=await to_user_response(user))
@@ -272,7 +272,7 @@ async def refresh_route(
         user.vermieter_id if user.role == "mieter" else user.id,
     )
     csrf_token = _generate_csrf()
-    set_auth_cookies(response, access_token, new_refresh, csrf_token)
+    set_auth_cookies(response, access_token, new_refresh, csrf_token, remember_me=True, request=request)
     await db.commit()
     return TokenResponse(access_token=access_token, user=await to_user_response(user))
 

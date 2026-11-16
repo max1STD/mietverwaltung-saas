@@ -40,7 +40,7 @@ async def create_mietvertrag(
 
     vertrag = Mietvertrag(
         vermieter_id=vermieter_id,
-        **data.model_dump(),
+        **data.model_dump(exclude={"kaltmiete", "nebenkosten_vorschuss"}),
     )
     db.add(vertrag)
     await db.flush()
@@ -109,7 +109,7 @@ async def update_mietvertrag(
     ip: str | None = None,
 ) -> Mietvertrag:
     """Aktualisiert einen Mietvertrag mit den übergebenen Feldern."""
-    update_fields = data.model_dump(exclude_unset=True)
+    update_fields = data.model_dump(exclude_unset=True, exclude={"kaltmiete", "nebenkosten_vorschuss"})
     for field, value in update_fields.items():
         setattr(vertrag, field, value)
 

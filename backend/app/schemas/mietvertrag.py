@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, computed_field
 
 
 class MietvertragBase(BaseModel):
@@ -17,20 +17,28 @@ class MietvertragBase(BaseModel):
     miete_cold: Decimal = Field(
         ...,
         ge=0,
-        alias="kaltmiete",
         validation_alias=AliasChoices("kaltmiete", "miete_cold"),
-        serialization_alias="kaltmiete",
     )
     nebenkosten_voraus: Decimal = Field(
         ...,
         ge=0,
-        alias="nebenkosten_vorschuss",
         validation_alias=AliasChoices("nebenkosten_vorschuss", "nebenkosten_voraus"),
-        serialization_alias="nebenkosten_vorschuss",
     )
     kaution: Decimal | None = None
     kaution_hinterlegt: bool = False
     status: str = Field(default="aktiv", pattern="^(aktiv|gekuendigt|beendet)$")
+
+    @computed_field
+    @property
+    def kaltmiete(self) -> Decimal:
+        """Deutscher Alias für die Kaltmiete (Frontend-Kompatibilität)."""
+        return self.miete_cold
+
+    @computed_field
+    @property
+    def nebenkosten_vorschuss(self) -> Decimal:
+        """Deutscher Alias für den Nebenkostenvorschuss (Frontend-Kompatibilität)."""
+        return self.nebenkosten_voraus
 
 
 class MietvertragCreate(MietvertragBase):
@@ -49,20 +57,26 @@ class MietvertragUpdate(BaseModel):
     miete_cold: Decimal | None = Field(
         None,
         ge=0,
-        alias="kaltmiete",
         validation_alias=AliasChoices("kaltmiete", "miete_cold"),
-        serialization_alias="kaltmiete",
     )
     nebenkosten_voraus: Decimal | None = Field(
         None,
         ge=0,
-        alias="nebenkosten_vorschuss",
         validation_alias=AliasChoices("nebenkosten_vorschuss", "nebenkosten_voraus"),
-        serialization_alias="nebenkosten_vorschuss",
     )
     kaution: Decimal | None = None
     kaution_hinterlegt: bool | None = None
     status: str | None = Field(None, pattern="^(aktiv|gekuendigt|beendet)$")
+
+    @computed_field
+    @property
+    def kaltmiete(self) -> Decimal | None:
+        return self.miete_cold
+
+    @computed_field
+    @property
+    def nebenkosten_vorschuss(self) -> Decimal | None:
+        return self.nebenkosten_voraus
 
 
 class MietvertragNestedMieter(BaseModel):

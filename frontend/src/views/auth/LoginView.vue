@@ -69,7 +69,7 @@ const { showToast } = useToast()
 
 const email = ref('')
 const password = ref('')
-const rememberMe = ref(false)
+const rememberMe = ref(true)
 const fieldErrors = reactive<Record<string, string>>({})
 
 function validate(): boolean {

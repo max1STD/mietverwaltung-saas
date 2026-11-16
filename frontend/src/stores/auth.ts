@@ -99,7 +99,7 @@ export const useAuthStore = defineStore('auth', () => {
   /**
    * Login mit E-Mail und Passwort.
    */
-  async function login(email: string, password: string, rememberMe: boolean = false): Promise<LoginResponse> {
+  async function login(email: string, password: string, rememberMe: boolean = true): Promise<LoginResponse> {
     loading.value = true
     error.value = null
     try {
