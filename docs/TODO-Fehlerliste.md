@@ -30,7 +30,7 @@ Diese Datei dient als zentrale Fehler- und Todo-Liste für UX-Fixes, Bugs und kl
 | # | Thema | Status | Beschreibung | Wo |
 |---|-------|--------|--------------|-----|
 | 7 | Paperless-ngx Integration | 🔄 In Arbeit | `dokumente`-Tabelle, User-Spalten und Alembic-Migration angelegt. Nächster Schritt: Client-Service, Upload-Endpunkte, Frontend-Dokumenten-Reiter. | `backend/app/models/dokument.py`, `backend/app/routes/dokumente.py` |
-| 8 | Session-/Cookie-Handling | 🔲 Offen | Nutzer werden ständig ausgeloggt. → GitHub #45 | `backend/app/services/jwt.py`, `backend/app/routes/auth.py`, `frontend/src/api/client.ts` |
+| 8 | Session-/Cookie-Handling | ✅ Erledigt | Access 24h / Refresh 30 Tage, remember_me Default true, X-Forwarded-Proto für Cloudflare-HTTPS, Promise-basierte Refresh-Queue. → GitHub #45 | `backend/app/services/jwt.py`, `backend/app/routes/auth.py`, `frontend/src/api/client.ts` |
 | 9 | Nginx Fehlerseiten | 🔲 Offen | Bei 500/502 zeigt Nginx seine Standard-Fehlerseite. | `infra/nginx/mietverwaltung.conf` |
 | 9 | Deployment-Automatisierung | 🔲 Offen | Backend/Frontend/Cloudflare manuell starten. Systemd-Units oder Docker-Compose für stabileren Neustart. | `infra/systemd/` |
 | 10 | Tests nach Paperless-Änderungen | 🔲 Offen | Sicherstellen, dass `pytest tests` und `pnpm build` weiterhin grün bleiben. | `backend/tests/`, `frontend/package.json` |
