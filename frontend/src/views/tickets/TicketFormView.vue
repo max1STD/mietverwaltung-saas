@@ -87,7 +87,7 @@
                 >
                   <option value="">— Keine Einheit —</option>
                   <option v-for="einheit in availableEinheiten" :key="einheit.id" :value="einheit.id"
-                  >{{ einheit.name }} {{ einheit.current_mieter ? `(Mieter: ${einheit.current_mieter.name})` : '' }}</option>
+                  >{{ einheit.name }} {{ (einheit.aktueller_mieter ?? einheit.current_mieter) ? `(Mieter: ${(einheit.aktueller_mieter ?? einheit.current_mieter)?.name})` : '' }}</option>
                 </select>
               </div>
             </div>
@@ -285,8 +285,9 @@ watch(
   (newEinheitId) => {
     if (!newEinheitId) return
     const einheit = availableEinheiten.value.find((e) => String(e.id) === String(newEinheitId))
-    if (einheit?.current_mieter) {
-      form.mieter_id = String(einheit.current_mieter.id)
+    const mieter = einheit?.aktueller_mieter ?? einheit?.current_mieter
+    if (mieter) {
+      form.mieter_id = String(mieter.id)
     }
   },
 )

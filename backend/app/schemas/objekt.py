@@ -6,6 +6,8 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.einheit import EinheitNestedMieter
+
 
 class ObjektBase(BaseModel):
     """Gemeinsame Felder für Objekt-Schemas."""
@@ -68,6 +70,7 @@ class ObjektNestedEinheit(BaseModel):
     kaltmiete: Decimal | None = None
     nebenkosten_vorschuss: Decimal | None = None
     status: str | None = None  # Vermietungsstatus aus Business-Logik
+    aktueller_mieter: EinheitNestedMieter | None = None
 
 
 class ObjektResponse(ObjektBase):

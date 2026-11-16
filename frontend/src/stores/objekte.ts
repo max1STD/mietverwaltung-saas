@@ -67,6 +67,11 @@ export interface Einheit {
   verfuegbar_ab?: string
   created_at?: string
   updated_at?: string
+  aktueller_mieter?: {
+    id: string
+    name: string
+  }
+  /** Legacy alias für aktueller_mieter */
   current_mieter?: {
     id: string
     name: string

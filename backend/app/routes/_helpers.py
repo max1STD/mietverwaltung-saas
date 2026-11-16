@@ -62,20 +62,33 @@ async def map_objekt_response(db: AsyncSession, objekt: Objekt) -> ObjektRespons
     # Beziehungen explizit laden (async Session erlaubt kein Lazy-Loading).
     await db.refresh(objekt, attribute_names=["einheiten"])
 
-    einheiten = [
-        ObjektNestedEinheit(
-            id=e.id,
-            public_id=e.public_id,
-            name=e.name,
-            wohnflaeche_qm=_to_decimal(e.wohnflaeche_qm),
-            etage=e.etage,
-            kaltmiete=_to_decimal(e.kaltmiete),
-            nebenkosten_vorschuss=_to_decimal(e.nebenkosten_vorschuss),
-            status=None,
+    einheiten = []
+    for e in objekt.einheiten:
+        if e.deleted_at is not None:
+            continue
+        vertrag = await get_aktueller_mieter(db, e.id)
+        aktueller_mieter = None
+        if vertrag:
+            await db.refresh(vertrag, attribute_names=["mieter"])
+            if vertrag.mieter:
+                aktueller_mieter = EinheitNestedMieter(
+                    id=vertrag.mieter.id,
+                    name=vertrag.mieter.full_name,
+                    status=vertrag.mieter.status,
+                )
+        einheiten.append(
+            ObjektNestedEinheit(
+                id=e.id,
+                public_id=e.public_id,
+                name=e.name,
+                wohnflaeche_qm=_to_decimal(e.wohnflaeche_qm),
+                etage=e.etage,
+                kaltmiete=_to_decimal(e.kaltmiete),
+                nebenkosten_vorschuss=_to_decimal(e.nebenkosten_vorschuss),
+                status="vermietet" if aktueller_mieter else "frei",
+                aktueller_mieter=aktueller_mieter,
+            )
         )
-        for e in objekt.einheiten
-        if e.deleted_at is None
-    ]
 
     return ObjektResponse(
         id=objekt.id,
