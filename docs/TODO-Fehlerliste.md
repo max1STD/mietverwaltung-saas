@@ -12,8 +12,8 @@ Diese Datei dient als zentrale Fehler- und Todo-Liste für UX-Fixes, Bugs und kl
 | # | Thema | Status | Beschreibung | Wo |
 |---|-------|--------|--------------|-----|
 | 1 | Lösch-Bestätigung | ✅ Erledigt | Native `window.confirm` durch zentriertes `AppModal` im App-Design ersetzen. | `frontend/src/views/objekte/ObjekteListView.vue` |
-| 2 | Cache invalidieren | 🔲 Offen | Nach Deployments müssen Nutzer gelegentlich `Strg+Shift+R` drücken. → GitHub #51 | `infra/nginx/mietverwaltung.conf` |
-| 3 | Favicon fehlt | 🔲 Offen | `/favicon.svg` liefert 404. → GitHub #52 | `frontend/index.html`, `frontend/public/` |
+| 2 | Cache invalidieren | ✅ Erledigt | index.html no-cache, Assets 1y via Vite-Fingerprint. Nginx-Config als Symlink. → GitHub #51 | `infra/nginx/mietverwaltung.conf` |
+| 3 | Favicon fehlt | ✅ Erledigt | `/favicon.svg` hinzugefügt, liefert 200. → GitHub #52 | `frontend/public/favicon.svg`, `frontend/index.html` |
 | 4 | Mobile Layouts prüfen | 🔲 Offen | Einige Tabellen/Formulare auf kleinen Bildschirmen noch nicht optimiert. | Alle `*View.vue` |
 | 5 | Klickbare KPI-/Detail-Verknüpfungen | 🔲 Offen | Dashboard-KPIs und Detailansichten verlinken. → GitHub #47 | `frontend/src/views/dashboard/`, `frontend/src/views/*DetailView.vue` |
 | 9 | Ticket: Dateianhänge | 🔲 Offen | Bilder/Dokumente an Tickets anhängen. → GitHub #48 | `frontend/src/views/tickets/TicketFormView.vue`, `backend/app/routes/tickets.py` |
