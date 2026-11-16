@@ -1,5 +1,10 @@
 <template>
-  <div class="bg-white rounded-xl border border-gray-100 p-5 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+  <component
+    :is="to ? 'RouterLink' : 'div'"
+    :to="to"
+    class="block bg-white rounded-xl border border-gray-100 p-5 shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition hover:shadow-[0_6px_16px_rgba(0,0,0,0.12)] hover:-translate-y-0.5"
+    :class="{ 'cursor-pointer': to }"
+  >
     <div class="flex items-start justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500">{{ label }}</p>
@@ -8,11 +13,12 @@
       </div>
       <span v-if="icon" class="text-2xl">{{ icon }}</span>
     </div>
-  </div>
+  </component>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
 
 interface Props {
   label: string
@@ -20,6 +26,7 @@ interface Props {
   subtitle?: string
   icon?: string
   variant?: 'default' | 'danger'
+  to?: RouteLocationRaw
 }
 
 const props = withDefaults(defineProps<Props>(), {

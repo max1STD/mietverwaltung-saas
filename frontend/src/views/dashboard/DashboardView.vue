@@ -33,22 +33,26 @@
             label="Objekte"
             :value="summary?.objekte_count ?? 0"
             icon="🏠"
+            to="/objekte"
           />
           <KPICard
             label="Wohneinheiten"
             :value="summary?.einheiten_count ?? 0"
             icon="🏢"
+            to="/objekte"
           />
           <KPICard
             label="Mieter"
             :value="summary?.mieter_count ?? 0"
             icon="👤"
+            to="/mieter"
           />
           <KPICard
             label="Offene Tickets"
             :value="summary?.offene_tickets_count ?? 0"
             variant="danger"
             icon="🎫"
+            to="/tickets"
           />
         </KPIGrid>
 
