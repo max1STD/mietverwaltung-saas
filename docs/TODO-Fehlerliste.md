@@ -22,6 +22,7 @@ Diese Datei dient als zentrale Fehler- und Todo-Liste für UX-Fixes, Bugs und kl
 | 12 | Objekt-Stammdaten erweitern | 🔲 Offen | Flächen, Energieausweis, Heizung, Denkmalschutz, Status etc. → GitHub #49 | `backend/app/models/objekt.py`, `frontend/src/views/objekte/` |
 | 13 | Kaufmännische Betragsformatierung | ✅ Erledigt | Beträge als „699.000,00 €“ anzeigen. | `frontend/src/components/ui/AppCurrencyInput.vue` |
 | 7 | Einheit-Detail-View | 🔲 Offen | Es gibt bisher keine separate Detailansicht für Wohneinheiten. → GitHub #50 | `frontend/src/views/einheiten/` |
+| 14 | Mietvertrag-Liste Objekt/Einheit | ✅ Erledigt | Spalten zeigen jetzt Einheit-Name und Objekt-Name. → GitHub #46 | `frontend/src/views/mietvertraege/MietvertraegeListView.vue`, `backend/app/routes/_helpers.py` |
 
 ---
 
