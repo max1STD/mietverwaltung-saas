@@ -104,6 +104,7 @@ class MietvertragResponse(MietvertragBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    public_id: int | None = None
     vermieter_id: int
     created_at: datetime
     updated_at: datetime

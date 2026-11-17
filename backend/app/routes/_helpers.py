@@ -233,6 +233,7 @@ async def map_mieter_response(
 
     return MieterResponse(
         id=mieter.id,
+        public_id=mieter.public_id,
         vermieter_id=mieter.vermieter_id,
         first_name=mieter.first_name,
         last_name=mieter.last_name,
@@ -275,6 +276,7 @@ async def map_mietvertrag_response(db: AsyncSession, vertrag: Mietvertrag) -> Mi
 
     return MietvertragResponse(
         id=vertrag.id,
+        public_id=vertrag.public_id,
         vermieter_id=vertrag.vermieter_id,
         mieter_id=vertrag.mieter_id,
         einheit_id=vertrag.einheit_id,

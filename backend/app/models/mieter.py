@@ -4,7 +4,8 @@ from __future__ import annotations
 from datetime import date
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Date, ForeignKey, Integer, String
+import sqlalchemy as sa
+from sqlalchemy import BigInteger, Date, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import BYTEA
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -23,6 +24,12 @@ class Mieter(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "mieter"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    public_id: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        unique=True,
+        server_default=sa.text("nextval('mieter_public_id_seq')"),
+    )
     vermieter_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,

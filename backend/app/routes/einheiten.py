@@ -16,6 +16,7 @@ from app.services.einheiten import (
     list_einheiten,
     update_einheit,
 )
+from app.services.public_id_resolver import resolve_einheit
 
 router = APIRouter()
 
@@ -66,7 +67,7 @@ async def get_einheit_route(
     user: User = Depends(require_role("vermieter")),
 ) -> EinheitResponse:
     """Gibt eine einzelne Einheit zurück."""
-    einheit = await get_einheit(db, vermieter_id=user.id, einheit_id=einheit_id)
+    einheit = await resolve_einheit(db, vermieter_id=user.id, entity_id=einheit_id)
     if not einheit:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -88,7 +89,7 @@ async def update_einheit_route(
     user: User = Depends(require_role("vermieter")),
 ) -> EinheitResponse:
     """Aktualisiert eine Einheit."""
-    einheit = await get_einheit(db, vermieter_id=user.id, einheit_id=einheit_id)
+    einheit = await resolve_einheit(db, vermieter_id=user.id, entity_id=einheit_id)
     if not einheit:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -117,7 +118,7 @@ async def delete_einheit_route(
     user: User = Depends(require_role("vermieter")),
 ) -> None:
     """Löscht eine Einheit (Soft-Delete)."""
-    einheit = await get_einheit(db, vermieter_id=user.id, einheit_id=einheit_id)
+    einheit = await resolve_einheit(db, vermieter_id=user.id, entity_id=einheit_id)
     if not einheit:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

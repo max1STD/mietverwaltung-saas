@@ -16,10 +16,10 @@ from app.schemas.mietvertrag import (
 from app.services.mietvertraege import (
     create_mietvertrag,
     delete_mietvertrag,
-    get_mietvertrag,
     list_mietvertraege,
     update_mietvertrag,
 )
+from app.services.public_id_resolver import resolve_mietvertrag
 
 router = APIRouter()
 
@@ -78,7 +78,7 @@ async def get_mietvertrag_route(
     user: User = Depends(require_role("vermieter")),
 ) -> MietvertragResponse:
     """Gibt einen einzelnen Mietvertrag zurück."""
-    vertrag = await get_mietvertrag(db, vermieter_id=user.id, vertrag_id=vertrag_id)
+    vertrag = await resolve_mietvertrag(db, vermieter_id=user.id, entity_id=vertrag_id)
     if not vertrag:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -100,7 +100,7 @@ async def update_mietvertrag_route(
     user: User = Depends(require_role("vermieter")),
 ) -> MietvertragResponse:
     """Aktualisiert einen Mietvertrag."""
-    vertrag = await get_mietvertrag(db, vermieter_id=user.id, vertrag_id=vertrag_id)
+    vertrag = await resolve_mietvertrag(db, vermieter_id=user.id, entity_id=vertrag_id)
     if not vertrag:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -129,7 +129,7 @@ async def delete_mietvertrag_route(
     user: User = Depends(require_role("vermieter")),
 ) -> None:
     """Löscht einen Mietvertrag (Soft-Delete)."""
-    vertrag = await get_mietvertrag(db, vermieter_id=user.id, vertrag_id=vertrag_id)
+    vertrag = await resolve_mietvertrag(db, vermieter_id=user.id, entity_id=vertrag_id)
     if not vertrag:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

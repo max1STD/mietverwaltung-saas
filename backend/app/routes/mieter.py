@@ -13,10 +13,10 @@ from app.services.mieter import (
     create_mieter,
     delete_mieter,
     get_aktuelle_einheit,
-    get_mieter,
     list_mieter,
     update_mieter,
 )
+from app.services.public_id_resolver import resolve_mieter
 
 router = APIRouter()
 
@@ -67,7 +67,7 @@ async def get_mieter_route(
     user: User = Depends(require_role("vermieter")),
 ) -> MieterResponse:
     """Gibt einen einzelnen Mieter zurück."""
-    mieter = await get_mieter(db, vermieter_id=user.id, mieter_id=mieter_id)
+    mieter = await resolve_mieter(db, vermieter_id=user.id, entity_id=mieter_id)
     if not mieter:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -90,7 +90,7 @@ async def update_mieter_route(
     user: User = Depends(require_role("vermieter")),
 ) -> MieterResponse:
     """Aktualisiert einen Mieter."""
-    mieter = await get_mieter(db, vermieter_id=user.id, mieter_id=mieter_id)
+    mieter = await resolve_mieter(db, vermieter_id=user.id, entity_id=mieter_id)
     if not mieter:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -120,7 +120,7 @@ async def delete_mieter_route(
     user: User = Depends(require_role("vermieter")),
 ) -> None:
     """Löscht einen Mieter (Soft-Delete)."""
-    mieter = await get_mieter(db, vermieter_id=user.id, mieter_id=mieter_id)
+    mieter = await resolve_mieter(db, vermieter_id=user.id, entity_id=mieter_id)
     if not mieter:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

@@ -126,6 +126,7 @@ class MieterResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    public_id: int | None = None
     vermieter_id: int
     first_name: str
     last_name: str

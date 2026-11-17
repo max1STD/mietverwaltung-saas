@@ -12,6 +12,7 @@ from app.schemas.einheit import EinheitCreate, EinheitNestedCreate, EinheitRespo
 from app.schemas.objekt import ObjektCreate, ObjektResponse, ObjektUpdate
 from app.services.einheiten import create_einheit, list_einheiten
 from app.services.objekte import create_objekt, delete_objekt, get_objekt, list_objekte, update_objekt
+from app.services.public_id_resolver import resolve_objekt
 
 router = APIRouter()
 
@@ -57,7 +58,7 @@ async def get_objekt_route(
     user: User = Depends(require_role("vermieter")),
 ) -> ObjektResponse:
     """Gibt ein einzelnes Objekt zurück."""
-    objekt = await get_objekt(db, vermieter_id=user.id, objekt_id=objekt_id)
+    objekt = await resolve_objekt(db, vermieter_id=user.id, entity_id=objekt_id)
     if not objekt:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -79,7 +80,7 @@ async def update_objekt_route(
     user: User = Depends(require_role("vermieter")),
 ) -> ObjektResponse:
     """Aktualisiert ein Objekt."""
-    objekt = await get_objekt(db, vermieter_id=user.id, objekt_id=objekt_id)
+    objekt = await resolve_objekt(db, vermieter_id=user.id, entity_id=objekt_id)
     if not objekt:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -108,7 +109,7 @@ async def delete_objekt_route(
     user: User = Depends(require_role("vermieter")),
 ) -> None:
     """Löscht ein Objekt (Soft-Delete)."""
-    objekt = await get_objekt(db, vermieter_id=user.id, objekt_id=objekt_id)
+    objekt = await resolve_objekt(db, vermieter_id=user.id, entity_id=objekt_id)
     if not objekt:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -138,14 +139,14 @@ async def create_einheit_nested_route(
     user: User = Depends(require_role("vermieter")),
 ) -> EinheitResponse:
     """Erstellt eine Einheit innerhalb eines bestimmten Objekts."""
-    objekt = await get_objekt(db, vermieter_id=user.id, objekt_id=objekt_id)
+    objekt = await resolve_objekt(db, vermieter_id=user.id, entity_id=objekt_id)
     if not objekt:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Objekt nicht gefunden",
         )
     payload = data.model_dump()
-    payload["objekt_id"] = objekt_id
+    payload["objekt_id"] = objekt.id
     einheit = await create_einheit(
         db,
         vermieter_id=user.id,
@@ -166,11 +167,11 @@ async def list_einheiten_nested_route(
     user: User = Depends(require_role("vermieter")),
 ) -> list[EinheitResponse]:
     """Listet alle Einheiten eines Objekts auf."""
-    objekt = await get_objekt(db, vermieter_id=user.id, objekt_id=objekt_id)
+    objekt = await resolve_objekt(db, vermieter_id=user.id, entity_id=objekt_id)
     if not objekt:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Objekt nicht gefunden",
         )
-    einheiten = await list_einheiten(db, vermieter_id=user.id, objekt_id=objekt_id)
+    einheiten = await list_einheiten(db, vermieter_id=user.id, objekt_id=objekt.id)
     return [await map_einheit_response(db, e) for e in einheiten]
