@@ -26,8 +26,11 @@ def load_env_file(path: Path) -> None:
 def main() -> None:
     load_env_file(ENV_FILE)
     os.environ.setdefault("PYTHONPATH", str(BACKEND_DIR))
+    python = str(BACKEND_DIR / ".venv" / "bin" / "python3")
     cmd = [
-        str(BACKEND_DIR / ".venv" / "bin" / "uvicorn"),
+        python,
+        "-m",
+        "uvicorn",
         "app.main:app",
         "--host", "127.0.0.1",
         "--port", "8000",
