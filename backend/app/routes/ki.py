@@ -29,7 +29,7 @@ from app.services.ai.keyword_classifier import (
 from app.services.ai.ollama_client import KIResult, generate_text
 from app.services.ai.presidio import anonymize, deanonymize
 from app.services.audit_log import audit_log
-from app.services.ocr.tesseract import extract_text
+from app.services.ocr import extract_text
 
 router = APIRouter()
 
