@@ -47,13 +47,13 @@ async def create_objekt(
 
 async def list_objekte(
     db: AsyncSession,
-    vermieter_id: int,
+    vermieter_id: int | None = None,
 ) -> list[Objekt]:
     """Liste aller nicht gelöschten Objekte eines Vermieters."""
     result = await db.execute(
         select(Objekt)
         .where(
-            Objekt.vermieter_id == vermieter_id,
+            Objekt.vermieter_id == vermieter_id if vermieter_id is not None else True,
             Objekt.deleted_at.is_(None),
         )
         .order_by(Objekt.name.asc())

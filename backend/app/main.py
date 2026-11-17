@@ -89,6 +89,7 @@ app.add_middleware(AuditMiddleware)
 # Routes (imported after app creation to avoid circular imports)
 from app.routes import (
     abrechnungen,
+    admin,
     auth,
     bewerbungen,
     billing,
@@ -127,6 +128,7 @@ app.include_router(onboarding.router, prefix="/api/v1/onboarding", tags=["onboar
 app.include_router(billing.router, prefix="/api/v1/billing", tags=["billing"])
 app.include_router(stripe_webhooks.router, prefix="/api/v1/webhooks", tags=["webhooks"])
 app.include_router(health.router, tags=["health"])
+app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 app.include_router(ki.router, prefix="/api/v1/ki", tags=["ki"])
 app.include_router(dokumente.router, prefix="/api/v1/dokumente", tags=["dokumente"])
 app.include_router(geo.router, prefix="/api/v1/geo", tags=["geo"])

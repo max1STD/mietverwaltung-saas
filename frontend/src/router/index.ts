@@ -200,6 +200,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/admin',
+      name: 'admin',
+      component: () => import('../views/admin/AdminView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
       path: '/bewerbungen/:id',
       name: 'bewerbung-detail',
       component: () => import('../views/bewerbungen/BewerbungDetailView.vue'),
@@ -238,6 +244,11 @@ router.beforeEach(async (to, from, next) => {
     } catch {
       // Onboarding-Fehler sollten den App-Start nicht blockieren
     }
+  }
+
+  // Admin-Route schuetzen
+  if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    return next({ name: 'dashboard' })
   }
 
   // Authentifiziert, aber 2FA noch ausstehend -> 2FA-Setup

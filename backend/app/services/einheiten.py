@@ -48,12 +48,12 @@ async def create_einheit(
 
 async def list_einheiten(
     db: AsyncSession,
-    vermieter_id: int,
+    vermieter_id: int | None = None,
     objekt_id: int | None = None,
 ) -> list[Einheit]:
     """Liste aller nicht gelöschten Einheiten eines Vermieters (optional gefiltert nach Objekt)."""
     query = select(Einheit).where(
-        Einheit.vermieter_id == vermieter_id,
+        Einheit.vermieter_id == vermieter_id if vermieter_id is not None else True,
         Einheit.deleted_at.is_(None),
     )
     if objekt_id is not None:

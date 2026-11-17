@@ -77,7 +77,7 @@ def anyio_backend() -> str:
     return "asyncio"
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture(scope="function", loop_scope="function")
 async def engine() -> AsyncIterator:
     """Async Engine für Tests (gleiche DB wie App)."""
     from app.config import settings
@@ -112,7 +112,7 @@ def _patch_audit_session(session: AsyncSession) -> None:
     audit_mod.async_session = lambda: _shared_session_ctx(session)
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(loop_scope="function")
 async def db_session(engine) -> AsyncIterator[AsyncSession]:
     """Transaktionale Session, die am Ende zurückgerollt wird."""
     async with engine.begin() as conn:
@@ -128,7 +128,7 @@ async def db_session(engine) -> AsyncIterator[AsyncSession]:
         await trans.rollback()
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(loop_scope="function")
 async def async_client(engine) -> AsyncIterator[AsyncClient]:
     """HTTP-Client mit überschriebenem get_db in einer Nested-Transaction."""
     # Redis-Test-DB leeren.
@@ -187,7 +187,7 @@ def csrf_header(async_client: AsyncClient) -> dict[str, str]:
     return {"X-CSRF-Token": token or ""}
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(loop_scope="function")
 async def vermieter_user(async_client: AsyncClient) -> User:
     """Erstellt einen Test-Vermieter in der Client-Session."""
     from app.models.user import User
@@ -208,7 +208,53 @@ async def vermieter_user(async_client: AsyncClient) -> User:
     return user
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(loop_scope="function")
+async def admin_user(async_client: AsyncClient) -> User:
+    """Erstellt einen Test-Admin in der Client-Session."""
+    from app.models.user import User
+    from app.services.auth import hash_password
+
+    session: AsyncSession = async_client.db_session
+    user = User(
+        email="test-admin@example.de",
+        password_hash=hash_password("TestPasswort123!"),
+        full_name="Test Admin",
+        role="admin",
+        is_active=True,
+        email_verified=True,
+    )
+    session.add(user)
+    await session.flush()
+    await session.refresh(user)
+    return user
+
+
+@pytest_asyncio.fixture(loop_scope="function")
+async def admin_client(
+    async_client: AsyncClient,
+    admin_user: User,
+) -> AsyncClient:
+    """Authentifizierter Client als Test-Admin."""
+    from app.main import app
+    from app.middleware.auth import get_current_user
+
+    async def override_get_current_user() -> User:
+        return admin_user
+
+    app.dependency_overrides[get_current_user] = override_get_current_user
+
+    csrf_token = async_client.cookies.get("csrf_token") or "test-csrf-token"
+    async_client.cookies.set("csrf_token", csrf_token)
+    async_client.headers["X-CSRF-Token"] = csrf_token
+    async_client.user_id = admin_user.id
+
+    yield async_client
+
+    app.dependency_overrides.pop(get_current_user, None)
+    async_client.headers.pop("X-CSRF-Token", None)
+
+
+@pytest_asyncio.fixture(loop_scope="function")
 async def auth_client(
     async_client: AsyncClient,
     vermieter_user: User,
