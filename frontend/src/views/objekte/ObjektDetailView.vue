@@ -79,11 +79,13 @@
 
             <AppTable v-else :items="objekteStore.einheiten" :columns="einheitColumns">
               <template #row="{ item }">
-                <td class="py-3 px-4 font-medium text-gray-900">{{ item.name }}</td>
-                <td class="py-3 px-4 text-sm text-gray-600">{{ item.etage ?? '–' }}</td>
-                <td class="py-3 px-4 text-sm text-gray-600">{{ item.wohnflaeche_qm ? `${item.wohnflaeche_qm} m²` : '–' }}</td>
-                <td class="py-3 px-4 text-sm text-gray-600">{{ formatCurrency(item.kaltmiete) }}</td>
-                <td class="py-3 px-4">
+                <td class="py-3 px-4 font-medium text-gray-900 cursor-pointer hover:text-[#0D3B70]" @click="$router.push(`/einheiten/${item.public_id || item.id}`)">
+                  {{ item.name }}
+                </td>
+                <td class="py-3 px-4 text-sm text-gray-600 cursor-pointer" @click="$router.push(`/einheiten/${item.public_id || item.id}`)">{{ item.etage ?? '–' }}</td>
+                <td class="py-3 px-4 text-sm text-gray-600 cursor-pointer" @click="$router.push(`/einheiten/${item.public_id || item.id}`)">{{ item.wohnflaeche_qm ? `${item.wohnflaeche_qm} m²` : '–' }}</td>
+                <td class="py-3 px-4 text-sm text-gray-600 cursor-pointer" @click="$router.push(`/einheiten/${item.public_id || item.id}`)">{{ formatCurrency(item.kaltmiete) }}</td>
+                <td class="py-3 px-4 cursor-pointer" @click="$router.push(`/einheiten/${item.public_id || item.id}`)">
                   <AppBadge :variant="badgeForStatus(item.status)">{{ item.status || 'frei' }}</AppBadge>
                 </td>
                 <td class="py-3 px-4 text-right">

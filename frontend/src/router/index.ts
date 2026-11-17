@@ -74,6 +74,18 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/einheiten/:id',
+      name: 'einheit-detail',
+      component: () => import('../views/einheiten/EinheitDetailView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/einheiten/:id/bearbeiten',
+      name: 'einheit-edit',
+      component: () => import('../views/einheiten/EinheitFormView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/objekte/:id/bearbeiten',
       name: 'objekt-edit',
       component: () => import('../views/objekte/ObjektFormView.vue'),

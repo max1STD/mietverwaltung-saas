@@ -60,24 +60,59 @@ export interface Einheit {
   name: string
   etage?: number
   wohnflaeche_qm?: number
-  zimmer?: number
+  nutzflaeche_qm?: number
+  balkon_flaeche_qm?: number
+  terrasse_flaeche_qm?: number
+  garten_flaeche_qm?: number
+  gewerbeflaeche_qm?: number
+  rooms?: number
+  wohnzimmer?: number
+  schlafzimmer?: number
+  badezimmer?: number
   kaltmiete?: number
   nebenkosten_vorschuss?: number
   status?: EinheitStatus | string
-  energieklasse?: string
-  letzte_renovierung?: string
-  verfuegbar_ab?: string
+  energy_class?: string
+  baujahr_einheit?: number
+  heizungsart?: string
+  warmwasserbereitung?: string
+  fenster?: string
+  boden?: string
+  sanitaer?: string
+  kueche?: string
+  energieausweis_art?: string
+  energieverbrauch_kennwert?: number
+  energieverbrauch_klasse?: string
+  bauweise?: string
+  denkmalschutz?: boolean
+  denkmalschutz_bis?: string
+  last_renovation?: string
+  renovierungsstatus?: string
+  zustand?: string
+  available_from?: string
+  bewohnbar_ab?: string
+  anmerkungen?: string
+  balkon?: boolean
+  terrasse?: boolean
+  garten?: boolean
+  garage?: boolean
+  stellplatz?: boolean
+  keller?: boolean
+  aufzug?: boolean
+  barrierefrei?: boolean
+  moebliert?: boolean
   created_at?: string
   updated_at?: string
   aktueller_mieter?: {
     id: string
     name: string
   }
-  /** Legacy alias für aktueller_mieter */
+  /** Legacy alias fuer aktueller_mieter */
   current_mieter?: {
     id: string
     name: string
   }
+  vermietungsstatus?: string
 }
 
 export const useObjekteStore = defineStore('objekte', () => {
