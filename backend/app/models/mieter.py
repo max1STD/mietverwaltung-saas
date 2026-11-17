@@ -13,6 +13,7 @@ from app.models.base import Base, SoftDeleteMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.adresse import Adresse
+    from app.models.bankverbindung import Bankverbindung
     from app.models.buergschaft import Buergschaft
     from app.models.mietvertraege import Mietvertrag
     from app.models.user import User
@@ -64,6 +65,12 @@ class Mieter(Base, TimestampMixin, SoftDeleteMixin):
     )
     buergschaften: Mapped[list[Buergschaft]] = relationship(
         "Buergschaft",
+        back_populates="mieter",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    bankverbindungen: Mapped[list["Bankverbindung"]] = relationship(
+        "Bankverbindung",
         back_populates="mieter",
         cascade="all, delete-orphan",
         lazy="selectin",

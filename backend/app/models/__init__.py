@@ -4,6 +4,7 @@ from app.models.abrechnungen import Abrechnung
 from app.models.adresse import Adresse
 from app.models.audit import AuditLog
 from app.models.base import Base
+from app.models.bankverbindung import Bankverbindung
 from app.models.bewerbungen import Bewerbung
 from app.models.buergschaft import Buergschaft
 from app.models.dokument import Dokument

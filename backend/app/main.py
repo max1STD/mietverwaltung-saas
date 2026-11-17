@@ -91,6 +91,7 @@ from app.routes import (
     abrechnungen,
     admin,
     auth,
+    bankverbindungen,
     bewerbungen,
     billing,
     dashboard,
@@ -102,6 +103,7 @@ from app.routes import (
     health,
     ki,
     kosten,
+    kostenkategorien,
     mieter,
     mietvertraege,
     mietzahlungen,
@@ -116,11 +118,13 @@ app.include_router(einwilligungen.router, prefix="/api/v1/einwilligungen", tags=
 app.include_router(dsgvo.router, prefix="/api/v1/dsgvo", tags=["dsgvo"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
 app.include_router(objekte.router, prefix="/api/v1/objekte", tags=["objekte"])
+app.include_router(bankverbindungen.router, prefix="/api/v1/bankverbindungen", tags=["bankverbindungen"])
 app.include_router(einheiten.router, prefix="/api/v1/einheiten", tags=["einheiten"])
 app.include_router(mieter.router, prefix="/api/v1/mieter", tags=["mieter"])
 app.include_router(mietvertraege.router, prefix="/api/v1/mietvertraege", tags=["mietvertraege"])
 app.include_router(tickets.router, prefix="/api/v1/tickets", tags=["tickets"])
 app.include_router(kosten.router, prefix="/api/v1/kosten", tags=["kosten"])
+app.include_router(kostenkategorien.router, prefix="/api/v1/kostenkategorien", tags=["kostenkategorien"])
 app.include_router(abrechnungen.router, prefix="/api/v1/abrechnungen", tags=["abrechnungen"])
 app.include_router(mietzahlungen.router, prefix="/api/v1/mietzahlungen", tags=["mietzahlungen"])
 app.include_router(bewerbungen.router, prefix="/api/v1/bewerbungen", tags=["bewerbungen"])

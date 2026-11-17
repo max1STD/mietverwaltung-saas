@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import BYTEA, JSON
@@ -13,6 +14,9 @@ from app.models.einwilligung import Einwilligung
 from app.models.plan_usage import PlanUsage
 from app.models.session import UserSession
 from app.models.subscription import Subscription
+
+if TYPE_CHECKING:
+    from app.models.bankverbindung import Bankverbindung
 
 
 class User(Base, TimestampMixin, SoftDeleteMixin):
@@ -118,4 +122,10 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
         cascade="all, delete-orphan",
         lazy="selectin",
         uselist=False,
+    )
+    bankverbindungen: Mapped[list["Bankverbindung"]] = relationship(
+        "Bankverbindung",
+        back_populates="vermieter",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
