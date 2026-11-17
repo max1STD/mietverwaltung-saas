@@ -16,7 +16,7 @@ Diese Datei dient als zentrale Fehler- und Todo-Liste für UX-Fixes, Bugs und kl
 | 3 | Favicon fehlt | ✅ Erledigt | `/favicon.svg` hinzugefügt, liefert 200. → GitHub #52 | `frontend/public/favicon.svg`, `frontend/index.html` |
 | 4 | Mobile Layouts prüfen | 🔲 Offen | Einige Tabellen/Formulare auf kleinen Bildschirmen noch nicht optimiert. | Alle `*View.vue` |
 | 5 | Klickbare KPI-/Detail-Verknüpfungen | ✅ Erledigt | Dashboard-KPIs verlinken auf Listenansichten. → GitHub #47 | `frontend/src/views/dashboard/DashboardView.vue`, `frontend/src/components/dashboard/KPICard.vue` |
-| 9 | Ticket: Dateianhänge | 🔄 In Arbeit | UI vorbereitet; echter Upload-Endpunkt folgt mit DMS-Integration. → GitHub #48 | `frontend/src/views/tickets/TicketFormView.vue`, `backend/app/routes/tickets.py` |
+| 9 | Ticket: Dateianhänge | ✅ Erledigt | Upload + Liste + Download + Löschen via Dokumenten-Service. → GitHub #48 | `frontend/src/views/tickets/TicketFormView.vue`, `backend/app/routes/dokumente.py` |
 | 10 | Ticket: Mieter-Autofill | ✅ Erledigt | Bei Einheit-Auswahl wird Mieter automatisch gesetzt. → GitHub #48 | `frontend/src/views/tickets/TicketFormView.vue`, `backend/app/routes/_helpers.py` |
 | 11 | Wohneinheit-Stammdaten erweitern | 🔲 Offen | Flächen, Ausstattung, Räume, Zustand, Energieklasse etc. → GitHub #50 | `backend/app/models/einheit.py`, `frontend/src/views/einheiten/` |
 | 12 | Objekt-Stammdaten erweitern | 🔲 Offen | Flächen, Energieausweis, Heizung, Denkmalschutz, Status etc. → GitHub #49 | `backend/app/models/objekt.py`, `frontend/src/views/objekte/` |
@@ -30,11 +30,11 @@ Diese Datei dient als zentrale Fehler- und Todo-Liste für UX-Fixes, Bugs und kl
 
 | # | Thema | Status | Beschreibung | Wo |
 |---|-------|--------|--------------|-----|
-| 7 | Paperless-ngx Integration | 🔄 In Arbeit | `dokumente`-Tabelle, User-Spalten und Alembic-Migration angelegt. Nächster Schritt: Client-Service, Upload-Endpunkte, Frontend-Dokumenten-Reiter. | `backend/app/models/dokument.py`, `backend/app/routes/dokumente.py` |
+| 7 | Paperless-ngx Integration | ✅ Erledigt (Basis) | Client-Service, Upload/Download/Vorschau, Frontend-Reiter, lokaler Fallback. Erweiterung: echte Paperless-Instanz + OCR-Status bei Bedarf. | `backend/app/services/paperless.py`, `backend/app/services/dokumente.py`, `frontend/src/components/dokumente/DokumenteListe.vue` |
 | 8 | Session-/Cookie-Handling | ✅ Erledigt | Access 24h / Refresh 30 Tage, remember_me Default true, X-Forwarded-Proto für Cloudflare-HTTPS, Promise-basierte Refresh-Queue. → GitHub #45 | `backend/app/services/jwt.py`, `backend/app/routes/auth.py`, `frontend/src/api/client.ts` |
 | 9 | Nginx Fehlerseiten | 🔲 Offen | Bei 500/502 zeigt Nginx seine Standard-Fehlerseite. | `infra/nginx/mietverwaltung.conf` |
 | 9 | Deployment-Automatisierung | 🔲 Offen | Backend/Frontend/Cloudflare manuell starten. Systemd-Units oder Docker-Compose für stabileren Neustart. | `infra/systemd/` |
-| 10 | Tests nach Paperless-Änderungen | 🔲 Offen | Sicherstellen, dass `pytest tests` und `pnpm build` weiterhin grün bleiben. | `backend/tests/`, `frontend/package.json` |
+| 10 | Tests nach Paperless-Änderungen | ✅ Erledigt | `pytest tests` 142/142 grün (phase10 KI ausgenommen), `pnpm build` grün. | `backend/tests/test_dokumente.py`, `frontend/vite.config.ts` |
 
 ---
 
