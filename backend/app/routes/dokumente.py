@@ -22,6 +22,7 @@ from app.schemas.dokument import (
     DokumentGenerateRequest,
     DokumentGenerateResponse,
     DokumentListResponse,
+    DokumentOcrResponse,
     DokumentUploadResponse,
 )
 from app.services.audit_log import audit_log
@@ -239,6 +240,28 @@ async def preview_uploaded_document(
     )
 
 
+@router.get("/{dokument_id}/ocr", response_model=DokumentOcrResponse)
+async def get_dokument_ocr(
+    dokument_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_role("vermieter")),
+) -> DokumentOcrResponse:
+    """Gibt den OCR-Text eines Dokuments zurueck."""
+    service = DokumentService(db)
+    dokument = await service.get_document(user.id, dokument_id)
+    if not dokument:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dokument nicht gefunden")
+
+    return DokumentOcrResponse(
+        id=dokument.id,
+        ocr_status=dokument.ocr_status or "pending",
+        ocr_text=dokument.ocr_text,
+        ocr_confidence=float(dokument.ocr_confidence) if dokument.ocr_confidence is not None else None,
+        ocr_engine=dokument.ocr_engine,
+        ocr_finished_at=dokument.ocr_finished_at,
+    )
+
+
 @router.delete("/{dokument_id}", response_model=DokumentDeleteResponse, dependencies=[Depends(csrf_protect)])
 async def delete_uploaded_document(
     dokument_id: int,
@@ -280,6 +303,9 @@ def _map_dokument(dokument) -> DokumentUploadResponse:
         file_size=dokument.file_size,
         content_type=dokument.content_type,
         status=dokument.status,
+        ocr_status=dokument.ocr_status,
+        ocr_text=dokument.ocr_text,
+        ocr_confidence=float(dokument.ocr_confidence) if dokument.ocr_confidence is not None else None,
         storage_path=dokument.storage_path,
         created_at=dokument.created_at,
         upload_error=dokument.upload_error,

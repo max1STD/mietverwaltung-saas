@@ -25,6 +25,7 @@ from app.config import settings
 from app.models.dokument import Dokument
 from app.models.user import User
 from app.services.crypto import decrypt_value, encrypt_value
+from app.services.dokument_ocr import run_ocr_for_dokument
 from app.services.paperless import PaperlessAPIError, PaperlessClient, PaperlessConfigError
 
 logger = logging.getLogger(__name__)
@@ -164,6 +165,7 @@ class DokumentService:
             paperless_document_id=paperless_document_id,
             paperless_user_id=paperless_user_id,
             status="pending" if paperless_document_id and not upload_error else "bereit",
+            ocr_status="pending",
             typ=typ,
             titel=titel,
             jahr=jahr,
@@ -173,6 +175,14 @@ class DokumentService:
             storage_path=storage_path,
             upload_error=upload_error,
         )
+
+        # Lokale OCR fuer alle Dokumente (Paperless uebernimmt spaeter)
+        try:
+            await run_ocr_for_dokument(self.db, dokument, content)
+        except Exception as exc:
+            logger.error("OCR failed for uploaded dokument: %s", exc)
+            dokument.ocr_status = "error"
+
         self.db.add(dokument)
         await self.db.flush()
         await self.db.refresh(dokument)

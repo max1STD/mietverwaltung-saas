@@ -1,4 +1,4 @@
-"""Schemas für Dokumenten-Generierung und Upload."""
+"""Schemas fuer Dokumenten-Generierung und Upload."""
 from __future__ import annotations
 
 from datetime import datetime
@@ -29,6 +29,9 @@ class DokumentUploadResponse(BaseModel):
     file_size: int
     content_type: str
     status: str
+    ocr_status: str | None = None
+    ocr_text: str | None = None
+    ocr_confidence: float | None = None
     storage_path: str | None = None
     created_at: datetime
     upload_error: str | None = None
@@ -41,3 +44,14 @@ class DokumentListResponse(BaseModel):
 class DokumentDeleteResponse(BaseModel):
     id: int
     deleted: bool = True
+
+
+class DokumentOcrResponse(BaseModel):
+    """OCR-Ergebnis fuer ein Dokument."""
+
+    id: int
+    ocr_status: str
+    ocr_text: str | None = None
+    ocr_confidence: float | None = None
+    ocr_engine: str | None = None
+    ocr_finished_at: datetime | None = None

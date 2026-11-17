@@ -14,8 +14,20 @@ export interface Dokument {
   file_size: number
   content_type: string
   status: string
+  ocr_status?: string | null
+  ocr_text?: string | null
+  ocr_confidence?: number | null
   created_at: string
   upload_error: string | null
+}
+
+export interface DokumentOcrResult {
+  id: number
+  ocr_status: string
+  ocr_text: string | null
+  ocr_confidence: number | null
+  ocr_engine: string | null
+  ocr_finished_at: string | null
 }
 
 export type DokumentTyp =
@@ -111,6 +123,16 @@ export const useDokumenteStore = defineStore('dokumente', () => {
     return `/api/v1/dokumente/${id}/preview`
   }
 
+  async function fetchOcrText(id: number): Promise<DokumentOcrResult | null> {
+    try {
+      const response = await apiClient.get(`/dokumente/${id}/ocr`)
+      return response.data
+    } catch (err) {
+      error.value = err as ApiError
+      return null
+    }
+  }
+
   return {
     dokumente,
     loading,
@@ -122,6 +144,7 @@ export const useDokumenteStore = defineStore('dokumente', () => {
     deleteDokument,
     downloadUrl,
     previewUrl,
+    fetchOcrText,
     resetError,
   }
 })

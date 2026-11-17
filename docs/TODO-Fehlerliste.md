@@ -1,6 +1,6 @@
 # Offene Punkte / Fehlerliste — Mietverwaltung-SaaS
 
-**Letzte Aktualisierung:** 16. November 2026  
+**Letzte Aktualisierung:** 17. November 2026  
 **Verantwortlich:** Hermes Agent / Max Karthoff
 
 Diese Datei dient als zentrale Fehler- und Todo-Liste für UX-Fixes, Bugs und kleine Verbesserungen, die während der Entwicklung auftauchen.
@@ -30,7 +30,7 @@ Diese Datei dient als zentrale Fehler- und Todo-Liste für UX-Fixes, Bugs und kl
 
 | # | Thema | Status | Beschreibung | Wo |
 |---|-------|--------|--------------|-----|
-| 7 | Paperless-ngx Integration | ✅ Erledigt (Basis) | Client-Service, Upload/Download/Vorschau, Frontend-Reiter, lokaler Fallback. Erweiterung: echte Paperless-Instanz + OCR-Status bei Bedarf. | `backend/app/services/paperless.py`, `backend/app/services/dokumente.py`, `frontend/src/components/dokumente/DokumenteListe.vue` |
+| 7 | Lokale OCR-Integration | ✅ Erledigt | Tesseract + PyMuPDF nach Upload, OCR-Status/Text/Confidence in DB, API-Endpunkt, Frontend-OCR-Button. Paperless-ngx bleibt TODO. | `backend/app/services/ocr/`, `backend/app/services/dokumente.py`, `frontend/src/components/dokumente/DokumenteListe.vue` |
 | 8 | Session-/Cookie-Handling | ✅ Erledigt | Access 24h / Refresh 30 Tage, remember_me Default true, X-Forwarded-Proto für Cloudflare-HTTPS, Promise-basierte Refresh-Queue. → GitHub #45 | `backend/app/services/jwt.py`, `backend/app/routes/auth.py`, `frontend/src/api/client.ts` |
 | 9 | Nginx Fehlerseiten | 🔲 Offen | Bei 500/502 zeigt Nginx seine Standard-Fehlerseite. | `infra/nginx/mietverwaltung.conf` |
 | 9 | Deployment-Automatisierung | 🔲 Offen | Backend/Frontend/Cloudflare manuell starten. Systemd-Units oder Docker-Compose für stabileren Neustart. | `infra/systemd/` |
@@ -51,14 +51,13 @@ Diese Datei dient als zentrale Fehler- und Todo-Liste für UX-Fixes, Bugs und kl
 
 ## Nächste große Arbeitspakete
 
-1. **Paperless-ngx DMS-Integration** (aktuell in Arbeit)
-   - Backend-Client-Service
-   - Upload/Download/Vorschau-Endpunkte
-   - Frontend-Reiter in Objekt/Einheit/Mieter/Mietvertrag
+1. **Domain-Core-Erweiterungen** (in Arbeit)
+   - Objekt-Stammdaten erweitern → GitHub #49
+   - Zähler / NK-Abrechnung
 
-2. **Domain-Core stabilisieren** ✅ Erledigt
-   - E2E-Tests Objekt/Einheit/Mieter/Mietvertrag (`tests/integration/test_domain_core_flow.py`)
-   - Bankverbindungen + Kostenkategorien verifizieren
+2. **Paperless-ngx DMS-Integration** (aktuell TODO)
+   - Echte Paperless-Instanz via Docker auf anderem Server
+   - Upload/Download/Vorschau-Endpunkte
 
 3. **Dashboard erweitern**
    - KPIs prüfen
