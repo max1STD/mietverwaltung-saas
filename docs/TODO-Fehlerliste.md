@@ -31,10 +31,11 @@ Diese Datei dient als zentrale Fehler- und Todo-Liste für UX-Fixes, Bugs und kl
 | # | Thema | Status | Beschreibung | Wo |
 |---|-------|--------|--------------|-----|
 | 7 | Lokale OCR-Integration | ✅ Erledigt | Tesseract + PyMuPDF nach Upload, OCR-Status/Text/Confidence in DB, API-Endpunkt, Frontend-OCR-Button. Paperless-ngx bleibt TODO. | `backend/app/services/ocr/`, `backend/app/services/dokumente.py`, `frontend/src/components/dokumente/DokumenteListe.vue` |
+| 8 | Admin-Backend | ✅ Erledigt | /api/v1/admin Stats/User-CRUD/Objekt-/Einheiten-Listen, AdminView, Router-Guard, 9 Tests. → GitHub #53 | `backend/app/routes/admin.py`, `frontend/src/views/admin/AdminView.vue` |
 | 8 | Session-/Cookie-Handling | ✅ Erledigt | Access 24h / Refresh 30 Tage, remember_me Default true, X-Forwarded-Proto für Cloudflare-HTTPS, Promise-basierte Refresh-Queue. → GitHub #45 | `backend/app/services/jwt.py`, `backend/app/routes/auth.py`, `frontend/src/api/client.ts` |
 | 9 | Nginx Fehlerseiten | 🔲 Offen | Bei 500/502 zeigt Nginx seine Standard-Fehlerseite. | `infra/nginx/mietverwaltung.conf` |
 | 9 | Deployment-Automatisierung | 🔲 Offen | Backend/Frontend/Cloudflare manuell starten. Systemd-Units oder Docker-Compose für stabileren Neustart. | `infra/systemd/` |
-| 10 | Tests nach Paperless-Änderungen | ✅ Erledigt | `pytest tests` 142/142 grün (phase10 KI ausgenommen), `pnpm build` grün. | `backend/tests/test_dokumente.py`, `frontend/vite.config.ts` |
+| 10 | Tests nach Paperless-Änderungen | ✅ Erledigt | `pytest tests` 166/166 gruen, `pnpm build` gruen. | `backend/tests/test_dokumente.py`, `frontend/vite.config.ts` |
 
 ---
 
