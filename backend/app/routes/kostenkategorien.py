@@ -11,12 +11,31 @@ from app.schemas.kosten import KostenkategorieCreate, KostenkategorieResponse, K
 from app.services.kostenkategorien import (
     create_kostenkategorie,
     delete_kostenkategorie,
+    ensure_default_kategorien,
     get_kostenkategorie,
     list_kostenkategorien,
     update_kostenkategorie,
 )
 
 router = APIRouter()
+
+
+@router.post(
+    "/default",
+    response_model=list[KostenkategorieResponse],
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(csrf_protect)],
+)
+async def create_default_kategorien_route(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_role("vermieter")),
+) -> list[KostenkategorieResponse]:
+    """Legt fuer den eingeloggten Vermieter die Default-Kostenkategorien an (idempotent)."""
+    await ensure_default_kategorien(db, vermieter_id=user.id)
+    await db.commit()
+    kategorien = await list_kostenkategorien(db, vermieter_id=user.id)
+    return [KostenkategorieResponse.model_validate(k) for k in kategorien]
 
 
 @router.post(
@@ -49,7 +68,10 @@ async def list_kostenkategorien_route(
     user: User = Depends(require_role("vermieter")),
 ) -> list[KostenkategorieResponse]:
     """Listet alle Kostenkategorien des Vermieters auf."""
-    return await list_kostenkategorien(db, vermieter_id=user.id)
+    await ensure_default_kategorien(db, vermieter_id=user.id)
+    await db.commit()
+    kategorien = await list_kostenkategorien(db, vermieter_id=user.id)
+    return [KostenkategorieResponse.model_validate(k) for k in kategorien]
 
 
 @router.get("/{kategorie_id}", response_model=KostenkategorieResponse)

@@ -27,11 +27,11 @@ async def test_create_kostenkategorie(auth_client: AsyncClient, vermieter_user: 
 @pytest.mark.asyncio(loop_scope="function")
 async def test_list_kostenkategorien_empty_then_default(auth_client: AsyncClient, vermieter_user: User) -> None:
     """Beim ersten Zugriff werden Default-Kategorien erstellt und zurueckgegeben."""
-    # Aktuell liefert die Route keine automatische Erzeugung; Service-Funktion ist separat verfuegbar.
+    # Beim ersten Zugriff werden Default-Kategorien erstellt und zurueckgegeben.
     response = await auth_client.get("/api/v1/kostenkategorien")
     assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, list)
+    assert len(data) > 0
 
 
 @pytest.mark.asyncio(loop_scope="function")

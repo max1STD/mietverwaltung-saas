@@ -39,13 +39,14 @@ async def ensure_default_kategorien(db: AsyncSession, vermieter_id: int) -> None
         return
 
     for item in DEFAULT_KATEGORIEN:
-        db.add(
-            Kostenkategorie(
-                vermieter_id=vermieter_id,
-                is_default=True,
-                **item,
-            )
-        )
+        kategorie_data = {
+            "vermieter_id": vermieter_id,
+            "is_default": True,
+            "name": item["name"],
+            "umlagefaehig": item.get("umlagefaehig", True),
+            "verteilungsschluessel": item["verteilungsschluessel"],
+        }
+        db.add(Kostenkategorie(**kategorie_data))
     await db.flush()
 
 

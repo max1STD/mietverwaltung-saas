@@ -182,6 +182,8 @@ export const useKostenStore = defineStore('kosten', () => {
     loading.value = true
     error.value = null
     try {
+      // Standard-Kategorien werden automatisch angelegt, falls sie fehlen.
+      await apiClient.post('/kostenkategorien/default')
       const { data } = await apiClient.get<Kostenkategorie[]>('/kostenkategorien')
       kategorien.value = data
       return data
