@@ -56,8 +56,8 @@ Diese Datei dient als zentrale Fehler- und Todo-Liste für UX-Fixes, Bugs und kl
    - Upload/Download/Vorschau-Endpunkte
    - Frontend-Reiter in Objekt/Einheit/Mieter/Mietvertrag
 
-2. **Domain-Core stabilisieren**
-   - E2E-Tests Objekt/Einheit/Mieter/Mietvertrag
+2. **Domain-Core stabilisieren** ✅ Erledigt
+   - E2E-Tests Objekt/Einheit/Mieter/Mietvertrag (`tests/integration/test_domain_core_flow.py`)
    - Bankverbindungen + Kostenkategorien verifizieren
 
 3. **Dashboard erweitern**
