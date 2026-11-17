@@ -107,6 +107,15 @@
             </div>
           </form>
         </AppCard>
+
+        <!-- Dokumente -->
+        <AppCard padding="md" shadow="md" class="mt-6">
+          <h2 class="text-lg font-semibold text-[#0D3B70] mb-4">Dokumente</h2>
+          <DokumenteListe
+            entity-type="ticket"
+            :entity-id="Number(ticketId)"
+          />
+        </AppCard>
       </template>
 
       <AppEmptyState
@@ -130,6 +139,7 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppEmptyState from '@/components/ui/AppEmptyState.vue'
+import DokumenteListe from '@/components/dokumente/DokumenteListe.vue'
 
 const route = useRoute()
 const ticketsStore = useTicketsStore()

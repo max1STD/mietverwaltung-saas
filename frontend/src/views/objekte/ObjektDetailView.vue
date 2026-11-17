@@ -95,6 +95,16 @@
             </AppTable>
           </AppCard>
         </div>
+
+        <!-- Dokumente -->
+        <AppCard class="mt-6" padding="md" shadow="md">
+          <h2 class="text-lg font-semibold text-[#0D3B70] mb-4">Dokumente</h2>
+          <DokumenteListe
+            v-if="objekteStore.currentObjekt"
+            entity-type="objekt"
+            :entity-id="Number(objekteStore.currentObjekt.id)"
+          />
+        </AppCard>
       </template>
 
       <!-- Objekt nicht gefunden -->
@@ -181,6 +191,7 @@ import AppBadge from '@/components/ui/AppBadge.vue'
 import AppEmptyState from '@/components/ui/AppEmptyState.vue'
 import AppModal from '@/components/ui/AppModal.vue'
 import AppInput from '@/components/ui/AppInput.vue'
+import DokumenteListe from '@/components/dokumente/DokumenteListe.vue'
 
 const route = useRoute()
 const router = useRouter()

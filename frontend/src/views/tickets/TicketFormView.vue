@@ -157,6 +157,7 @@ import { useTicketsStore, type Ticket, type TicketKategorie, type TicketPriorita
 import { useObjekteStore } from '@/stores/objekte'
 import { useMieterStore } from '@/stores/mieter'
 import { useAuthStore } from '@/stores/auth'
+import { useDokumenteStore } from '@/stores/dokumente'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppInput from '@/components/ui/AppInput.vue'
@@ -167,6 +168,7 @@ const ticketsStore = useTicketsStore()
 const objekteStore = useObjekteStore()
 const mieterStore = useMieterStore()
 const authStore = useAuthStore()
+const dokumenteStore = useDokumenteStore()
 const { showToast } = useToast()
 
 const form = reactive({
@@ -267,16 +269,34 @@ async function handleSubmit(): Promise<void> {
   if (!validate()) return
 
   const created = await ticketsStore.createTicket(buildPayload())
-  if (created) {
-    // TODO: attachments upload wenn Backend bereit
-    if (attachments.value.length) {
-      showToast(`${attachments.value.length} Anhang/Anhänge werden vorbereitet (Upload folgt).`, 'info')
-    }
-    showToast('Ticket erfolgreich erstellt.', 'success')
-    router.push(`/tickets/${created.id}`)
-  } else {
+  if (!created) {
     showToast(ticketsStore.error?.message || 'Fehler beim Erstellen.', 'error')
+    return
   }
+
+  if (attachments.value.length && created.id) {
+    let uploaded = 0
+    for (const file of attachments.value) {
+      const ok = await dokumenteStore.uploadDokument(
+        'ticket',
+        Number(created.id),
+        file,
+        file.name,
+        'sonstiges',
+      )
+      if (ok) uploaded++
+    }
+    if (uploaded === attachments.value.length) {
+      showToast(`${uploaded} Anhang/Anhänge hochgeladen.`, 'success')
+    } else if (uploaded > 0) {
+      showToast(`${uploaded} von ${attachments.value.length} Anhängen hochgeladen.`, 'info')
+    } else {
+      showToast(dokumenteStore.error?.message || 'Fehler beim Hochladen der Anhänge.', 'error')
+    }
+  }
+
+  showToast('Ticket erfolgreich erstellt.', 'success')
+  router.push(`/tickets/${created.id}`)
 }
 
 // Wenn Einheit gewählt wird, Mieter automatisch aus aktuellem Mietvertrag füllen
