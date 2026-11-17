@@ -43,6 +43,33 @@ export interface Objekt {
   tilgung?: number | null
   monatliche_rate?: number | null
   foto_url?: string | null
+  grundstuecksflaeche_qm?: number | null
+  wohnflaeche_gesamt_qm?: number | null
+  nutzflaeche_gesamt_qm?: number | null
+  vermietbare_flaeche_qm?: number | null
+  anzahl_einheiten?: number | null
+  baujahr_objekt?: number | null
+  bauweise?: string | null
+  zustand?: string | null
+  denkmalschutz?: boolean | null
+  denkmalschutz_bis?: string | null
+  energieausweis_art?: string | null
+  energieausweis_gueltig_bis?: string | null
+  energieverbrauch_kennwert?: number | null
+  energieverbrauch_klasse?: string | null
+  heizungsart?: string | null
+  warmwasserbereitung?: string | null
+  solaranlage?: boolean | null
+  land?: string | null
+  adresszusatz?: string | null
+  lagebeschreibung?: string | null
+  kaufpreis_pro_qm?: number | null
+  gesamtmiete_ist?: number | null
+  gesamtmiete_soll?: number | null
+  barrierefrei?: boolean | null
+  aufzug?: boolean | null
+  gartennutzung?: boolean | null
+  anmerkungen?: string | null
   notizen?: string
   created_at?: string
   updated_at?: string

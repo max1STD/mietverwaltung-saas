@@ -19,7 +19,7 @@ Diese Datei dient als zentrale Fehler- und Todo-Liste für UX-Fixes, Bugs und kl
 | 9 | Ticket: Dateianhänge | ✅ Erledigt | Upload + Liste + Download + Löschen via Dokumenten-Service. → GitHub #48 | `frontend/src/views/tickets/TicketFormView.vue`, `backend/app/routes/dokumente.py` |
 | 10 | Ticket: Mieter-Autofill | ✅ Erledigt | Bei Einheit-Auswahl wird Mieter automatisch gesetzt. → GitHub #48 | `frontend/src/views/tickets/TicketFormView.vue`, `backend/app/routes/_helpers.py` |
 | 11 | Wohneinheit-Stammdaten erweitern | ✅ Erledigt | Migration 0010 + Modell/Schema + Service/Route + Einheit-Detail-View + Formular. → GitHub #50 | `backend/app/models/einheit.py`, `frontend/src/views/einheiten/` |
-| 12 | Objekt-Stammdaten erweitern | 🔲 Offen | Flächen, Energieausweis, Heizung, Denkmalschutz, Status etc. → GitHub #49 | `backend/app/models/objekt.py`, `frontend/src/views/objekte/` |
+| 12 | Objekt-Stammdaten erweitern | ✅ Erledigt | Migration 0011 + Modell/Schema + Service/Route + Objekt-Detail + Formular. → GitHub #49 | `backend/app/models/objekt.py`, `frontend/src/views/objekte/` |
 | 13 | Kaufmännische Betragsformatierung | ✅ Erledigt | Beträge als „699.000,00 €“ anzeigen. | `frontend/src/components/ui/AppCurrencyInput.vue` |
 | 7 | Einheit-Detail-View | ✅ Erledigt | `/einheiten/:id` mit Tabs Stammdaten/Mieter-Historie/Dokumente. → GitHub #50 | `frontend/src/views/einheiten/EinheitDetailView.vue` |
 | 14 | Mietvertrag-Liste Objekt/Einheit | ✅ Erledigt | Spalten zeigen jetzt Einheit-Name und Objekt-Name. → GitHub #46 | `frontend/src/views/mietvertraege/MietvertraegeListView.vue`, `backend/app/routes/_helpers.py` |

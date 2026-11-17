@@ -41,8 +41,40 @@
                 <dd class="text-sm font-medium text-gray-900">{{ objekteStore.currentObjekt.typ || '–' }}</dd>
               </div>
               <div class="flex justify-between">
+                <dt class="text-sm text-gray-500">Zustand</dt>
+                <dd class="text-sm font-medium text-gray-900">{{ objekteStore.currentObjekt.zustand || '–' }}</dd>
+              </div>
+              <div class="flex justify-between">
+                <dt class="text-sm text-gray-500">Bauweise</dt>
+                <dd class="text-sm font-medium text-gray-900">{{ objekteStore.currentObjekt.bauweise || '–' }}</dd>
+              </div>
+              <div class="flex justify-between">
                 <dt class="text-sm text-gray-500">Baujahr</dt>
                 <dd class="text-sm font-medium text-gray-900">{{ objekteStore.currentObjekt.baujahr || '–' }}</dd>
+              </div>
+              <div class="flex justify-between">
+                <dt class="text-sm text-gray-500">Anzahl Einheiten</dt>
+                <dd class="text-sm font-medium text-gray-900">{{ objekteStore.currentObjekt.anzahl_einheiten || '–' }}</dd>
+              </div>
+              <div class="flex justify-between">
+                <dt class="text-sm text-gray-500">Wohnfläche gesamt</dt>
+                <dd class="text-sm font-medium text-gray-900">{{ formatQm(objekteStore.currentObjekt.wohnflaeche_gesamt_qm) }}</dd>
+              </div>
+              <div class="flex justify-between">
+                <dt class="text-sm text-gray-500">Vermietbare Fläche</dt>
+                <dd class="text-sm font-medium text-gray-900">{{ formatQm(objekteStore.currentObjekt.vermietbare_flaeche_qm) }}</dd>
+              </div>
+              <div class="flex justify-between">
+                <dt class="text-sm text-gray-500">Energieklasse</dt>
+                <dd class="text-sm font-medium text-gray-900">{{ objekteStore.currentObjekt.energieverbrauch_klasse || '–' }}</dd>
+              </div>
+              <div class="flex justify-between">
+                <dt class="text-sm text-gray-500">Heizungsart</dt>
+                <dd class="text-sm font-medium text-gray-900">{{ objekteStore.currentObjekt.heizungsart || '–' }}</dd>
+              </div>
+              <div class="flex justify-between">
+                <dt class="text-sm text-gray-500">Denkmalschutz</dt>
+                <dd class="text-sm font-medium text-gray-900">{{ formatBool(objekteStore.currentObjekt.denkmalschutz) }}</dd>
               </div>
               <div class="flex justify-between">
                 <dt class="text-sm text-gray-500">Kaufpreis</dt>
@@ -51,6 +83,14 @@
               <div class="flex justify-between">
                 <dt class="text-sm text-gray-500">Kaufdatum</dt>
                 <dd class="text-sm font-medium text-gray-900">{{ formatDate(objekteStore.currentObjekt.kaufdatum) }}</dd>
+              </div>
+              <div class="flex justify-between">
+                <dt class="text-sm text-gray-500">Gesamtmiete IST</dt>
+                <dd class="text-sm font-medium text-gray-900">{{ formatCurrency(objekteStore.currentObjekt.gesamtmiete_ist) }}</dd>
+              </div>
+              <div class="flex justify-between">
+                <dt class="text-sm text-gray-500">Gesamtmiete SOLL</dt>
+                <dd class="text-sm font-medium text-gray-900">{{ formatCurrency(objekteStore.currentObjekt.gesamtmiete_soll) }}</dd>
               </div>
             </dl>
             <div v-if="objekteStore.currentObjekt.notizen" class="mt-6">
@@ -274,6 +314,17 @@ function formatCurrency(value?: number | string | null): string {
 function formatDate(value?: string | number | null): string {
   if (!value || value === '') return '–'
   return new Date(value).toLocaleDateString('de-DE')
+}
+
+function formatQm(value?: number | string | null): string {
+  if (value == null || value === '') return '–'
+  return `${new Intl.NumberFormat('de-DE').format(Number(value))} m²`
+}
+
+function formatBool(value?: boolean | null): string {
+  if (value === true) return 'Ja'
+  if (value === false) return 'Nein'
+  return '–'
 }
 
 function badgeForStatus(status?: string): 'green' | 'yellow' | 'red' | 'gray' {
