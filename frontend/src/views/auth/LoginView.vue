@@ -112,7 +112,8 @@ async function handleSubmit() {
     }
 
     showToast('Erfolgreich angemeldet.', 'success')
-    const redirect = (route.query.redirect as string) || '/dashboard'
+    // Admin-User landet direkt im Admin-Panel, alle anderen auf Dashboard/Redirect.
+    const redirect = authStore.isAdmin ? '/admin' : ((route.query.redirect as string) || '/dashboard')
     await router.push(redirect)
   } catch {
     showToast(authStore.error?.message || 'Anmeldung fehlgeschlagen.', 'error')
