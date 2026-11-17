@@ -6,7 +6,7 @@
       padding="none"
       shadow="md"
       hover
-      @click="$router.push(`/objekte/${objekt.id}`)"
+      @click="$router.push(`/objekte/${objekt.public_id || objekt.id}`)"
     >
       <div class="relative h-32 bg-gray-100 rounded-t-xl overflow-hidden">
         <img

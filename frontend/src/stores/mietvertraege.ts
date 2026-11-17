@@ -14,6 +14,7 @@ export type MietvertragStatus = 'aktiv' | 'gekuendigt' | 'beendet'
 
 export interface Mietvertrag {
   id: string
+  public_id?: string
   mieter_id: string
   einheit_id: string
   objekt_id?: string
@@ -115,11 +116,11 @@ export const useMietvertraegeStore = defineStore('mietvertraege', () => {
     error.value = null
     try {
       const { data } = await apiClient.patch<Mietvertrag>(`/mietvertraege/${id}`, payload)
-      const index = mietvertraege.value.findIndex((mv) => mv.id === id)
+      const index = mietvertraege.value.findIndex((mv) => mv.id === id || mv.public_id === id)
       if (index !== -1) {
         mietvertraege.value[index] = data
       }
-      if (currentMietvertrag.value?.id === id) {
+      if (currentMietvertrag.value && (currentMietvertrag.value.id === id || currentMietvertrag.value.public_id === id)) {
         currentMietvertrag.value = data
       }
       return data
@@ -139,8 +140,8 @@ export const useMietvertraegeStore = defineStore('mietvertraege', () => {
     error.value = null
     try {
       await apiClient.delete(`/mietvertraege/${id}`)
-      mietvertraege.value = mietvertraege.value.filter((mv) => mv.id !== id)
-      if (currentMietvertrag.value?.id === id) {
+      mietvertraege.value = mietvertraege.value.filter((mv) => mv.id !== id && mv.public_id !== id)
+      if (currentMietvertrag.value && (currentMietvertrag.value.id === id || currentMietvertrag.value.public_id === id)) {
         currentMietvertrag.value = null
       }
       return true

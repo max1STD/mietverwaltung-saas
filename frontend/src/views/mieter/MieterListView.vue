@@ -43,7 +43,7 @@
           <template #row="{ item }">
             <td class="py-3 px-4">
               <RouterLink
-                :to="`/mieter/${item.id}`"
+                :to="`/mieter/${item.public_id || item.id}`"
                 class="font-medium text-[#0D3B70] hover:underline"
               >
                 {{ item.name }}
@@ -59,7 +59,7 @@
               <AppButton
                 variant="ghost"
                 size="sm"
-                @click="$router.push(`/mieter/${item.id}/bearbeiten`)"
+                @click="$router.push(`/mieter/${item.public_id || item.id}/bearbeiten`)"
               >
                 Bearbeiten
               </AppButton>
@@ -67,7 +67,7 @@
                 variant="danger"
                 size="sm"
                 :loading="mieterStore.saving"
-                @click="deleteMieter(item.id)"
+                @click="deleteMieter(item.public_id || item.id)"
               >
                 Löschen
               </AppButton>

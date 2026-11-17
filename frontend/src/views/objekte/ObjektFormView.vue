@@ -334,7 +334,7 @@ async function handleSubmit(): Promise<void> {
     const updated = await objekteStore.updateObjekt(objektId.value, payload)
     if (updated) {
       showToast('Objekt aktualisiert.', 'success')
-      router.push(`/objekte/${updated.id}`)
+      router.push(`/objekte/${updated.public_id || updated.id}`)
     } else {
       mapApiErrors(objekteStore.error?.details)
       showToast(objekteStore.error?.message || 'Fehler beim Speichern.', 'error')
@@ -343,7 +343,7 @@ async function handleSubmit(): Promise<void> {
     const created = await objekteStore.createObjekt(payload)
     if (created) {
       showToast('Objekt erfolgreich angelegt.', 'success')
-      router.push(`/objekte/${created.id}`)
+      router.push(`/objekte/${created.public_id || created.id}`)
     } else {
       mapApiErrors(objekteStore.error?.details)
       showToast(objekteStore.error?.message || 'Fehler beim Anlegen.', 'error')

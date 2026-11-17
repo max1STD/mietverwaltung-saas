@@ -367,7 +367,7 @@ async function handleSubmit(): Promise<void> {
     const updated = await mieterStore.updateMieter(mieterId.value, payload)
     if (updated) {
       showToast('Mieter aktualisiert.', 'success')
-      router.push(`/mieter/${updated.id}`)
+      router.push(`/mieter/${updated.public_id || updated.id}`)
     } else {
       showToast(mieterStore.error?.message || 'Fehler beim Speichern.', 'error')
     }
@@ -375,7 +375,7 @@ async function handleSubmit(): Promise<void> {
     const created = await mieterStore.createMieter(payload)
     if (created) {
       showToast('Mieter erfolgreich angelegt.', 'success')
-      router.push(`/mieter/${created.id}`)
+      router.push(`/mieter/${created.public_id || created.id}`)
     } else {
       showToast(mieterStore.error?.message || 'Fehler beim Anlegen.', 'error')
     }

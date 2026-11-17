@@ -12,6 +12,7 @@ import apiClient, { ApiError, normalizeError } from '@/api/client'
 
 export interface Mieter {
   id: string
+  public_id?: string
   vermieter_id?: string
   user_id?: string
   first_name: string
@@ -127,11 +128,11 @@ export const useMieterStore = defineStore('mieter', () => {
     error.value = null
     try {
       const { data } = await apiClient.patch<Mieter>(`/mieter/${id}`, payload)
-      const index = mieter.value.findIndex((m) => m.id === id)
+      const index = mieter.value.findIndex((m) => m.id === id || m.public_id === id)
       if (index !== -1) {
         mieter.value[index] = data
       }
-      if (currentMieter.value?.id === id) {
+      if (currentMieter.value && (currentMieter.value.id === id || currentMieter.value.public_id === id)) {
         currentMieter.value = data
       }
       return data
@@ -151,8 +152,8 @@ export const useMieterStore = defineStore('mieter', () => {
     error.value = null
     try {
       await apiClient.delete(`/mieter/${id}`)
-      mieter.value = mieter.value.filter((m) => m.id !== id)
-      if (currentMieter.value?.id === id) {
+      mieter.value = mieter.value.filter((m) => m.id !== id && m.public_id !== id)
+      if (currentMieter.value && (currentMieter.value.id === id || currentMieter.value.public_id === id)) {
         currentMieter.value = null
       }
       return true

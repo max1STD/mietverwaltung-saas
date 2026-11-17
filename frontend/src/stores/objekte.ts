@@ -23,6 +23,7 @@ export type ObjektTyp =
 
 export interface Objekt {
   id: string
+  public_id?: string
   vermieter_id: string
   name: string
   /** Alias für ältere Komponenten */
@@ -54,6 +55,7 @@ export type EinheitStatus = 'vermietet' | 'frei' | 'renovierung' | 'gesperrt'
 
 export interface Einheit {
   id: string
+  public_id?: string
   objekt_id: string
   name: string
   etage?: number
@@ -150,11 +152,11 @@ export const useObjekteStore = defineStore('objekte', () => {
     error.value = null
     try {
       const { data } = await apiClient.patch<Objekt>(`/objekte/${id}`, payload)
-      const index = objekte.value.findIndex((o) => o.id === id)
+      const index = objekte.value.findIndex((o) => o.id === id || o.public_id === id)
       if (index !== -1) {
         objekte.value[index] = data
       }
-      if (currentObjekt.value?.id === id) {
+      if (currentObjekt.value && (currentObjekt.value.id === id || currentObjekt.value.public_id === id)) {
         currentObjekt.value = data
       }
       return data
@@ -174,8 +176,8 @@ export const useObjekteStore = defineStore('objekte', () => {
     error.value = null
     try {
       await apiClient.delete(`/objekte/${id}`)
-      objekte.value = objekte.value.filter((o) => o.id !== id)
-      if (currentObjekt.value?.id === id) {
+      objekte.value = objekte.value.filter((o) => o.id !== id && o.public_id !== id)
+      if (currentObjekt.value && (currentObjekt.value.id === id || currentObjekt.value.public_id === id)) {
         currentObjekt.value = null
       }
       return true
@@ -234,7 +236,7 @@ export const useObjekteStore = defineStore('objekte', () => {
     error.value = null
     try {
       const { data } = await apiClient.patch<Einheit>(`/einheiten/${id}`, payload)
-      const index = einheiten.value.findIndex((e) => e.id === id)
+      const index = einheiten.value.findIndex((e) => e.id === id || e.public_id === id)
       if (index !== -1) {
         einheiten.value[index] = data
       }
@@ -255,7 +257,7 @@ export const useObjekteStore = defineStore('objekte', () => {
     error.value = null
     try {
       await apiClient.delete(`/einheiten/${id}`)
-      einheiten.value = einheiten.value.filter((e) => e.id !== id)
+      einheiten.value = einheiten.value.filter((e) => e.id !== id && e.public_id !== id)
       return true
     } catch (err) {
       error.value = normalizeError(err as Error)
