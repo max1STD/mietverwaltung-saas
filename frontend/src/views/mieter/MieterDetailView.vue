@@ -88,7 +88,7 @@
                 <div>
                   <dt class="text-sm text-gray-500">Objekt / Einheit</dt>
                   <dd class="text-sm font-medium text-gray-900">
-                    {{ mietvertrag.objekt?.bezeichnung || '–' }} · {{ mietvertrag.einheit?.bezeichnung || '–' }}
+                    {{ mietvertrag.einheit?.objekt_name || '–' }} · {{ mietvertrag.einheit?.name || '–' }}
                   </dd>
                 </div>
                 <div>
@@ -189,6 +189,7 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useMieterStore, type Mieter } from '@/stores/mieter'
 import { useMietvertraegeStore, type Mietvertrag } from '@/stores/mietvertraege'
+import { useObjekteStore, type Einheit } from '@/stores/objekte'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -200,6 +201,7 @@ import AppInput from '@/components/ui/AppInput.vue'
 const route = useRoute()
 const mieterStore = useMieterStore()
 const mietvertraegeStore = useMietvertraegeStore()
+const objekteStore = useObjekteStore()
 const { showToast } = useToast()
 
 const mieterId = computed(() => String(route.params.id))
@@ -214,6 +216,7 @@ const vertragForm = reactive({
   kaltmiete: '',
   nebenkosten_vorschuss: '',
   kaution: '',
+  kaution_hinterlegt: false,
 })
 
 function formatDate(value?: string): string {
@@ -242,9 +245,18 @@ function badgeForVertragStatus(status?: string): 'green' | 'yellow' | 'red' | 'g
   }
 }
 
+function einheitenFuerObjekt(objektId: string): Einheit[] {
+  return objekteStore.einheiten.filter((e: Einheit) => e.objekt_id === objektId)
+}
+
 async function loadVertraege(): Promise<void> {
   const data = await mietvertraegeStore.fetchMietvertraegeByMieter(mieterId.value)
   mietvertraege.value = data
+}
+
+async function loadObjekteUndEinheiten(): Promise<void> {
+  await objekteStore.fetchObjekte()
+  await Promise.all(objekteStore.objekte.map((o) => objekteStore.fetchEinheiten(o.id)))
 }
 
 async function createVertrag(): Promise<void> {
@@ -253,13 +265,14 @@ async function createVertrag(): Promise<void> {
     return
   }
 
-  const payload: Partial<Mietvertrag> = {
-    mieter_id: mieterId.value,
-    einheit_id: vertragForm.einheit_id,
+  const payload: Record<string, unknown> = {
+    mieter_id: Number(mieterId.value),
+    einheit_id: Number(vertragForm.einheit_id),
     mietbeginn: vertragForm.mietbeginn,
     kaltmiete: Number(vertragForm.kaltmiete),
-    nebenkosten_vorschuss: vertragForm.nebenkosten_vorschuss ? Number(vertragForm.nebenkosten_vorschuss) : undefined,
-    kaution: vertragForm.kaution ? Number(vertragForm.kaution) : undefined,
+    nebenkosten_vorschuss: vertragForm.nebenkosten_vorschuss ? Number(vertragForm.nebenkosten_vorschuss) : 0,
+    kaution: vertragForm.kaution ? Number(vertragForm.kaution) : null,
+    kaution_hinterlegt: vertragForm.kaution_hinterlegt,
   }
 
   const created = await mietvertraegeStore.createMietvertrag(payload)
@@ -277,11 +290,13 @@ watch(
   () => {
     mieterStore.fetchMieterById(mieterId.value)
     loadVertraege()
+    loadObjekteUndEinheiten()
   },
 )
 
 onMounted(() => {
   mieterStore.fetchMieterById(mieterId.value)
   loadVertraege()
+  loadObjekteUndEinheiten()
 })
 </script>

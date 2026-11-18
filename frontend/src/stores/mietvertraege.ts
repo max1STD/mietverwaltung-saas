@@ -23,6 +23,7 @@ export interface Mietvertrag {
   kaltmiete: number
   nebenkosten_vorschuss?: number
   kaution?: number
+  kaution_hinterlegt?: boolean
   status?: MietvertragStatus | string
   created_at?: string
   updated_at?: string
@@ -89,7 +90,7 @@ export const useMietvertraegeStore = defineStore('mietvertraege', () => {
   /**
    * Neuen Mietvertrag anlegen.
    */
-  async function createMietvertrag(payload: Partial<Mietvertrag>): Promise<Mietvertrag | null> {
+  async function createMietvertrag(payload: Record<string, unknown>): Promise<Mietvertrag | null> {
     saving.value = true
     error.value = null
     try {
@@ -110,7 +111,7 @@ export const useMietvertraegeStore = defineStore('mietvertraege', () => {
    */
   async function updateMietvertrag(
     id: string,
-    payload: Partial<Mietvertrag>,
+    payload: Record<string, unknown>,
   ): Promise<Mietvertrag | null> {
     saving.value = true
     error.value = null

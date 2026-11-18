@@ -7,9 +7,27 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.einheit import Einheit
 from app.models.mieter import Mieter
 from app.models.mietvertraege import Mietvertrag
+from app.models.user import User
 from app.schemas.mietvertrag import MietvertragCreate, MietvertragUpdate
 from app.services.audit_log import audit_log
 from app.services.einheiten import get_aktueller_mieter
+
+
+async def _resolve_mieter_for_user(
+    db: AsyncSession,
+    user: User,
+) -> Mieter | None:
+    """Ermittelt den Mieter-Stammdatensatz zum eingeloggten Mieter-Account."""
+    if user.role != "mieter" or user.email is None or user.vermieter_id is None:
+        return None
+    result = await db.execute(
+        select(Mieter).where(
+            Mieter.email == user.email,
+            Mieter.vermieter_id == user.vermieter_id,
+            Mieter.deleted_at.is_(None),
+        )
+    )
+    return result.scalar_one_or_none()
 
 
 async def create_mietvertrag(
@@ -19,11 +37,7 @@ async def create_mietvertrag(
     data: MietvertragCreate,
     ip: str | None = None,
 ) -> Mietvertrag:
-    """Legt einen neuen Mietvertrag an.
-
-    Prüft vorab, dass Mieter und Einheit dem Vermieter gehören und
-    die Einheit nicht bereits aktiv vermietet ist (Überbelegung verhindern).
-    """
+    """Legt einen neuen Mietvertrag an."""
     # Eigentümerschaft validieren
     mieter = await db.get(Mieter, data.mieter_id)
     einheit = await db.get(Einheit, data.einheit_id)
@@ -84,6 +98,24 @@ async def list_mietvertraege(
     return list(result.scalars().all())
 
 
+async def list_mietvertraege_for_user(
+    db: AsyncSession,
+    user: User,
+) -> list[Mietvertrag]:
+    """Liste der Mietverträge für einen Mieter (nur eigene, aktive)."""
+    mieter = await _resolve_mieter_for_user(db, user)
+    if mieter is None:
+        return []
+
+    result = await db.execute(
+        select(Mietvertrag).where(
+            Mietvertrag.mieter_id == mieter.id,
+            Mietvertrag.deleted_at.is_(None),
+        ).order_by(Mietvertrag.mietbeginn.desc())
+    )
+    return list(result.scalars().all())
+
+
 async def get_mietvertrag(
     db: AsyncSession,
     vermieter_id: int,
@@ -94,6 +126,26 @@ async def get_mietvertrag(
         select(Mietvertrag).where(
             Mietvertrag.id == vertrag_id,
             Mietvertrag.vermieter_id == vermieter_id,
+            Mietvertrag.deleted_at.is_(None),
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_mietvertrag_for_user(
+    db: AsyncSession,
+    user: User,
+    vertrag_id: int,
+) -> Mietvertrag | None:
+    """Liefert einen Mietvertrag, falls er dem eingeloggten Mieter gehört."""
+    mieter = await _resolve_mieter_for_user(db, user)
+    if mieter is None:
+        return None
+
+    result = await db.execute(
+        select(Mietvertrag).where(
+            Mietvertrag.id == vertrag_id,
+            Mietvertrag.mieter_id == mieter.id,
             Mietvertrag.deleted_at.is_(None),
         )
     )

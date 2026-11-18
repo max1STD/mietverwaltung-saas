@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.middleware.auth import _get_client_ip, csrf_protect, require_role
+from app.middleware.auth import _get_client_ip, csrf_protect, get_current_user, require_role
 from app.models.user import User
 from app.routes._helpers import map_mietvertrag_response
 from app.schemas.mietvertrag import (
@@ -16,7 +16,10 @@ from app.schemas.mietvertrag import (
 from app.services.mietvertraege import (
     create_mietvertrag,
     delete_mietvertrag,
+    get_mietvertrag,
+    get_mietvertrag_for_user,
     list_mietvertraege,
+    list_mietvertraege_for_user,
     update_mietvertrag,
 )
 from app.services.public_id_resolver import resolve_mietvertrag
@@ -37,7 +40,7 @@ async def create_mietvertrag_route(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_role("vermieter")),
 ) -> MietvertragResponse:
-    """Erstellt einen neuen Mietvertrag."""
+    """Erstellt einen neuen Mietvertrag (nur Vermieter)."""
     try:
         vertrag = await create_mietvertrag(
             db,
@@ -59,15 +62,19 @@ async def list_mietvertraege_route(
     einheit_id: int | None = None,
     mieter_id: int | None = None,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(require_role("vermieter")),
+    user: User = Depends(get_current_user),
 ) -> list[MietvertragResponse]:
-    """Listet alle Mietverträge des Vermieters, optional gefiltert."""
-    vertraege = await list_mietvertraege(
-        db,
-        vermieter_id=user.id,
-        einheit_id=einheit_id,
-        mieter_id=mieter_id,
-    )
+    """Listet Mietverträge für Vermieter oder eigenen Mieter-Account."""
+    if user.role == "vermieter":
+        vertraege = await list_mietvertraege(
+            db,
+            vermieter_id=user.id,
+            einheit_id=einheit_id,
+            mieter_id=mieter_id,
+        )
+    else:
+        # Mieter sieht nur seine eigenen Verträge; Filter werden ignoriert.
+        vertraege = await list_mietvertraege_for_user(db, user)
     return [await map_mietvertrag_response(db, v) for v in vertraege]
 
 
@@ -75,10 +82,13 @@ async def list_mietvertraege_route(
 async def get_mietvertrag_route(
     vertrag_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(require_role("vermieter")),
+    user: User = Depends(get_current_user),
 ) -> MietvertragResponse:
-    """Gibt einen einzelnen Mietvertrag zurück."""
-    vertrag = await resolve_mietvertrag(db, vermieter_id=user.id, entity_id=vertrag_id)
+    """Gibt einen einzelnen Mietvertrag zurück (Vermieter oder eigener Mieter)."""
+    if user.role == "vermieter":
+        vertrag = await resolve_mietvertrag(db, vermieter_id=user.id, entity_id=vertrag_id)
+    else:
+        vertrag = await get_mietvertrag_for_user(db, user, vertrag_id)
     if not vertrag:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -99,7 +109,7 @@ async def update_mietvertrag_route(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_role("vermieter")),
 ) -> MietvertragResponse:
-    """Aktualisiert einen Mietvertrag."""
+    """Aktualisiert einen Mietvertrag (nur Vermieter)."""
     vertrag = await resolve_mietvertrag(db, vermieter_id=user.id, entity_id=vertrag_id)
     if not vertrag:
         raise HTTPException(
@@ -128,7 +138,7 @@ async def delete_mietvertrag_route(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_role("vermieter")),
 ) -> None:
-    """Löscht einen Mietvertrag (Soft-Delete)."""
+    """Löscht einen Mietvertrag (Soft-Delete, nur Vermieter)."""
     vertrag = await resolve_mietvertrag(db, vermieter_id=user.id, entity_id=vertrag_id)
     if not vertrag:
         raise HTTPException(

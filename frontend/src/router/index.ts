@@ -122,6 +122,24 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/mietvertraege/neu',
+      name: 'mietvertrag-create',
+      component: () => import('../views/mietvertraege/MietvertragFormView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/mietvertraege/:id',
+      name: 'mietvertrag-detail',
+      component: () => import('../views/mietvertraege/MietvertragDetailView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/mietvertraege/:id/bearbeiten',
+      name: 'mietvertrag-edit',
+      component: () => import('../views/mietvertraege/MietvertragFormView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/tickets',
       name: 'tickets',
       component: () => import('../views/tickets/TicketListView.vue'),
