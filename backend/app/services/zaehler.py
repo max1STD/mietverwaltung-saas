@@ -3,14 +3,16 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
-from typing import Sequence
+from typing import Any, Sequence
 
-from sqlalchemy import select
+from sqlalchemy import inspect, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.einheit import Einheit
 from app.models.mieter import Mieter
 from app.models.mietvertraege import Mietvertrag
+from app.models.objekt import Objekt
 from app.models.user import User
 from app.models.zaehler import Zaehler, Zaehlerablesung
 from app.schemas.zaehler import (
@@ -30,6 +32,39 @@ _ZAEHLER_TYP_EINHEIT = {
     "kaltwasser": "m3",
     "sonstiges": "sonstiges",
 }
+
+
+def zaehler_response_data(zaehler: Zaehler) -> dict[str, Any]:
+    """Erzeugt ein serialisierbares Dict aus einem Zaehler inkl. Einheit/Objekt-Namen.
+
+    Greift nur auf bereits eager-geladene Relationships zu, um Lazy-Loading-Fehler
+    im Async-Kontext zu vermeiden.
+    """
+    einheit_name: str | None = None
+    objekt_name: str | None = None
+    zaehler_state = inspect(zaehler)
+    if zaehler.einheit_id and "einheit_obj" not in zaehler_state.unloaded:
+        einheit_obj = zaehler.einheit_obj
+        einheit_name = einheit_obj.name if einheit_obj else None
+        if einheit_obj and "objekt" not in inspect(einheit_obj).unloaded:
+            objekt_name = einheit_obj.objekt.name if einheit_obj.objekt else None
+
+    return {
+        "id": zaehler.id,
+        "vermieter_id": zaehler.vermieter_id,
+        "einheit_id": zaehler.einheit_id,
+        "bezeichnung": zaehler.bezeichnung,
+        "zaehlernummer": zaehler.zaehlernummer,
+        "typ": zaehler.typ,
+        "einheit": zaehler.einheit,
+        "ist_hauptzaehler": zaehler.ist_hauptzaehler,
+        "ablesedatum": zaehler.ablesedatum,
+        "created_at": zaehler.created_at,
+        "updated_at": zaehler.updated_at,
+        "deleted_at": zaehler.deleted_at,
+        "einheit_name": einheit_name,
+        "objekt_name": objekt_name,
+    }
 
 
 async def _owns_einheit(
@@ -56,7 +91,11 @@ async def _can_access_zaehler(
 ) -> Zaehler | None:
     """Gibt den Zähler zurück, wenn der User berechtigt ist (Vermieter oder aktueller Mieter der Einheit)."""
     result = await db.execute(
-        select(Zaehler).where(
+        select(Zaehler)
+        .options(
+            selectinload(Zaehler.einheit_obj).selectinload(Einheit.objekt),
+        )
+        .where(
             Zaehler.id == zaehler_id,
             Zaehler.deleted_at.is_(None),
         )
@@ -163,9 +202,15 @@ async def list_zaehler(
     einheit_id: int | None = None,
 ) -> Sequence[Zaehler]:
     """Listet alle aktiven Zähler eines Vermieters, optional gefiltert nach Einheit."""
-    stmt = select(Zaehler).where(
-        Zaehler.vermieter_id == vermieter_id,
-        Zaehler.deleted_at.is_(None),
+    stmt = (
+        select(Zaehler)
+        .options(
+            selectinload(Zaehler.einheit_obj).selectinload(Einheit.objekt),
+        )
+        .where(
+            Zaehler.vermieter_id == vermieter_id,
+            Zaehler.deleted_at.is_(None),
+        )
     )
     if einheit_id is not None:
         stmt = stmt.where(Zaehler.einheit_id == einheit_id)
@@ -211,9 +256,15 @@ async def list_zaehler_for_user(
     if not einheit_ids:
         return []
 
-    stmt = select(Zaehler).where(
-        Zaehler.einheit_id.in_(einheit_ids),
-        Zaehler.deleted_at.is_(None),
+    stmt = (
+        select(Zaehler)
+        .options(
+            selectinload(Zaehler.einheit_obj).selectinload(Einheit.objekt),
+        )
+        .where(
+            Zaehler.einheit_id.in_(einheit_ids),
+            Zaehler.deleted_at.is_(None),
+        )
     )
     if einheit_id is not None and einheit_id in einheit_ids:
         stmt = stmt.where(Zaehler.einheit_id == einheit_id)
@@ -229,7 +280,11 @@ async def get_zaehler(
 ) -> Zaehler | None:
     """Gibt einen einzelnen Zähler zurück."""
     result = await db.execute(
-        select(Zaehler).where(
+        select(Zaehler)
+        .options(
+            selectinload(Zaehler.einheit_obj).selectinload(Einheit.objekt),
+        )
+        .where(
             Zaehler.id == zaehler_id,
             Zaehler.vermieter_id == vermieter_id,
             Zaehler.deleted_at.is_(None),

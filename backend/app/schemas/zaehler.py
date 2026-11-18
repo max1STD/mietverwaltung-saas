@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -52,6 +53,8 @@ class ZaehlerResponse(ZaehlerBase):
     id: int
     vermieter_id: int
     einheit_id: int
+    einheit_name: str | None = None
+    objekt_name: str | None = None
     ablesedatum: date | None = None
     created_at: datetime
     updated_at: datetime

@@ -16,6 +16,8 @@ export interface Zaehler {
   id: string
   vermieter_id: string
   einheit_id: string
+  einheit_name?: string | null
+  objekt_name?: string | null
   bezeichnung: string
   zaehlernummer?: string | null
   typ: ZaehlerTyp

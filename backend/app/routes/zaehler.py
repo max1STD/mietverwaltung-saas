@@ -31,6 +31,7 @@ from app.services.zaehler import (
     list_zaehler_for_user,
     update_ablesung,
     update_zaehler,
+    zaehler_response_data,
 )
 
 router = APIRouter()
@@ -55,10 +56,10 @@ async def create_zaehler_route(
     data: ZaehlerCreate,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_role("vermieter")),
-) -> Zaehler:
+) -> ZaehlerResponse:
     """Legt einen neuen Zähler für eine Einheit an (nur Vermieter)."""
     try:
-        return await create_zaehler(
+        zaehler = await create_zaehler(
             db,
             vermieter_id=user.id,
             user_id=user.id,
@@ -67,6 +68,9 @@ async def create_zaehler_route(
         )
     except PermissionError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    # Eager-geladenes Objekt holen, damit Einheit/Objekt-Name im Response stehen.
+    zaehler = await get_zaehler(db, vermieter_id=user.id, zaehler_id=zaehler.id)
+    return ZaehlerResponse.model_validate(zaehler_response_data(zaehler))
 
 
 @router.get("", response_model=list[ZaehlerResponse])
@@ -82,7 +86,7 @@ async def list_zaehler_route(
         user_role=user.role,
         einheit_id=einheit_id,
     )
-    return [ZaehlerResponse.model_validate(z) for z in zaehler]
+    return [ZaehlerResponse.model_validate(zaehler_response_data(z)) for z in zaehler]
 
 
 @router.get("/{zaehler_id}", response_model=ZaehlerMitAblesungenResponse)
@@ -95,8 +99,9 @@ async def get_zaehler_route(
     zaehler = await get_zaehler_for_user(db, user_id=user.id, user_role=user.role, zaehler_id=zaehler_id)
     if zaehler is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zähler nicht gefunden.")
-    # Ablesungen werden über die Relationship mitgeladen (selectin).
-    return ZaehlerMitAblesungenResponse.model_validate(zaehler)
+    data = zaehler_response_data(zaehler)
+    data["ablesungen"] = [ZaehlerablesungResponse.model_validate(a).model_dump() for a in zaehler.ablesungen]
+    return ZaehlerMitAblesungenResponse.model_validate(data)
 
 
 @router.patch("/{zaehler_id}", response_model=ZaehlerResponse)
@@ -106,12 +111,12 @@ async def update_zaehler_route(
     data: ZaehlerUpdate,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_role("vermieter")),
-) -> Zaehler:
+) -> ZaehlerResponse:
     """Aktualisiert einen Zähler (nur Vermieter)."""
     zaehler = await get_zaehler(db, vermieter_id=user.id, zaehler_id=zaehler_id)
     if zaehler is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zähler nicht gefunden.")
-    return await update_zaehler(
+    await update_zaehler(
         db,
         vermieter_id=user.id,
         user_id=user.id,
@@ -119,6 +124,9 @@ async def update_zaehler_route(
         data=data,
         ip=_get_client_ip(request),
     )
+    # Eager-geladenes Objekt holen, damit Einheit/Objekt-Name im Response stehen.
+    zaehler = await get_zaehler(db, vermieter_id=user.id, zaehler_id=zaehler_id)
+    return ZaehlerResponse.model_validate(zaehler_response_data(zaehler))
 
 
 @router.delete("/{zaehler_id}", status_code=status.HTTP_204_NO_CONTENT)
