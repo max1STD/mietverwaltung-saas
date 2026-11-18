@@ -9,6 +9,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.einheit import Einheit
+from app.models.mieter import Mieter
+from app.models.mietvertraege import Mietvertrag
+from app.models.user import User
 from app.models.zaehler import Zaehler, Zaehlerablesung
 from app.schemas.zaehler import (
     ZaehlerCreate,
@@ -45,36 +48,48 @@ async def _owns_einheit(
     return result.scalar_one_or_none() is not None
 
 
-async def _get_zaehler(
+async def _can_access_zaehler(
     db: AsyncSession,
-    vermieter_id: int,
+    user_id: int,
+    user_role: str,
     zaehler_id: int,
 ) -> Zaehler | None:
-    """Gibt einen Zähler zurück, wenn er dem Vermieter gehört und aktiv ist."""
+    """Gibt den Zähler zurück, wenn der User berechtigt ist (Vermieter oder aktueller Mieter der Einheit)."""
     result = await db.execute(
         select(Zaehler).where(
             Zaehler.id == zaehler_id,
-            Zaehler.vermieter_id == vermieter_id,
             Zaehler.deleted_at.is_(None),
         )
     )
-    return result.scalar_one_or_none()
-
-
-async def _get_ablesung(
-    db: AsyncSession,
-    vermieter_id: int,
-    ablesung_id: int,
-) -> Zaehlerablesung | None:
-    """Gibt eine Ablesung zurück, wenn sie dem Vermieter gehört und aktiv ist."""
-    result = await db.execute(
-        select(Zaehlerablesung).where(
-            Zaehlerablesung.id == ablesung_id,
-            Zaehlerablesung.vermieter_id == vermieter_id,
-            Zaehlerablesung.deleted_at.is_(None),
+    zaehler = result.scalar_one_or_none()
+    if zaehler is None:
+        return None
+    if user_role == "vermieter":
+        return zaehler if zaehler.vermieter_id == user_id else None
+    # Mieter: Mieter-Datensatz per E-Mail ermitteln (etabliertes Pattern aus Tickets).
+    user_result = await db.execute(select(User).where(User.id == user_id))
+    user = user_result.scalar_one_or_none()
+    if user is None or user.email is None:
+        return None
+    mieter_result = await db.execute(
+        select(Mieter).where(
+            Mieter.email == user.email,
+            Mieter.vermieter_id == zaehler.vermieter_id,
+            Mieter.deleted_at.is_(None),
         )
     )
-    return result.scalar_one_or_none()
+    mieter = mieter_result.scalar_one_or_none()
+    if mieter is None:
+        return None
+    mv_result = await db.execute(
+        select(Mietvertrag).where(
+            Mietvertrag.mieter_id == mieter.id,
+            Mietvertrag.einheit_id == zaehler.einheit_id,
+            Mietvertrag.status == "aktiv",
+            Mietvertrag.deleted_at.is_(None),
+        )
+    )
+    return zaehler if mv_result.scalar_one_or_none() is not None else None
 
 
 async def _berechne_verbrauch(
@@ -159,13 +174,78 @@ async def list_zaehler(
     return result.scalars().all()
 
 
+async def list_zaehler_for_user(
+    db: AsyncSession,
+    user_id: int,
+    user_role: str,
+    einheit_id: int | None = None,
+) -> Sequence[Zaehler]:
+    """Listet Zähler fuer Vermieter oder berechtigte Mieter."""
+    if user_role == "vermieter":
+        return await list_zaehler(db, vermieter_id=user_id, einheit_id=einheit_id)
+
+    # Mieter: nur Zaehler der eigenen aktuellen Wohneinheit(en).
+    user_result = await db.execute(select(User).where(User.id == user_id))
+    user = user_result.scalar_one_or_none()
+    if user is None or user.email is None:
+        return []
+    mieter_result = await db.execute(
+        select(Mieter).where(
+            Mieter.email == user.email,
+            Mieter.vermieter_id == user.vermieter_id,
+            Mieter.deleted_at.is_(None),
+        )
+    )
+    mieter = mieter_result.scalar_one_or_none()
+    if mieter is None:
+        return []
+
+    einheit_ids_result = await db.execute(
+        select(Mietvertrag.einheit_id).where(
+            Mietvertrag.mieter_id == mieter.id,
+            Mietvertrag.status == "aktiv",
+            Mietvertrag.deleted_at.is_(None),
+        )
+    )
+    einheit_ids = [row[0] for row in einheit_ids_result.all()]
+    if not einheit_ids:
+        return []
+
+    stmt = select(Zaehler).where(
+        Zaehler.einheit_id.in_(einheit_ids),
+        Zaehler.deleted_at.is_(None),
+    )
+    if einheit_id is not None and einheit_id in einheit_ids:
+        stmt = stmt.where(Zaehler.einheit_id == einheit_id)
+    stmt = stmt.order_by(Zaehler.bezeichnung)
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+
 async def get_zaehler(
     db: AsyncSession,
     vermieter_id: int,
     zaehler_id: int,
 ) -> Zaehler | None:
     """Gibt einen einzelnen Zähler zurück."""
-    return await _get_zaehler(db, vermieter_id, zaehler_id)
+    result = await db.execute(
+        select(Zaehler).where(
+            Zaehler.id == zaehler_id,
+            Zaehler.vermieter_id == vermieter_id,
+            Zaehler.deleted_at.is_(None),
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_zaehler_for_user(
+    db: AsyncSession,
+    user_id: int,
+    user_role: str,
+    zaehler_id: int,
+) -> Zaehler | None:
+    """Gibt einen einzelnen Zähler für berechtigte User zurück."""
+    return await _can_access_zaehler(db, user_id, user_role, zaehler_id)
 
 
 async def update_zaehler(
@@ -235,10 +315,65 @@ async def create_ablesung(
     ip: str | None = None,
 ) -> Zaehlerablesung:
     """Erstellt eine neue Ablesung und berechnet den Verbrauch."""
-    zaehler = await _get_zaehler(db, vermieter_id, zaehler_id)
+    zaehler = await get_zaehler(db, vermieter_id, zaehler_id)
     if zaehler is None:
         raise PermissionError("Zähler nicht gefunden oder nicht berechtigt.")
 
+    verbrauch = await _berechne_verbrauch(
+        db,
+        zaehler_id,
+        data.zaehlerstand,
+        data.ablesedatum,
+    )
+
+    ablesung = Zaehlerablesung(
+        vermieter_id=vermieter_id,
+        zaehler_id=zaehler_id,
+        ablesedatum=data.ablesedatum,
+        zaehlerstand=data.zaehlerstand,
+        verbrauch=verbrauch,
+        ableser=data.ableser,
+        notizen=data.notizen,
+        ist_schaetzung=data.ist_schaetzung,
+    )
+    db.add(ablesung)
+    await db.flush()
+    await db.refresh(ablesung)
+
+    zaehler.ablesedatum = data.ablesedatum
+
+    await audit_log(
+        db,
+        user_id=user_id,
+        vermieter_id=vermieter_id,
+        action="zaehlerablesung_create",
+        entity="zaehlerablesungen",
+        entity_id=ablesung.id,
+        details={
+            "zaehler_id": zaehler_id,
+            "zaehlerstand": str(data.zaehlerstand),
+            "verbrauch": str(verbrauch) if verbrauch is not None else None,
+        },
+        ip=ip,
+        risk_level="niedrig",
+    )
+    return ablesung
+
+
+async def create_ablesung_for_user(
+    db: AsyncSession,
+    user_id: int,
+    user_role: str,
+    zaehler_id: int,
+    data: ZaehlerablesungCreate,
+    ip: str | None = None,
+) -> Zaehlerablesung:
+    """Erstellt eine neue Ablesung für Vermieter oder berechtigten Mieter."""
+    zaehler = await _can_access_zaehler(db, user_id, user_role, zaehler_id)
+    if zaehler is None:
+        raise PermissionError("Zähler nicht gefunden oder nicht berechtigt.")
+
+    vermieter_id = zaehler.vermieter_id
     verbrauch = await _berechne_verbrauch(
         db,
         zaehler_id,
@@ -305,7 +440,14 @@ async def get_ablesung(
     ablesung_id: int,
 ) -> Zaehlerablesung | None:
     """Gibt eine einzelne Ablesung zurück."""
-    return await _get_ablesung(db, vermieter_id, ablesung_id)
+    result = await db.execute(
+        select(Zaehlerablesung).where(
+            Zaehlerablesung.id == ablesung_id,
+            Zaehlerablesung.vermieter_id == vermieter_id,
+            Zaehlerablesung.deleted_at.is_(None),
+        )
+    )
+    return result.scalar_one_or_none()
 
 
 async def update_ablesung(

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.middleware.auth import require_role
+from app.middleware.auth import get_current_user, require_role
 from app.models.user import User
 from app.models.zaehler import Zaehler, Zaehlerablesung
 from app.schemas.zaehler import (
@@ -19,13 +19,16 @@ from app.schemas.zaehler import (
 )
 from app.services.zaehler import (
     create_ablesung,
+    create_ablesung_for_user,
     create_zaehler,
     delete_ablesung,
     delete_zaehler,
     get_ablesung,
     get_zaehler,
+    get_zaehler_for_user,
     list_ablesungen,
     list_zaehler,
+    list_zaehler_for_user,
     update_ablesung,
     update_zaehler,
 )
@@ -52,7 +55,7 @@ async def create_zaehler_route(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_role("vermieter")),
 ) -> Zaehler:
-    """Legt einen neuen Zähler für eine Einheit an."""
+    """Legt einen neuen Zähler für eine Einheit an (nur Vermieter)."""
     try:
         return await create_zaehler(
             db,
@@ -69,10 +72,15 @@ async def create_zaehler_route(
 async def list_zaehler_route(
     einheit_id: int | None = None,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(require_role("vermieter")),
+    user: User = Depends(get_current_user),
 ) -> list[ZaehlerResponse]:
-    """Listet alle Zähler des Vermieters, optional gefiltert nach Einheit."""
-    zaehler = await list_zaehler(db, vermieter_id=user.id, einheit_id=einheit_id)
+    """Listet Zähler für Vermieter oder berechtigte Mieter."""
+    zaehler = await list_zaehler_for_user(
+        db,
+        user_id=user.id,
+        user_role=user.role,
+        einheit_id=einheit_id,
+    )
     return [ZaehlerResponse.model_validate(z) for z in zaehler]
 
 
@@ -80,12 +88,13 @@ async def list_zaehler_route(
 async def get_zaehler_route(
     zaehler_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(require_role("vermieter")),
+    user: User = Depends(get_current_user),
 ) -> ZaehlerMitAblesungenResponse:
-    """Gibt einen einzelnen Zähler inklusive Ablesungen zurück."""
-    zaehler = await get_zaehler(db, vermieter_id=user.id, zaehler_id=zaehler_id)
+    """Gibt einen Zähler inklusive Ablesungen für Vermieter oder Mieter zurück."""
+    zaehler = await get_zaehler_for_user(db, user_id=user.id, user_role=user.role, zaehler_id=zaehler_id)
     if zaehler is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zähler nicht gefunden.")
+    # Ablesungen werden über die Relationship mitgeladen (selectin).
     return ZaehlerMitAblesungenResponse.model_validate(zaehler)
 
 
@@ -97,7 +106,7 @@ async def update_zaehler_route(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_role("vermieter")),
 ) -> Zaehler:
-    """Aktualisiert einen Zähler."""
+    """Aktualisiert einen Zähler (nur Vermieter)."""
     zaehler = await get_zaehler(db, vermieter_id=user.id, zaehler_id=zaehler_id)
     if zaehler is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zähler nicht gefunden.")
@@ -118,7 +127,7 @@ async def delete_zaehler_route(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_role("vermieter")),
 ) -> None:
-    """Löscht einen Zähler inklusive aller Ablesungen (Soft-Delete)."""
+    """Löscht einen Zähler inklusive aller Ablesungen (nur Vermieter)."""
     zaehler = await get_zaehler(db, vermieter_id=user.id, zaehler_id=zaehler_id)
     if zaehler is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zähler nicht gefunden.")
@@ -142,14 +151,14 @@ async def create_ablesung_route(
     zaehler_id: int,
     data: ZaehlerablesungCreate,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(require_role("vermieter")),
+    user: User = Depends(get_current_user),
 ) -> Zaehlerablesung:
-    """Legt eine neue Ablesung für einen Zähler an."""
+    """Legt eine neue Ablesung an (Vermieter oder berechtigter Mieter)."""
     try:
-        return await create_ablesung(
+        return await create_ablesung_for_user(
             db,
-            vermieter_id=user.id,
             user_id=user.id,
+            user_role=user.role,
             zaehler_id=zaehler_id,
             data=data,
             ip=_get_client_ip(request),
@@ -162,13 +171,13 @@ async def create_ablesung_route(
 async def list_ablesungen_route(
     zaehler_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(require_role("vermieter")),
+    user: User = Depends(get_current_user),
 ) -> list[ZaehlerablesungResponse]:
-    """Listet alle Ablesungen eines Zählers."""
-    zaehler = await get_zaehler(db, vermieter_id=user.id, zaehler_id=zaehler_id)
+    """Listet alle Ablesungen eines Zählers (Vermieter oder berechtigter Mieter)."""
+    zaehler = await get_zaehler_for_user(db, user_id=user.id, user_role=user.role, zaehler_id=zaehler_id)
     if zaehler is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zähler nicht gefunden.")
-    ablesungen = await list_ablesungen(db, vermieter_id=user.id, zaehler_id=zaehler_id)
+    ablesungen = await list_ablesungen(db, vermieter_id=zaehler.vermieter_id, zaehler_id=zaehler_id)
     return [ZaehlerablesungResponse.model_validate(a) for a in ablesungen]
 
 
@@ -177,10 +186,13 @@ async def get_ablesung_route(
     zaehler_id: int,
     ablesung_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(require_role("vermieter")),
+    user: User = Depends(get_current_user),
 ) -> ZaehlerablesungResponse:
     """Gibt eine einzelne Ablesung zurück."""
-    ablesung = await get_ablesung(db, vermieter_id=user.id, ablesung_id=ablesung_id)
+    zaehler = await get_zaehler_for_user(db, user_id=user.id, user_role=user.role, zaehler_id=zaehler_id)
+    if zaehler is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zähler nicht gefunden.")
+    ablesung = await get_ablesung(db, vermieter_id=zaehler.vermieter_id, ablesung_id=ablesung_id)
     if ablesung is None or ablesung.zaehler_id != zaehler_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -198,7 +210,10 @@ async def update_ablesung_route(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_role("vermieter")),
 ) -> Zaehlerablesung:
-    """Aktualisiert eine Ablesung."""
+    """Aktualisiert eine Ablesung (nur Vermieter)."""
+    zaehler = await get_zaehler(db, vermieter_id=user.id, zaehler_id=zaehler_id)
+    if zaehler is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zähler nicht gefunden.")
     ablesung = await get_ablesung(db, vermieter_id=user.id, ablesung_id=ablesung_id)
     if ablesung is None or ablesung.zaehler_id != zaehler_id:
         raise HTTPException(
@@ -226,7 +241,10 @@ async def delete_ablesung_route(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_role("vermieter")),
 ) -> None:
-    """Löscht eine Ablesung (Soft-Delete)."""
+    """Löscht eine Ablesung (nur Vermieter)."""
+    zaehler = await get_zaehler(db, vermieter_id=user.id, zaehler_id=zaehler_id)
+    if zaehler is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zähler nicht gefunden.")
     ablesung = await get_ablesung(db, vermieter_id=user.id, ablesung_id=ablesung_id)
     if ablesung is None or ablesung.zaehler_id != zaehler_id:
         raise HTTPException(

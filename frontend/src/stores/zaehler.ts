@@ -84,7 +84,7 @@ export const useZaehlerStore = defineStore('zaehler', () => {
     }
   }
 
-  async function createZaehler(payload: Partial<Zaehler>): Promise<Zaehler | null> {
+  async function createZaehler(payload: Record<string, unknown>): Promise<Zaehler | null> {
     saving.value = true
     error.value = null
     try {
@@ -99,7 +99,7 @@ export const useZaehlerStore = defineStore('zaehler', () => {
     }
   }
 
-  async function updateZaehler(id: string, payload: Partial<Zaehler>): Promise<Zaehler | null> {
+  async function updateZaehler(id: string, payload: Record<string, unknown>): Promise<Zaehler | null> {
     saving.value = true
     error.value = null
     try {

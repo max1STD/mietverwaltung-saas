@@ -255,6 +255,53 @@ async def admin_client(
 
 
 @pytest_asyncio.fixture(loop_scope="function")
+async def mieter_user(async_client: AsyncClient, vermieter_user: User) -> User:
+    """Erstellt einen Test-Mieter in der Client-Session."""
+    from app.models.user import User
+    from app.services.auth import hash_password
+
+    session: AsyncSession = async_client.db_session
+    user = User(
+        email="test-mieter@example.de",
+        password_hash=hash_password("TestPasswort123!"),
+        full_name="Test Mieter",
+        role="mieter",
+        vermieter_id=vermieter_user.id,
+        is_active=True,
+        email_verified=True,
+    )
+    session.add(user)
+    await session.flush()
+    await session.refresh(user)
+    return user
+
+
+@pytest_asyncio.fixture(loop_scope="function")
+async def mieter_client(
+    async_client: AsyncClient,
+    mieter_user: User,
+) -> AsyncClient:
+    """Authentifizierter Client als Test-Mieter."""
+    from app.main import app
+    from app.middleware.auth import get_current_user
+
+    async def override_get_current_user() -> User:
+        return mieter_user
+
+    app.dependency_overrides[get_current_user] = override_get_current_user
+
+    csrf_token = async_client.cookies.get("csrf_token") or "test-csrf-token"
+    async_client.cookies.set("csrf_token", csrf_token)
+    async_client.headers["X-CSRF-Token"] = csrf_token
+    async_client.user_id = mieter_user.id
+
+    yield async_client
+
+    app.dependency_overrides.pop(get_current_user, None)
+    async_client.headers.pop("X-CSRF-Token", None)
+
+
+@pytest_asyncio.fixture(loop_scope="function")
 async def auth_client(
     async_client: AsyncClient,
     vermieter_user: User,

@@ -158,6 +158,30 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/zaehler',
+      name: 'zaehler',
+      component: () => import('../views/zaehler/ZaehlerListView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/zaehler/neu',
+      name: 'zaehler-create',
+      component: () => import('../views/zaehler/ZaehlerFormView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/zaehler/:id',
+      name: 'zaehler-detail',
+      component: () => import('../views/zaehler/ZaehlerDetailView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/zaehler/:id/bearbeiten',
+      name: 'zaehler-edit',
+      component: () => import('../views/zaehler/ZaehlerFormView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/kosten',
       name: 'kosten',
       component: () => import('../views/kosten/KostenListView.vue'),
