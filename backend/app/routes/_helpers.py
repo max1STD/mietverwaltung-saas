@@ -221,7 +221,7 @@ async def map_mieter_response(
     aktuelle_einheit: Einheit | None = None,
 ) -> MieterResponse:
     """Mappt einen Mieter-ORM inklusive aktueller Einheit auf das Response-Schema."""
-    birth_date_str = decrypt_value(mieter.birth_date_enc)
+    birth_date_str = decrypt_value(mieter.birth_date_enc, context="mieter:birth_date")
     birth_date = date.fromisoformat(birth_date_str) if birth_date_str else None
 
     await db.refresh(mieter, attribute_names=["adressen", "buergschaften"])

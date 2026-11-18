@@ -82,12 +82,12 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     def paperless_token(self) -> str | None:
         """Entschlüsselter Paperless-API-Token."""
         from app.services.crypto import decrypt_value
-        return decrypt_value(self.paperless_token_enc)
+        return decrypt_value(self.paperless_token_enc, context="users:paperless_token")
 
     def set_paperless_token(self, token: str | None) -> None:
         """Verschlüsselt und speichert den Paperless-API-Token."""
         from app.services.crypto import encrypt_value
-        self.paperless_token_enc = encrypt_value(token)
+        self.paperless_token_enc = encrypt_value(token, context="users:paperless_token")
 
     # Beziehungen
     sessions: Mapped[list[UserSession]] = relationship(

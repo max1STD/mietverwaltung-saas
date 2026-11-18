@@ -45,7 +45,7 @@ async def create_mieter(
         email=payload.get("email"),
         phone=phone,
         notes=notes,
-        birth_date_enc=encrypt_value(birth_date.isoformat() if birth_date else None),
+        birth_date_enc=encrypt_value(birth_date.isoformat() if birth_date else None, context="mieter:birth_date"),
         status=payload.get("status", "aktiv"),
         since=payload.get("since"),
     )
@@ -168,7 +168,7 @@ async def update_mieter(
     if "geburtsdatum" in update_fields:
         birth_date = update_fields.pop("geburtsdatum")
         mieter.birth_date_enc = encrypt_value(
-            birth_date.isoformat() if birth_date else None
+            birth_date.isoformat() if birth_date else None, context="mieter:birth_date"
         )
 
     if "first_name" in update_fields:

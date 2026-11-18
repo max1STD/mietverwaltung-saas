@@ -1,4 +1,4 @@
-"""Service fuer Bankverbindungen — CRUD mit IBAN-Verschluesselung."""
+"""Service fuer Bankverbindungen — CRUD mit IBAN- und BIC-Verschluesselung."""
 from __future__ import annotations
 
 from sqlalchemy import select
@@ -8,6 +8,10 @@ from app.models.bankverbindung import Bankverbindung
 from app.schemas.bankverbindung import BankverbindungCreate, BankverbindungUpdate
 from app.services.audit_log import audit_log
 from app.services.crypto import decrypt_value, encrypt_value
+
+
+_IBAN_CONTEXT = "bankverbindungen:iban"
+_BIC_CONTEXT = "bankverbindungen:bic"
 
 
 async def create_bankverbindung(
@@ -24,8 +28,8 @@ async def create_bankverbindung(
     bankverbindung = Bankverbindung(
         vermieter_id=vermieter_id,
         mieter_id=data.mieter_id,
-        iban_enc=encrypt_value(data.iban),
-        bic=data.bic,
+        iban_enc=encrypt_value(data.iban, context=_IBAN_CONTEXT),
+        bic_enc=encrypt_value(data.bic, context=_BIC_CONTEXT),
         kontoinhaber=data.kontoinhaber,
         bankname=data.bankname,
         is_default=data.is_default,
@@ -90,7 +94,11 @@ async def update_bankverbindung(
     update_fields = data.model_dump(exclude_unset=True)
 
     if "iban" in update_fields and update_fields["iban"] is not None:
-        bankverbindung.iban_enc = encrypt_value(update_fields.pop("iban"))
+        bankverbindung.iban_enc = encrypt_value(update_fields.pop("iban"), context=_IBAN_CONTEXT)
+
+    if "bic" in update_fields and update_fields["bic"] is not None:
+        bankverbindung.bic_enc = encrypt_value(update_fields.pop("bic"), context=_BIC_CONTEXT)
+        bankverbindung.bic = None
 
     if "is_default" in update_fields and update_fields["is_default"]:
         await _clear_default_bankverbindungen(db, vermieter_id)
@@ -158,4 +166,9 @@ async def _clear_default_bankverbindungen(
 
 def get_iban(bankverbindung: Bankverbindung) -> str | None:
     """Hilfsfunktion zum Entschluesseln der IBAN."""
-    return decrypt_value(bankverbindung.iban_enc)
+    return decrypt_value(bankverbindung.iban_enc, context=_IBAN_CONTEXT)
+
+
+def get_bic(bankverbindung: Bankverbindung) -> str | None:
+    """Hilfsfunktion zum Entschluesseln der BIC."""
+    return decrypt_value(bankverbindung.bic_enc, context=_BIC_CONTEXT)

@@ -3,12 +3,16 @@ from __future__ import annotations
 
 import pytest
 from httpx import AsyncClient
-
+from app.models.bankverbindung import Bankverbindung
 from app.models.user import User
+from app.services.crypto import decrypt_value
 
 
 @pytest.mark.asyncio(loop_scope="function")
-async def test_create_bankverbindung(auth_client: AsyncClient, vermieter_user: User) -> None:
+async def test_create_bankverbindung(
+    auth_client: AsyncClient,
+    vermieter_user: User,
+) -> None:
     """Ein Vermieter kann eine Bankverbindung anlegen."""
     payload = {
         "iban": "DE89 3704 0044 0532 0130 00",
@@ -25,6 +29,13 @@ async def test_create_bankverbindung(auth_client: AsyncClient, vermieter_user: U
     assert data["kontoinhaber"] == payload["kontoinhaber"]
     assert data["is_default"] is True
     assert data["vermieter_id"] == vermieter_user.id
+
+    # Sicherstellen, dass IBAN und BIC verschlüsselt in der DB liegen.
+    session = auth_client.db_session
+    bv = await session.get(Bankverbindung, data["id"])
+    assert bv is not None
+    assert decrypt_value(bv.iban_enc, context="bankverbindungen:iban") == data["iban"]
+    assert decrypt_value(bv.bic_enc, context="bankverbindungen:bic") == data["bic"]
 
 
 @pytest.mark.asyncio(loop_scope="function")
@@ -68,6 +79,34 @@ async def test_update_bankverbindung(auth_client: AsyncClient) -> None:
     assert data["kontoinhaber"] == "Neu"
     assert data["bankname"] == "Neue Bank"
     assert data["iban"] == "DE89370400440532013000"
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_update_bankverbindung_bic_encrypted(
+    auth_client: AsyncClient,
+) -> None:
+    """Auch ein nachträglich geänderter BIC wird verschlüsselt gespeichert."""
+    create_resp = await auth_client.post(
+        "/api/v1/bankverbindungen",
+        json={
+            "iban": "DE89 3704 0044 0532 0130 00",
+            "kontoinhaber": "Max",
+        },
+    )
+    bankv_id = create_resp.json()["id"]
+
+    response = await auth_client.patch(
+        f"/api/v1/bankverbindungen/{bankv_id}",
+        json={"bic": "NEWBICXXX"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["bic"] == "NEWBICXXX"
+
+    session = auth_client.db_session
+    bv = await session.get(Bankverbindung, bankv_id)
+    assert bv is not None
+    assert decrypt_value(bv.bic_enc, context="bankverbindungen:bic") == "NEWBICXXX"
 
 
 @pytest.mark.asyncio(loop_scope="function")

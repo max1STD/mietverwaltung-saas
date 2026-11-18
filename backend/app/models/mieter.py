@@ -94,7 +94,7 @@ class Mieter(Base, TimestampMixin, SoftDeleteMixin):
     def geburtsdatum(self) -> date | None:
         from app.services.crypto import decrypt_value
         if self.birth_date_enc:
-            decrypted = decrypt_value(self.birth_date_enc)
+            decrypted = decrypt_value(self.birth_date_enc, context="mieter:birth_date")
             return date.fromisoformat(decrypted) if decrypted else None
         return None
 

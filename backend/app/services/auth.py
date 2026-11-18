@@ -539,7 +539,7 @@ async def update_user_profile(
     # Steuernummer separat verschlüsseln.
     if "steuernr" in data:
         old_enc = user.steuernr_enc
-        user.steuernr_enc = encrypt_value(data["steuernr"])
+        user.steuernr_enc = encrypt_value(data["steuernr"], context="users:steuernr")
         changed["steuernr"] = "changed" if old_enc != user.steuernr_enc else None
 
     await set_rls_context(db, user)

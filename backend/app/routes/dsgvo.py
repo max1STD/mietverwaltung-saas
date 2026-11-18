@@ -33,7 +33,7 @@ def _user_export_dict(user: User) -> dict:
         "is_active": user.is_active,
         "dsgvo_consent_at": user.dsgvo_consent_at.isoformat() if user.dsgvo_consent_at else None,
         "firma": user.firma,
-        "steuernr": decrypt_value(user.steuernr_enc) if user.steuernr_enc else None,
+        "steuernr": decrypt_value(user.steuernr_enc, context="users:steuernr") if user.steuernr_enc else None,
         "rechnungs_adresse": {
             "strasse": user.rechnungs_strasse,
             "hausnr": user.rechnungs_hausnr,

@@ -68,7 +68,7 @@ class DokumentService:
 
     async def _get_or_create_paperless_user(self, user: User) -> tuple[int, str]:
         if user.paperless_user_id and user.paperless_token_enc:
-            token = decrypt_value(user.paperless_token_enc)
+            token = decrypt_value(user.paperless_token_enc, context="users:paperless_token")
             if token:
                 return user.paperless_user_id, token
         if not self.paperless:
@@ -79,7 +79,7 @@ class DokumentService:
             first_name=user.first_name or "",
             last_name=user.last_name or "",
         )
-        encrypted_token = encrypt_value(pl_user.token)
+        encrypted_token = encrypt_value(pl_user.token, context="users:paperless_token")
         user.paperless_user_id = pl_user.id
         user.paperless_token_enc = encrypted_token
         await self.db.flush()
@@ -220,7 +220,7 @@ class DokumentService:
         if dokument.paperless_document_id and dokument.paperless_user_id and self.paperless:
             user = await self._get_vermieter(dokument.vermieter_id)
             if user and user.paperless_token_enc:
-                token = decrypt_value(user.paperless_token_enc)
+                token = decrypt_value(user.paperless_token_enc, context="users:paperless_token")
                 if token:
                     content = await self.paperless.download_document(token, dokument.paperless_document_id)
                     return content, dokument.content_type
@@ -234,7 +234,7 @@ class DokumentService:
         if dokument.paperless_document_id and dokument.paperless_user_id and self.paperless:
             user = await self._get_vermieter(dokument.vermieter_id)
             if user and user.paperless_token_enc:
-                token = decrypt_value(user.paperless_token_enc)
+                token = decrypt_value(user.paperless_token_enc, context="users:paperless_token")
                 if token:
                     content = await self.paperless.preview_document(token, dokument.paperless_document_id)
                     return content, "application/pdf"
@@ -249,7 +249,7 @@ class DokumentService:
             user = await self._get_vermieter(dokument.vermieter_id)
             if user and user.paperless_token_enc:
                 try:
-                    token = decrypt_value(user.paperless_token_enc)
+                    token = decrypt_value(user.paperless_token_enc, context="users:paperless_token")
                     if token:
                         await self.paperless.delete_document(token, dokument.paperless_document_id)
                 except Exception as exc:
