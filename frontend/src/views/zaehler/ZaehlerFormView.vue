@@ -116,7 +116,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useZaehlerStore, type ZaehlerTyp } from '@/stores/zaehler'
 import { useObjekteStore, type Einheit } from '@/stores/objekte'
@@ -156,6 +156,27 @@ function goBack(): void {
     router.push('/zaehler')
   }
 }
+
+function defaultEinheitFuerTyp(typ: ZaehlerTyp): string {
+  switch (typ) {
+    case 'strom': return 'kwh'
+    case 'gas': return 'kwh_m3'
+    case 'wasser':
+    case 'kaltwasser': return 'm3'
+    case 'waerme': return 'kwh'
+    case 'sonstiges':
+    default: return 'sonstiges'
+  }
+}
+
+watch(() => form.typ, (neu, alt) => {
+  // Nur automatisch setzen, wenn der User nicht manuell geändert hat
+  // oder der aktuelle Wert der Default des alten Typs war.
+  const altDefault = alt ? defaultEinheitFuerTyp(alt as ZaehlerTyp) : null
+  if (!form.einheit || form.einheit === altDefault) {
+    form.einheit = defaultEinheitFuerTyp(neu)
+  }
+}, { immediate: true })
 
 function validateForm(): boolean {
   formError.value = ''
