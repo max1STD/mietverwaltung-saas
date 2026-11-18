@@ -24,6 +24,7 @@ from app.models.session import UserSession
 from app.models.subscription import Subscription
 from app.models.tickets import Ticket, TicketComment, TicketSLA, TicketTrigger
 from app.models.user import User
+from app.models.zaehler import Zaehler, Zaehlerablesung
 
 __all__ = [
     "Base",
@@ -53,4 +54,7 @@ __all__ = [
     "TicketComment",
     "TicketSLA",
     "TicketTrigger",
+    "Zaehler",
+    "Zaehlerablesung",
+    "Bankverbindung",
 ]

@@ -111,6 +111,7 @@ from app.routes import (
     onboarding,
     stripe_webhooks,
     tickets,
+    zaehler,
 )
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
@@ -136,3 +137,4 @@ app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 app.include_router(ki.router, prefix="/api/v1/ki", tags=["ki"])
 app.include_router(dokumente.router, prefix="/api/v1/dokumente", tags=["dokumente"])
 app.include_router(geo.router, prefix="/api/v1/geo", tags=["geo"])
+app.include_router(zaehler.router, prefix="/api/v1/zaehler", tags=["zaehler"])
