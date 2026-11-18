@@ -18,6 +18,8 @@ from app.schemas.zaehler import (
     ZaehlerMitAblesungenResponse,
 )
 from app.services.zaehler import (
+    AblesePlausibilitaetError,
+    ablesung_response_data,
     create_ablesung,
     create_ablesung_for_user,
     create_zaehler,
@@ -100,7 +102,7 @@ async def get_zaehler_route(
     if zaehler is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zähler nicht gefunden.")
     data = zaehler_response_data(zaehler)
-    data["ablesungen"] = [ZaehlerablesungResponse.model_validate(a).model_dump() for a in zaehler.ablesungen]
+    data["ablesungen"] = [ZaehlerablesungResponse.model_validate(ablesung_response_data(a)).model_dump() for a in zaehler.ablesungen]
     return ZaehlerMitAblesungenResponse.model_validate(data)
 
 
@@ -164,7 +166,7 @@ async def create_ablesung_route(
 ) -> Zaehlerablesung:
     """Legt eine neue Ablesung an (Vermieter oder berechtigter Mieter)."""
     try:
-        return await create_ablesung_for_user(
+        ablesung = await create_ablesung_for_user(
             db,
             user_id=user.id,
             user_role=user.role,
@@ -174,6 +176,9 @@ async def create_ablesung_route(
         )
     except PermissionError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    except AblesePlausibilitaetError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+    return ablesung
 
 
 @router.get("/{zaehler_id}/ablesungen", response_model=list[ZaehlerablesungResponse])
@@ -187,7 +192,7 @@ async def list_ablesungen_route(
     if zaehler is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zähler nicht gefunden.")
     ablesungen = await list_ablesungen(db, vermieter_id=zaehler.vermieter_id, zaehler_id=zaehler_id)
-    return [ZaehlerablesungResponse.model_validate(a) for a in ablesungen]
+    return [ZaehlerablesungResponse.model_validate(ablesung_response_data(a)) for a in ablesungen]
 
 
 @router.get("/{zaehler_id}/ablesungen/{ablesung_id}", response_model=ZaehlerablesungResponse)
@@ -207,7 +212,7 @@ async def get_ablesung_route(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Ablesung nicht gefunden.",
         )
-    return ZaehlerablesungResponse.model_validate(ablesung)
+    return ZaehlerablesungResponse.model_validate(ablesung_response_data(ablesung))
 
 
 @router.patch("/{zaehler_id}/ablesungen/{ablesung_id}", response_model=ZaehlerablesungResponse)
@@ -218,7 +223,7 @@ async def update_ablesung_route(
     data: ZaehlerablesungUpdate,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_role("vermieter")),
-) -> Zaehlerablesung:
+) -> ZaehlerablesungResponse:
     """Aktualisiert eine Ablesung (nur Vermieter)."""
     zaehler = await get_zaehler(db, vermieter_id=user.id, zaehler_id=zaehler_id)
     if zaehler is None:
@@ -229,14 +234,18 @@ async def update_ablesung_route(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Ablesung nicht gefunden.",
         )
-    return await update_ablesung(
-        db,
-        vermieter_id=user.id,
-        user_id=user.id,
-        ablesung=ablesung,
-        data=data,
-        ip=_get_client_ip(request),
-    )
+    try:
+        ablesung = await update_ablesung(
+            db,
+            vermieter_id=user.id,
+            user_id=user.id,
+            ablesung=ablesung,
+            data=data,
+            ip=_get_client_ip(request),
+        )
+    except AblesePlausibilitaetError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+    return ZaehlerablesungResponse.model_validate(ablesung_response_data(ablesung))
 
 
 @router.delete(

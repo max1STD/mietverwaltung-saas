@@ -50,6 +50,8 @@
                 {{ item.bezeichnung }}
               </RouterLink>
             </td>
+            <td class="py-3 px-4 text-sm text-gray-600">{{ item.objekt_name || '–' }}</td>
+            <td class="py-3 px-4 text-sm text-gray-600">{{ item.einheit_name || '–' }}</td>
             <td class="py-3 px-4 text-sm text-gray-600">{{ formatTyp(item.typ) }}</td>
             <td class="py-3 px-4 text-sm text-gray-600">{{ item.zaehlernummer || '–' }}</td>
             <td class="py-3 px-4 text-sm text-gray-600">{{ formatEinheit(item.einheit) }}</td>
@@ -114,6 +116,8 @@ const { showToast } = useToast()
 
 const columns = [
   { key: 'bezeichnung', label: 'Bezeichnung', sortable: true },
+  { key: 'objekt_name', label: 'Objekt', sortable: true },
+  { key: 'einheit_name', label: 'Wohnung', sortable: true },
   { key: 'typ', label: 'Typ', sortable: true },
   { key: 'zaehlernummer', label: 'Zählernummer', sortable: false },
   { key: 'einheit', label: 'Einheit', sortable: false },

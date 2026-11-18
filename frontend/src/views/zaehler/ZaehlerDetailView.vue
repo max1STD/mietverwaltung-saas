@@ -33,6 +33,15 @@
         </div>
       </div>
 
+      <div v-if="zaehlerStore.currentZaehler" class="mt-2 flex flex-wrap gap-2 text-sm text-gray-600">
+        <span v-if="zaehlerStore.currentZaehler.objekt_name">
+          Objekt: <span class="font-medium text-gray-900">{{ zaehlerStore.currentZaehler.objekt_name }}</span>
+        </span>
+        <span v-if="zaehlerStore.currentZaehler.einheit_name" class="ml-0 sm:ml-4">
+          Wohnung: <span class="font-medium text-gray-900">{{ zaehlerStore.currentZaehler.einheit_name }}</span>
+        </span>
+      </div>
+
       <!-- Ladezustand -->
       <div v-if="zaehlerStore.loading" class="py-12 text-center text-gray-500">
         Zähler wird geladen …
@@ -92,6 +101,15 @@
                     (Verbrauch: {{ formatNumber(ablesung.verbrauch) }})
                   </span>
                 </p>
+                <div v-if="ablesung.warnings?.length" class="mt-1 space-y-1">
+                  <div
+                    v-for="(warning, wIndex) in ablesung.warnings"
+                    :key="wIndex"
+                    class="text-xs text-orange-700 bg-orange-50 px-2 py-1 rounded"
+                  >
+                    ⚠️ {{ warning }}
+                  </div>
+                </div>
                 <p class="text-xs text-gray-400 mt-1">
                   Erfasst am {{ formatDateTime(ablesung.created_at) }} · Ableser: {{ ablesung.ableser || '–' }}
                 </p>
@@ -182,6 +200,31 @@
           <label for="ist_schaetzung" class="text-sm text-gray-700">Schätzung</label>
         </div>
 
+        <div v-if="showZaehlerwechsel" class="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
+          <input
+            id="zaehlerwechsel"
+            v-model="form.zaehlerwechsel"
+            type="checkbox"
+            class="h-4 w-4 mt-0.5 text-[#0D3B70] border-gray-300 rounded"
+          />
+          <div class="flex-1">
+            <label for="zaehlerwechsel" class="text-sm font-medium text-yellow-900">Zählerwechsel hinterlegen</label>
+            <p class="text-xs text-yellow-800 mt-0.5">
+              Der eingegebene Stand ist kleiner als die vorherige Ablesung. Aktivieren Sie diesen Haken, wenn ein Zählerwechsel stattgefunden hat.
+            </p>
+          </div>
+        </div>
+
+        <div v-if="warnings.length" class="space-y-2">
+          <div
+            v-for="(warning, index) in warnings"
+            :key="index"
+            class="p-3 bg-orange-50 border border-orange-200 rounded-xl text-sm text-orange-900"
+          >
+            ⚠️ {{ warning }}
+          </div>
+        </div>
+
         <div>
           <label for="notizen" class="block text-sm font-medium text-gray-700 mb-1">Notizen</label>
           <textarea
@@ -230,7 +273,47 @@ const form = reactive({
   zaehlerstand: '',
   ableser: '',
   ist_schaetzung: false,
+  zaehlerwechsel: false,
   notizen: '',
+})
+
+const showZaehlerwechsel = computed(() => {
+  if (!form.zaehlerstand || !zaehlerStore.currentZaehler?.ablesungen?.length) return false
+  const stand = Number(form.zaehlerstand)
+  const letzteAblesung = zaehlerStore.currentZaehler.ablesungen[0]
+  return stand < Number(letzteAblesung.zaehlerstand)
+})
+
+const warnings = computed(() => {
+  const list: string[] = []
+  if (!form.zaehlerstand || !zaehlerStore.currentZaehler?.ablesungen?.length) return list
+  const stand = Number(form.zaehlerstand)
+  const letzte = zaehlerStore.currentZaehler.ablesungen[0]
+  const letzterStand = Number(letzte.zaehlerstand)
+  const letztesDatum = new Date(letzte.ablesedatum)
+  const aktuellesDatum = form.ablesedatum ? new Date(form.ablesedatum) : new Date()
+
+  if (stand > letzterStand) {
+    const verbrauch = stand - letzterStand
+    const tage = Math.max(1, Math.round((aktuellesDatum.getTime() - letztesDatum.getTime()) / (1000 * 60 * 60 * 24)))
+    const verbrauchProTag = verbrauch / tage
+    const typ = zaehlerStore.currentZaehler.typ
+    const grenzen: Record<string, number> = {
+      strom: 200,
+      gas: 500,
+      wasser: 5,
+      waerme: 500,
+      kaltwasser: 5,
+      sonstiges: 1_000_000,
+    }
+    if (verbrauchProTag > (grenzen[typ] || grenzen.sonstiges)) {
+      list.push(`Auffällig hoher Verbrauch (${verbrauchProTag.toFixed(2)} Einheiten/Tag). Bitte prüfen Sie die Ablesung auf Zahlendreher.`)
+    }
+    if (verbrauch === 0 && tage >= 30) {
+      list.push('Kein Verbrauch über einen längeren Zeitraum erfasst. Bitte prüfen Sie, ob der Zähler in Betrieb ist.')
+    }
+  }
+  return list
 })
 
 const ablesungen = computed(() => {
@@ -285,6 +368,7 @@ function resetForm(): void {
   form.zaehlerstand = ''
   form.ableser = ''
   form.ist_schaetzung = false
+  form.zaehlerwechsel = false
   form.notizen = ''
   editingAblesung.value = null
 }
@@ -300,6 +384,7 @@ function editAblesung(ablesung: Zaehlerablesung): void {
   form.zaehlerstand = ablesung.zaehlerstand
   form.ableser = ablesung.ableser || ''
   form.ist_schaetzung = ablesung.ist_schaetzung
+  form.zaehlerwechsel = ablesung.zaehlerwechsel || false
   form.notizen = ablesung.notizen || ''
   showForm.value = true
 }
@@ -312,6 +397,7 @@ async function submitAblesung(): Promise<void> {
     zaehlerstand: form.zaehlerstand,
     ableser: form.ableser || null,
     ist_schaetzung: form.ist_schaetzung,
+    zaehlerwechsel: form.zaehlerwechsel,
     notizen: form.notizen || null,
   }
 

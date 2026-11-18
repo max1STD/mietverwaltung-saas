@@ -34,6 +34,24 @@ _ZAEHLER_TYP_EINHEIT = {
 }
 
 
+# Typische Maximalverbräuche pro Tag für Plausibilitätsprüfungen (Einheiten je Zähler-Typ).
+# Werte sind konservativ gewählt für Wohngebäude; dienen als Warn-Schwelle.
+_MAX_VERBRAUCH_PRO_TAG: dict[str, Decimal] = {
+    "strom": Decimal("200"),      # kWh/Tag (großer Haushalt + Wärmepumpe)
+    "gas": Decimal("500"),        # kWh/Tag (altes Haus, kalter Winter)
+    "wasser": Decimal("5"),         # m³/Tag (extrem hoch, aber möglich bei Leck)
+    "waerme": Decimal("500"),       # kWh/Tag
+    "kaltwasser": Decimal("5"),     # m³/Tag
+    "sonstiges": Decimal("1_000_000"),  # unbekannt, keine sinnvolle Prüfung
+}
+
+
+class AblesePlausibilitaetError(ValueError):
+    """Harte Plausibilitätsverletzung, die nur per Zählerwechsel überschrieben werden kann."""
+
+    pass
+
+
 def zaehler_response_data(zaehler: Zaehler) -> dict[str, Any]:
     """Erzeugt ein serialisierbares Dict aus einem Zaehler inkl. Einheit/Objekt-Namen.
 
@@ -64,6 +82,26 @@ def zaehler_response_data(zaehler: Zaehler) -> dict[str, Any]:
         "deleted_at": zaehler.deleted_at,
         "einheit_name": einheit_name,
         "objekt_name": objekt_name,
+    }
+
+
+def ablesung_response_data(ablesung: Zaehlerablesung) -> dict[str, Any]:
+    """Erzeugt ein serialisierbares Dict aus einer Ablesung inkl. Warnungen."""
+    return {
+        "id": ablesung.id,
+        "vermieter_id": ablesung.vermieter_id,
+        "zaehler_id": ablesung.zaehler_id,
+        "ablesedatum": ablesung.ablesedatum,
+        "zaehlerstand": ablesung.zaehlerstand,
+        "verbrauch": ablesung.verbrauch,
+        "ableser": ablesung.ableser,
+        "notizen": ablesung.notizen,
+        "ist_schaetzung": ablesung.ist_schaetzung,
+        "zaehlerwechsel": ablesung.zaehlerwechsel,
+        "warnings": getattr(ablesung, "warnings", []),
+        "created_at": ablesung.created_at,
+        "updated_at": ablesung.updated_at,
+        "deleted_at": ablesung.deleted_at,
     }
 
 
@@ -136,8 +174,17 @@ async def _berechne_verbrauch(
     zaehler_id: int,
     aktueller_stand: Decimal,
     aktuelles_datum: date,
-) -> Decimal | None:
-    """Berechnet den Verbrauch gegenüber der vorherigen Ablesung."""
+    zaehlerwechsel: bool = False,
+    typ: str | None = None,
+) -> tuple[Decimal | None, list[str]]:
+    """Berechnet den Verbrauch gegenüber der vorherigen Ablesung.
+
+    Returns:
+        Tuple aus (verbrauch, warnings). verbrauch ist None, wenn keine
+        vorherige Ablesung existiert. warnings enthält Hinweise auf
+        Auffälligkeiten, aber keine harten Fehler.
+    """
+    warnings: list[str] = []
     result = await db.execute(
         select(Zaehlerablesung)
         .where(
@@ -150,8 +197,44 @@ async def _berechne_verbrauch(
     )
     vorherige = result.scalar_one_or_none()
     if vorherige is None:
-        return None
-    return aktueller_stand - vorherige.zaehlerstand
+        return None, warnings
+
+    if aktueller_stand < vorherige.zaehlerstand:
+        if not zaehlerwechsel:
+            raise AblesePlausibilitaetError(
+                "Der eingegebene Zählerstand ist kleiner als die vorherige Ablesung. "
+                "Bitte hinterlegen Sie einen Zählerwechsel, falls ein neuer Zähler eingebaut wurde."
+            )
+        # Bei Zählerwechsel kein Verbrauch aus dieser Differenz berechnen.
+        return None, warnings
+
+    verbrauch: Decimal = aktueller_stand - vorherige.zaehlerstand
+    tage = (aktuelles_datum - vorherige.ablesedatum).days or 1
+    verbrauch_pro_tag = verbrauch / Decimal(tage)
+
+    # Zählerüberlauf-Heuristik: abrupte sehr kleine Werte nach großen Ständen.
+    if vorherige.zaehlerstand > Decimal("900000") and aktueller_stand < Decimal("10000"):
+        warnings.append(
+            "Möglicher Zählerüberlauf erkannt: Der vorherige Stand war sehr hoch und der neue Stand "
+            "fällt stark ab. Bitte prüfen Sie die Ablesung."
+        )
+
+    # Auffällig hoher Verbrauch pro Tag (Zahlendreher / Leck / Heizungsausfall etc.)
+    max_pro_tag = _MAX_VERBRAUCH_PRO_TAG.get(typ or "sonstiges", _MAX_VERBRAUCH_PRO_TAG["sonstiges"])
+    if verbrauch_pro_tag > max_pro_tag:
+        warnings.append(
+            f"Auffällig hoher Verbrauch ({verbrauch_pro_tag.quantize(Decimal('0.001'))} Einheiten/Tag) "
+            "im Vergleich zum Erwartungswert. Bitte prüfen Sie die Ablesung auf Zahlendreher."
+        )
+
+    # Nullverbrauch über längeren Zeitraum
+    if verbrauch == Decimal("0") and tage >= 30:
+        warnings.append(
+            "Kein Verbrauch über einen längeren Zeitraum erfasst. "
+            "Bitte prüfen Sie, ob der Zähler in Betrieb ist."
+        )
+
+    return verbrauch, warnings
 
 
 async def create_zaehler(
@@ -374,11 +457,13 @@ async def create_ablesung(
     if zaehler is None:
         raise PermissionError("Zähler nicht gefunden oder nicht berechtigt.")
 
-    verbrauch = await _berechne_verbrauch(
+    verbrauch, warnings = await _berechne_verbrauch(
         db,
         zaehler_id,
         data.zaehlerstand,
         data.ablesedatum,
+        zaehlerwechsel=data.zaehlerwechsel,
+        typ=zaehler.typ,
     )
 
     ablesung = Zaehlerablesung(
@@ -390,10 +475,12 @@ async def create_ablesung(
         ableser=data.ableser,
         notizen=data.notizen,
         ist_schaetzung=data.ist_schaetzung,
+        zaehlerwechsel=data.zaehlerwechsel,
     )
     db.add(ablesung)
     await db.flush()
     await db.refresh(ablesung)
+    ablesung.warnings = warnings
 
     zaehler.ablesedatum = data.ablesedatum
 
@@ -408,6 +495,7 @@ async def create_ablesung(
             "zaehler_id": zaehler_id,
             "zaehlerstand": str(data.zaehlerstand),
             "verbrauch": str(verbrauch) if verbrauch is not None else None,
+            "zaehlerwechsel": data.zaehlerwechsel,
         },
         ip=ip,
         risk_level="niedrig",
@@ -429,11 +517,13 @@ async def create_ablesung_for_user(
         raise PermissionError("Zähler nicht gefunden oder nicht berechtigt.")
 
     vermieter_id = zaehler.vermieter_id
-    verbrauch = await _berechne_verbrauch(
+    verbrauch, warnings = await _berechne_verbrauch(
         db,
         zaehler_id,
         data.zaehlerstand,
         data.ablesedatum,
+        zaehlerwechsel=data.zaehlerwechsel,
+        typ=zaehler.typ,
     )
 
     ablesung = Zaehlerablesung(
@@ -445,10 +535,12 @@ async def create_ablesung_for_user(
         ableser=data.ableser,
         notizen=data.notizen,
         ist_schaetzung=data.ist_schaetzung,
+        zaehlerwechsel=data.zaehlerwechsel,
     )
     db.add(ablesung)
     await db.flush()
     await db.refresh(ablesung)
+    ablesung.warnings = warnings
 
     zaehler.ablesedatum = data.ablesedatum
 
@@ -463,6 +555,7 @@ async def create_ablesung_for_user(
             "zaehler_id": zaehler_id,
             "zaehlerstand": str(data.zaehlerstand),
             "verbrauch": str(verbrauch) if verbrauch is not None else None,
+            "zaehlerwechsel": data.zaehlerwechsel,
         },
         ip=ip,
         risk_level="niedrig",
@@ -519,12 +612,15 @@ async def update_ablesung(
         setattr(ablesung, field, value)
 
     if "zaehlerstand" in update_fields or "ablesedatum" in update_fields:
-        ablesung.verbrauch = await _berechne_verbrauch(
+        # Bei Updates nur Neuberechnung; Zählerwechsel-Flag wird nicht nachträglich verändert.
+        verbrauch, _ = await _berechne_verbrauch(
             db,
             ablesung.zaehler_id,
             ablesung.zaehlerstand,
             ablesung.ablesedatum,
+            zaehlerwechsel=ablesung.zaehlerwechsel,
         )
+        ablesung.verbrauch = verbrauch
 
     await db.flush()
     await db.refresh(ablesung)

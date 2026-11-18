@@ -118,6 +118,11 @@ class Zaehlerablesung(Base, TimestampMixin, SoftDeleteMixin):
         nullable=False,
         default=False,
     )
+    zaehlerwechsel: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
 
     vermieter: Mapped[User] = relationship("User", foreign_keys=[vermieter_id])
     zaehler: Mapped[Zaehler] = relationship(

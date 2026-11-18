@@ -74,7 +74,7 @@ class ZaehlerablesungBase(BaseModel):
 class ZaehlerablesungCreate(ZaehlerablesungBase):
     """Payload für das Anlegen einer Ablesung."""
 
-    pass
+    zaehlerwechsel: bool = False
 
 
 class ZaehlerablesungUpdate(BaseModel):
@@ -87,6 +87,7 @@ class ZaehlerablesungUpdate(BaseModel):
     ableser: str | None = Field(None, max_length=50)
     notizen: str | None = Field(None, max_length=500)
     ist_schaetzung: bool | None = None
+    zaehlerwechsel: bool | None = None
 
 
 class ZaehlerablesungResponse(ZaehlerablesungBase):
@@ -98,6 +99,7 @@ class ZaehlerablesungResponse(ZaehlerablesungBase):
     vermieter_id: int
     zaehler_id: int
     verbrauch: Decimal | None = None
+    warnings: list[str] = []
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None = None

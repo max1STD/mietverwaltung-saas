@@ -43,6 +43,8 @@ export interface Zaehlerablesung {
   ableser?: string | null
   notizen?: string | null
   ist_schaetzung: boolean
+  zaehlerwechsel?: boolean
+  warnings?: string[]
   created_at?: string
   updated_at?: string
   deleted_at?: string | null
@@ -142,7 +144,7 @@ export const useZaehlerStore = defineStore('zaehler', () => {
 
   async function createAblesung(
     zaehlerId: string,
-    payload: Partial<Zaehlerablesung>,
+    payload: Partial<Zaehlerablesung> & { zaehlerwechsel?: boolean },
   ): Promise<Zaehlerablesung | null> {
     saving.value = true
     error.value = null
