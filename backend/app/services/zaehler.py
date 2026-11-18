@@ -176,15 +176,37 @@ async def _berechne_verbrauch(
     aktuelles_datum: date,
     zaehlerwechsel: bool = False,
     typ: str | None = None,
+    ablesung_id: int | None = None,
 ) -> tuple[Decimal | None, list[str]]:
-    """Berechnet den Verbrauch gegenüber der vorherigen Ablesung.
+    """Berechnet den Verbrauch gegenüber der vorherigen Ablesung und prüft spätere.
 
     Returns:
         Tuple aus (verbrauch, warnings). verbrauch ist None, wenn keine
-        vorherige Ablesung existiert. warnings enthält Hinweise auf
-        Auffälligkeiten, aber keine harten Fehler.
+        vorherige Ablesung existiert oder ein Zählerwechsel vorliegt.
+        warnings enthält Hinweise auf Auffälligkeiten, aber keine harten Fehler.
     """
     warnings: list[str] = []
+
+    # Harte Regel: eine Ablesung in der Vergangenheit darf nicht größer sein
+    # als eine bereits existierende spätere Ablesung (außer Zählerwechsel).
+    spaetere_query = select(Zaehlerablesung).where(
+        Zaehlerablesung.zaehler_id == zaehler_id,
+        Zaehlerablesung.deleted_at.is_(None),
+        Zaehlerablesung.ablesedatum > aktuelles_datum,
+    )
+    if ablesung_id:
+        spaetere_query = spaetere_query.where(Zaehlerablesung.id != ablesung_id)
+    spaetere_query = spaetere_query.order_by(Zaehlerablesung.ablesedatum.asc()).limit(1)
+    spaetere_result = await db.execute(spaetere_query)
+    spaetere = spaetere_result.scalar_one_or_none()
+    if spaetere is not None and aktueller_stand > spaetere.zaehlerstand:
+        if not zaehlerwechsel:
+            raise AblesePlausibilitaetError(
+                "Der eingegebene Zählerstand ist größer als eine spätere Ablesung. "
+                "Bitte prüfen Sie das Datum und den Stand, oder hinterlegen Sie einen Zählerwechsel."
+            )
+        return None, warnings
+
     result = await db.execute(
         select(Zaehlerablesung)
         .where(
@@ -192,6 +214,7 @@ async def _berechne_verbrauch(
             Zaehlerablesung.deleted_at.is_(None),
             Zaehlerablesung.ablesedatum < aktuelles_datum,
         )
+        .where(Zaehlerablesung.id != ablesung_id if ablesung_id else True)
         .order_by(Zaehlerablesung.ablesedatum.desc(), Zaehlerablesung.created_at.desc())
         .limit(1)
     )
@@ -619,6 +642,7 @@ async def update_ablesung(
             ablesung.zaehlerstand,
             ablesung.ablesedatum,
             zaehlerwechsel=ablesung.zaehlerwechsel,
+            ablesung_id=ablesung.id,
         )
         ablesung.verbrauch = verbrauch
 

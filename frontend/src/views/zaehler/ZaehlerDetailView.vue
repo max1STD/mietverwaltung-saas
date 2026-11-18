@@ -280,22 +280,38 @@ const form = reactive({
 const showZaehlerwechsel = computed(() => {
   if (!form.zaehlerstand || !zaehlerStore.currentZaehler?.ablesungen?.length) return false
   const stand = Number(form.zaehlerstand)
-  const letzteAblesung = zaehlerStore.currentZaehler.ablesungen[0]
-  return stand < Number(letzteAblesung.zaehlerstand)
+  const aktuellesDatum = form.ablesedatum ? new Date(form.ablesedatum).getTime() : Date.now()
+  const letzte = zaehlerStore.currentZaehler.ablesungen.find(
+    (a) => new Date(a.ablesedatum).getTime() < aktuellesDatum,
+  )
+  const naechste = zaehlerStore.currentZaehler.ablesungen.find(
+    (a) => new Date(a.ablesedatum).getTime() > aktuellesDatum,
+  )
+  if (letzte && stand < Number(letzte.zaehlerstand)) return true
+  if (naechste && stand > Number(naechste.zaehlerstand)) return true
+  return false
 })
 
 const warnings = computed(() => {
   const list: string[] = []
   if (!form.zaehlerstand || !zaehlerStore.currentZaehler?.ablesungen?.length) return list
   const stand = Number(form.zaehlerstand)
-  const letzte = zaehlerStore.currentZaehler.ablesungen[0]
-  const letzterStand = Number(letzte.zaehlerstand)
-  const letztesDatum = new Date(letzte.ablesedatum)
-  const aktuellesDatum = form.ablesedatum ? new Date(form.ablesedatum) : new Date()
+  const aktuellesDatumMs = form.ablesedatum ? new Date(form.ablesedatum).getTime() : Date.now()
+  const letzte = zaehlerStore.currentZaehler.ablesungen.find(
+    (a) => new Date(a.ablesedatum).getTime() < aktuellesDatumMs,
+  )
+  const naechste = zaehlerStore.currentZaehler.ablesungen.find(
+    (a) => new Date(a.ablesedatum).getTime() > aktuellesDatumMs,
+  )
 
-  if (stand > letzterStand) {
-    const verbrauch = stand - letzterStand
-    const tage = Math.max(1, Math.round((aktuellesDatum.getTime() - letztesDatum.getTime()) / (1000 * 60 * 60 * 24)))
+  if (letzte && stand > Number(letzte.zaehlerstand)) {
+    const verbrauch = stand - Number(letzte.zaehlerstand)
+    const tage = Math.max(
+      1,
+      Math.round(
+        (aktuellesDatumMs - new Date(letzte.ablesedatum).getTime()) / (1000 * 60 * 60 * 24),
+      ),
+    )
     const verbrauchProTag = verbrauch / tage
     const typ = zaehlerStore.currentZaehler.typ
     const grenzen: Record<string, number> = {
@@ -307,12 +323,23 @@ const warnings = computed(() => {
       sonstiges: 1_000_000,
     }
     if (verbrauchProTag > (grenzen[typ] || grenzen.sonstiges)) {
-      list.push(`Auffällig hoher Verbrauch (${verbrauchProTag.toFixed(2)} Einheiten/Tag). Bitte prüfen Sie die Ablesung auf Zahlendreher.`)
+      list.push(
+        `Auffällig hoher Verbrauch (${verbrauchProTag.toFixed(2)} Einheiten/Tag). Bitte prüfen Sie die Ablesung auf Zahlendreher.`,
+      )
     }
     if (verbrauch === 0 && tage >= 30) {
-      list.push('Kein Verbrauch über einen längeren Zeitraum erfasst. Bitte prüfen Sie, ob der Zähler in Betrieb ist.')
+      list.push(
+        'Kein Verbrauch über einen längeren Zeitraum erfasst. Bitte prüfen Sie, ob der Zähler in Betrieb ist.',
+      )
     }
   }
+
+  if (naechste && stand > Number(naechste.zaehlerstand)) {
+    list.push(
+      'Der eingegebene Stand ist größer als eine spätere Ablesung. Bitte prüfen Sie Datum und Stand, oder hinterlegen Sie einen Zählerwechsel.',
+    )
+  }
+
   return list
 })
 
