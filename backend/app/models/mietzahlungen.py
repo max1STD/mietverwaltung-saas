@@ -53,6 +53,16 @@ class Mietzahlung(Base):
         DateTime(timezone=True),
         default=lambda: datetime.now(UTC),
     )
+    updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
 
     vermieter: Mapped[User] = relationship("User", foreign_keys=[vermieter_id])
     mieter: Mapped[Mieter | None] = relationship("Mieter", foreign_keys=[mieter_id])

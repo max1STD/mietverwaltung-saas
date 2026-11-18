@@ -5,11 +5,16 @@
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 class="text-2xl sm:text-3xl font-bold text-[#0D3B70]">Mietzahlungen</h1>
-          <p class="text-gray-500 mt-1">Behalte Soll- und Ist-Zahlungen sowie Mahnstufen im Blick.</p>
+          <p class="text-gray-500 mt-1">Soll-/Ist-Zahlungen und Mahnwesen im Blick.</p>
         </div>
-        <AppButton @click="showCreateModal = true">
-          + Zahlung anlegen
-        </AppButton>
+        <div class="flex gap-2">
+          <AppButton variant="secondary" @click="showGenerateModal = true">
+            Generieren
+          </AppButton>
+          <AppButton @click="showCreateModal = true">
+            + Zahlung anlegen
+          </AppButton>
+        </div>
       </div>
 
       <!-- KPI-Karten -->
@@ -81,10 +86,10 @@
           :description="
             searchQuery || filterStatus || filterMahnstufe
               ? 'Passe die Filter an, um Ergebnisse zu sehen.'
-              : 'Lege deine erste Mietzahlung an.'
+              : 'Lege deine erste Mietzahlung an oder generiere sie aus Verträgen.'
           "
           :action-label="searchQuery || filterStatus || filterMahnstufe ? 'Filter zurücksetzen' : 'Zahlung anlegen'"
-          @action="resetFilters() || (showCreateModal = true)"
+          @action="resetFilters(); showCreateModal = true"
         />
 
         <!-- Tabelle -->
@@ -92,19 +97,20 @@
           v-else
           :items="filteredZahlungen"
           :columns="columns"
-          initial-sort="faellig_am"
+          initial-sort="zahlungsdatum"
         >
           <template #row="{ item }">
             <td class="py-3 px-4">
               <div class="font-medium text-gray-900">{{ item.mieter?.name || '–' }}</div>
-              <div class="text-xs text-gray-500">{{ item.einheit?.name || '–' }}</div>
+              <div class="text-xs text-gray-500">{{ item.einheit?.objekt_name }} / {{ item.einheit?.name || '–' }}</div>
             </td>
-            <td class="py-3 px-4 text-sm text-gray-600">{{ formatDate(item.faellig_am) }}</td>
+            <td class="py-3 px-4 text-sm text-gray-600">{{ formatDate(item.zahlungsdatum) }}</td>
             <td class="py-3 px-4 text-sm font-medium text-gray-900 text-right">{{ formatCurrency(item.betrag_soll) }}</td>
             <td class="py-3 px-4 text-sm text-gray-600 text-right">{{ formatCurrency(item.betrag_ist) }}</td>
+            <td class="py-3 px-4 text-sm text-gray-600 text-right">{{ formatCurrency(item.offener_betrag) }}</td>
             <td class="py-3 px-4">
-              <AppBadge :variant="badgeForStatus(item.status)">
-                {{ statusLabel(item.status) }}
+              <AppBadge :variant="badgeForStatus(mietzahlungenStore.statusFor(item))">
+                {{ statusLabel(mietzahlungenStore.statusFor(item)) }}
               </AppBadge>
             </td>
             <td class="py-3 px-4">
@@ -118,15 +124,15 @@
           <template #actions="{ item }">
             <div class="flex items-center justify-end gap-2">
               <AppButton
-                v-if="item.status !== 'bezahlt'"
+                v-if="mietzahlungenStore.statusFor(item) !== 'bezahlt'"
                 size="sm"
                 :loading="mietzahlungenStore.saving"
-                @click="markPaid(item.id)"
+                @click="markPaid(item)"
               >
                 Als bezahlt markieren
               </AppButton>
               <AppButton
-                v-if="item.mahnstufe < 3 && item.status !== 'bezahlt'"
+                v-if="item.mahnstufe < 3 && mietzahlungenStore.statusFor(item) !== 'bezahlt'"
                 variant="secondary"
                 size="sm"
                 :loading="mietzahlungenStore.saving"
@@ -163,58 +169,36 @@
           />
           <AppInput
             id="new-faellig"
-            v-model="createForm.faellig_am"
-            label="Fällig am"
+            v-model="createForm.zahlungsdatum"
+            label="Zahlungsdatum / Fällig am"
             type="date"
             required
           />
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label for="new-mieter" class="block text-sm font-medium text-gray-700 mb-1">Mieter</label>
-            <select
-              id="new-mieter"
-              v-model="createForm.mieter_id"
-              required
-              class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0D3B70]/20 focus:border-[#0D3B70]"
+        <div>
+          <label for="new-vertrag" class="block text-sm font-medium text-gray-700 mb-1">Mietvertrag</label>
+          <select
+            id="new-vertrag"
+            v-model="createForm.vertrag_id"
+            required
+            class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0D3B70]/20 focus:border-[#0D3B70]"
+          >
+            <option value="">Bitte wählen</option>
+            <option
+              v-for="vertrag in vertraegeStore.mietvertraege"
+              :key="vertrag.id"
+              :value="vertrag.id"
             >
-              <option value="">Bitte wählen</option>
-              <option
-                v-for="mieter in mieterStore.mieter"
-                :key="mieter.id"
-                :value="mieter.id"
-              >
-                {{ mieter.name }}
-              </option>
-            </select>
-          </div>
-
-          <div>
-            <label for="new-einheit" class="block text-sm font-medium text-gray-700 mb-1">Einheit</label>
-            <select
-              id="new-einheit"
-              v-model="createForm.einheit_id"
-              class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0D3B70]/20 focus:border-[#0D3B70]"
-            >
-              <option value="">Bitte wählen</option>
-              <optgroup v-for="objekt in objekteStore.objekte" :key="objekt.id" :label="objekt.name">
-                <option
-                  v-for="einheit in einheitenFuerObjekt(objekt.id)"
-                  :key="einheit.id"
-                  :value="einheit.id"
-                >
-                  {{ einheit.name }}
-                </option>
-              </optgroup>
-            </select>
-          </div>
+              {{ vertrag.mieter?.name }} — {{ vertrag.einheit?.objekt_name }} / {{ vertrag.einheit?.name }}
+            </option>
+          </select>
         </div>
 
         <AppInput
           id="new-referenz"
-          v-model="createForm.referenz"
-          label="Referenz / Verwendungszweck"
+          v-model="createForm.zahlungsreferenz"
+          label="Zahlungsreferenz / Verwendungszweck"
           placeholder="Miete Oktober 2026"
         />
 
@@ -228,14 +212,37 @@
         </div>
       </form>
     </AppModal>
+
+    <!-- Modal: Generieren -->
+    <AppModal v-model="showGenerateModal" title="Mietzahlungen generieren">
+      <form class="space-y-4" @submit.prevent="generateZahlungen">
+        <AppInput
+          id="generate-monat"
+          v-model="generateForm.monat"
+          label="Monat"
+          type="month"
+          required
+        />
+        <p class="text-sm text-gray-500">
+          Es werden für alle aktiven Mietverträge Zahlungsposten mit der Gesamtmiete (Kaltmiete + Nebenkostenvorschuss) angelegt, sofern für den Monat noch kein Posten existiert.
+        </p>
+        <div class="flex justify-end gap-3 pt-2">
+          <AppButton type="button" variant="ghost" @click="showGenerateModal = false">
+            Abbrechen
+          </AppButton>
+          <AppButton type="submit" :loading="mietzahlungenStore.saving">
+            Generieren
+          </AppButton>
+        </div>
+      </form>
+    </AppModal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useMietzahlungenStore, type Mietzahlung, type MietzahlungStatus } from '@/stores/mietzahlungen'
-import { useMieterStore } from '@/stores/mieter'
-import { useObjekteStore, type Einheit } from '@/stores/objekte'
+import { useMietvertraegeStore, type Mietvertrag } from '@/stores/mietvertraege'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppInput from '@/components/ui/AppInput.vue'
@@ -246,28 +253,32 @@ import AppEmptyState from '@/components/ui/AppEmptyState.vue'
 import AppModal from '@/components/ui/AppModal.vue'
 
 const mietzahlungenStore = useMietzahlungenStore()
-const mieterStore = useMieterStore()
-const objekteStore = useObjekteStore()
+const vertraegeStore = useMietvertraegeStore()
 const { showToast } = useToast()
 
 const searchQuery = ref('')
 const filterStatus = ref('')
 const filterMahnstufe = ref('')
 const showCreateModal = ref(false)
+const showGenerateModal = ref(false)
 
 const createForm = reactive({
   betrag_soll: '',
-  faellig_am: '',
-  mieter_id: '',
-  einheit_id: '',
-  referenz: '',
+  zahlungsdatum: new Date().toISOString().split('T')[0],
+  vertrag_id: '',
+  zahlungsreferenz: '',
+})
+
+const generateForm = reactive({
+  monat: new Date().toISOString().slice(0, 7),
 })
 
 const columns = [
   { key: 'mieter', label: 'Mieter / Einheit' },
-  { key: 'faellig_am', label: 'Fällig am' },
+  { key: 'zahlungsdatum', label: 'Zahlungsdatum' },
   { key: 'betrag_soll', label: 'Soll' },
   { key: 'betrag_ist', label: 'Ist' },
+  { key: 'offener_betrag', label: 'Offen' },
   { key: 'status', label: 'Status' },
   { key: 'mahnstufe', label: 'Mahnstufe' },
 ]
@@ -279,14 +290,15 @@ const filteredZahlungen = computed(() => {
   if (query) {
     result = result.filter(
       (z) =>
-        ((z.mieter?.name ?? '').toLowerCase().includes(query) ?? false) ||
-        ((z.einheit?.name ?? '').toLowerCase().includes(query) ?? false) ||
-        (z.referenz?.toLowerCase().includes(query) ?? false),
+        ((z.mieter?.name ?? '').toLowerCase().includes(query)) ||
+        ((z.einheit?.name ?? '').toLowerCase().includes(query)) ||
+        ((z.einheit?.objekt_name ?? '').toLowerCase().includes(query)) ||
+        ((z.zahlungsreferenz ?? '').toLowerCase().includes(query)),
     )
   }
 
   if (filterStatus.value) {
-    result = result.filter((z) => z.status === filterStatus.value)
+    result = result.filter((z) => mietzahlungenStore.statusFor(z) === filterStatus.value)
   }
 
   if (filterMahnstufe.value) {
@@ -298,38 +310,35 @@ const filteredZahlungen = computed(() => {
 
 const openSoll = computed(() => {
   return filteredZahlungen.value
-    .filter((z) => z.status !== 'bezahlt')
-    .reduce((sum, z) => sum + (z.betrag_soll || 0) - (z.betrag_ist || 0), 0)
+    .filter((z) => mietzahlungenStore.statusFor(z) !== 'bezahlt')
+    .reduce((sum, z) => sum + (z.offener_betrag || 0), 0)
 })
 
 const receivedTotal = computed(() => {
   return filteredZahlungen.value
-    .filter((z) => z.status === 'bezahlt')
+    .filter((z) => mietzahlungenStore.statusFor(z) === 'bezahlt')
     .reduce((sum, z) => sum + (z.betrag_ist || z.betrag_soll || 0), 0)
 })
 
 const overdueCount = computed(() => {
-  return filteredZahlungen.value.filter((z) => z.status === 'ueberfaellig').length
+  return filteredZahlungen.value.filter((z) => mietzahlungenStore.statusFor(z) === 'ueberfaellig').length
 })
 
-function einheitenFuerObjekt(objektId: string): Einheit[] {
-  return objekteStore.einheiten.filter((e) => e.objekt_id === objektId)
-}
-
-function formatDate(value?: string): string {
+function formatDate(value?: string | null): string {
   if (!value) return '–'
   return new Date(value).toLocaleDateString('de-DE')
 }
 
-function formatCurrency(value?: number): string {
+function formatCurrency(value?: number | string | null): string {
   if (value == null) return '–'
+  const num = typeof value === 'string' ? Number(value) : value
   return new Intl.NumberFormat('de-DE', {
     style: 'currency',
     currency: 'EUR',
-  }).format(value)
+  }).format(num)
 }
 
-function statusLabel(status?: string): string {
+function statusLabel(status?: MietzahlungStatus | string): string {
   switch (status) {
     case 'offen':
       return 'Offen'
@@ -344,7 +353,7 @@ function statusLabel(status?: string): string {
   }
 }
 
-function badgeForStatus(status?: string): 'green' | 'yellow' | 'red' | 'gray' {
+function badgeForStatus(status?: MietzahlungStatus | string): 'green' | 'yellow' | 'red' | 'gray' {
   switch (status) {
     case 'bezahlt':
       return 'green'
@@ -359,25 +368,32 @@ function badgeForStatus(status?: string): 'green' | 'yellow' | 'red' | 'gray' {
   }
 }
 
-function resetFilters(): boolean {
+function resetFilters(): void {
   searchQuery.value = ''
   filterStatus.value = ''
   filterMahnstufe.value = ''
-  return true
 }
 
 async function createZahlung(): Promise<void> {
-  if (!createForm.mieter_id) {
-    showToast('Bitte wähle einen Mieter aus.', 'warning')
+  if (!createForm.vertrag_id) {
+    showToast('Bitte wähle einen Mietvertrag aus.', 'warning')
     return
   }
 
+  const betrag = Number(createForm.betrag_soll.replace(',', '.'))
+  if (!betrag || betrag <= 0) {
+    showToast('Bitte gib einen gültigen Soll-Betrag ein.', 'warning')
+    return
+  }
+
+  const vertrag = vertraegeStore.mietvertraege.find((v: Mietvertrag) => v.id === createForm.vertrag_id)
+
   const created = await mietzahlungenStore.createMietzahlung({
-    betrag_soll: Number(createForm.betrag_soll.replace(',', '.')),
-    faellig_am: createForm.faellig_am,
-    mieter_id: createForm.mieter_id,
-    einheit_id: createForm.einheit_id || undefined,
-    referenz: createForm.referenz || undefined,
+    vertrag_id: createForm.vertrag_id,
+    mieter_id: vertrag?.mieter_id,
+    betrag_soll: betrag,
+    zahlungsdatum: createForm.zahlungsdatum,
+    zahlungsreferenz: createForm.zahlungsreferenz || undefined,
   })
 
   if (created) {
@@ -391,19 +407,16 @@ async function createZahlung(): Promise<void> {
 
 function resetCreateForm(): void {
   createForm.betrag_soll = ''
-  createForm.faellig_am = ''
-  createForm.mieter_id = ''
-  createForm.einheit_id = ''
-  createForm.referenz = ''
+  createForm.zahlungsdatum = new Date().toISOString().split('T')[0]
+  createForm.vertrag_id = ''
+  createForm.zahlungsreferenz = ''
 }
 
-async function markPaid(id: string): Promise<void> {
-  const zahlung = mietzahlungenStore.mietzahlungen.find((z) => z.id === id)
-  const betrag = zahlung?.betrag_soll ?? 0
-
-  const updated = await mietzahlungenStore.markPaid(id, {
+async function markPaid(zahlung: Mietzahlung): Promise<void> {
+  const betrag = zahlung.betrag_soll
+  const updated = await mietzahlungenStore.markPaid(zahlung.id, {
     betrag_ist: betrag,
-    gezahlt_am: new Date().toISOString().split('T')[0],
+    zahlungsdatum: new Date().toISOString().split('T')[0],
   })
 
   if (updated) {
@@ -434,14 +447,28 @@ async function deleteZahlung(id: string): Promise<void> {
   }
 }
 
+async function generateZahlungen(): Promise<void> {
+  if (!generateForm.monat) {
+    showToast('Bitte wähle einen Monat aus.', 'warning')
+    return
+  }
+  const monat = `${generateForm.monat}-01`
+  const generated = await mietzahlungenStore.generate(monat)
+  if (generated.length) {
+    showToast(`${generated.length} Zahlungsposten generiert.`, 'success')
+    showGenerateModal.value = false
+  } else if (mietzahlungenStore.error) {
+    showToast(mietzahlungenStore.error.message || 'Fehler beim Generieren.', 'error')
+  } else {
+    showToast('Keine neuen Zahlungsposten notwendig.', 'info')
+    showGenerateModal.value = false
+  }
+}
+
 onMounted(async () => {
   await Promise.all([
     mietzahlungenStore.fetchMietzahlungen(),
-    mieterStore.fetchMieter(),
-    objekteStore.fetchObjekte(),
+    vertraegeStore.fetchMietvertraege(),
   ])
-  for (const objekt of objekteStore.objekte) {
-    await objekteStore.fetchEinheiten(objekt.id)
-  }
 })
 </script>

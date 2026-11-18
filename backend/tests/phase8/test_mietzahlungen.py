@@ -75,6 +75,13 @@ async def test_mietzahlung_crud_and_mark_paid(auth_client: AsyncClient) -> None:
     assert data["mieter"]["name"] == "Max Zahler"
     zahlung_id = data["id"]
 
+    # Mahnstufe erhöhen (noch offen)
+    mahn_response = await auth_client.post(
+        f"/api/v1/mietzahlungen/{zahlung_id}/mahnstufe",
+    )
+    assert mahn_response.status_code == 200
+    assert mahn_response.json()["mahnstufe"] == 1
+
     # mark-paid
     mark_response = await auth_client.post(
         f"/api/v1/mietzahlungen/{zahlung_id}/mark-paid",
@@ -85,13 +92,6 @@ async def test_mietzahlung_crud_and_mark_paid(auth_client: AsyncClient) -> None:
     )
     assert mark_response.status_code == 200
     assert mark_response.json()["betrag_ist"] == "850.00"
-
-    # Mahnstufe erhöhen
-    mahn_response = await auth_client.post(
-        f"/api/v1/mietzahlungen/{zahlung_id}/mahnstufe",
-    )
-    assert mahn_response.status_code == 200
-    assert mahn_response.json()["mahnstufe"] == 1
 
     # Löschen
     del_response = await auth_client.delete(f"/api/v1/mietzahlungen/{zahlung_id}")

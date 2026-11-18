@@ -4,7 +4,9 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from app.models.abrechnung_positionen import AbrechnungPosition
 from app.models.abrechnungen import Abrechnung
@@ -41,6 +43,7 @@ from app.schemas.mietvertrag import (
     MietvertragResponse,
 )
 from app.schemas.mietzahlung import (
+    MietzahlungNestedEinheit,
     MietzahlungNestedMieter,
     MietzahlungNestedVertrag,
     MietzahlungResponse,
@@ -451,8 +454,14 @@ async def map_mietzahlung_response(
     db: AsyncSession,
     zahlung: Mietzahlung,
 ) -> MietzahlungResponse:
-    """Mappt eine Mietzahlung-ORM inklusive Mieter und Vertrag auf Response."""
-    await db.refresh(zahlung, attribute_names=["mieter", "vertrag"])
+    """Mappt eine Mietzahlung-ORM inklusive Mieter, Einheit und Vertrag auf Response."""
+    result = await db.execute(
+        select(Mietzahlung).options(
+            joinedload(Mietzahlung.mieter),
+            joinedload(Mietzahlung.vertrag).joinedload(Mietvertrag.einheit).joinedload(Einheit.objekt),
+        ).where(Mietzahlung.id == zahlung.id)
+    )
+    zahlung = result.unique().scalar_one()
 
     mieter_info = None
     if zahlung.mieter:
@@ -461,11 +470,21 @@ async def map_mietzahlung_response(
             name=zahlung.mieter.full_name,
         )
 
+    einheit_info = None
+    if zahlung.vertrag and zahlung.vertrag.einheit:
+        einheit = zahlung.vertrag.einheit
+        einheit_info = MietzahlungNestedEinheit(
+            id=einheit.id,
+            name=einheit.name,
+            objekt_name=einheit.objekt.name if einheit.objekt else "",
+        )
+
     vertrag_info = None
     if zahlung.vertrag:
         vertrag_info = MietzahlungNestedVertrag(
             id=zahlung.vertrag.id,
             miete_cold=_to_decimal(zahlung.vertrag.miete_cold) or Decimal("0"),
+            nebenkosten_voraus=_to_decimal(zahlung.vertrag.nebenkosten_voraus) or Decimal("0"),
         )
 
     return MietzahlungResponse(
@@ -479,7 +498,10 @@ async def map_mietzahlung_response(
         mahnstufe=zahlung.mahnstufe,
         zahlungsreferenz=zahlung.zahlungsreferenz,
         created_at=zahlung.created_at,
+        updated_at=zahlung.updated_at,
+        deleted_at=zahlung.deleted_at,
         mieter=mieter_info,
+        einheit=einheit_info,
         vertrag=vertrag_info,
     )
 
