@@ -57,7 +57,7 @@ export const useZaehlerStore = defineStore('zaehler', () => {
     loading.value = true
     error.value = null
     try {
-      const params = einheitId ? { einheit_id: einheitId } : {}
+      const params = einheitId && String(einheitId).trim() !== '' ? { einheit_id: einheitId } : {}
       const { data } = await apiClient.get<Zaehler[]>('/zaehler', { params })
       zaehler.value = data
       return data

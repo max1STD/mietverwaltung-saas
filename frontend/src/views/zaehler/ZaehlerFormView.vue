@@ -95,6 +95,14 @@
             <label for="ist_hauptzaehler" class="text-sm text-gray-700">Hauptzähler</label>
           </div>
 
+          <div
+            v-if="formError"
+            class="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm"
+            role="alert"
+          >
+            {{ formError }}
+          </div>
+
           <div class="pt-4 flex items-center justify-end gap-3">
             <AppButton variant="ghost" type="button" @click="goBack">Abbrechen</AppButton>
             <AppButton type="submit" :loading="zaehlerStore.saving">
@@ -108,7 +116,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useZaehlerStore, type ZaehlerTyp } from '@/stores/zaehler'
 import { useObjekteStore, type Einheit } from '@/stores/objekte'
@@ -126,12 +134,14 @@ const { showToast } = useToast()
 const isEdit = computed(() => !!route.params.id)
 const zaehlerId = computed(() => route.params.id as string)
 
+const formError = ref('')
+
 const form = reactive({
   bezeichnung: '',
   zaehlernummer: '',
   typ: 'strom' as ZaehlerTyp,
   einheit: 'kwh',
-  einheit_id: '',
+  einheit_id: undefined as string | undefined,
   ist_hauptzaehler: false,
 })
 
@@ -147,10 +157,33 @@ function goBack(): void {
   }
 }
 
+function validateForm(): boolean {
+  formError.value = ''
+  if (!form.bezeichnung.trim()) {
+    formError.value = 'Bitte gib eine Bezeichnung ein.'
+    return false
+  }
+  if (!form.typ) {
+    formError.value = 'Bitte wähle einen Typ aus.'
+    return false
+  }
+  if (!form.einheit) {
+    formError.value = 'Bitte wähle eine Einheit aus.'
+    return false
+  }
+  if (!form.einheit_id) {
+    formError.value = 'Bitte wähle eine Wohneinheit aus.'
+    return false
+  }
+  return true
+}
+
 async function handleSubmit(): Promise<void> {
+  if (!validateForm()) return
+
   const payload = {
-    bezeichnung: form.bezeichnung,
-    zaehlernummer: form.zaehlernummer || null,
+    bezeichnung: form.bezeichnung.trim(),
+    zaehlernummer: form.zaehlernummer.trim() || null,
     typ: form.typ,
     einheit: form.einheit,
     einheit_id: Number(form.einheit_id),
@@ -168,9 +201,11 @@ async function handleSubmit(): Promise<void> {
 
   if (ok) {
     showToast(isEdit.value ? 'Zähler gespeichert.' : 'Zähler angelegt.', 'success')
+    await zaehlerStore.fetchZaehler()
     await router.push(isEdit.value ? `/zaehler/${zaehlerId.value}` : '/zaehler')
   } else {
-    showToast(zaehlerStore.error?.message || 'Speichern fehlgeschlagen.', 'error')
+    formError.value = zaehlerStore.error?.message || 'Speichern fehlgeschlagen.'
+    showToast(formError.value, 'error')
   }
 }
 
@@ -184,7 +219,7 @@ onMounted(async () => {
       form.zaehlernummer = z.zaehlernummer || ''
       form.typ = z.typ
       form.einheit = z.einheit
-      form.einheit_id = z.einheit_id
+      form.einheit_id = z.einheit_id ? String(z.einheit_id) : undefined
       form.ist_hauptzaehler = z.ist_hauptzaehler
     }
   }

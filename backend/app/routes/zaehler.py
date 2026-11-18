@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.middleware.auth import get_current_user, require_role
+from app.middleware.auth import csrf_protect, get_current_user, require_role
 from app.models.user import User
 from app.models.zaehler import Zaehler, Zaehlerablesung
 from app.schemas.zaehler import (
@@ -48,6 +48,7 @@ def _get_client_ip(request: Request) -> str | None:
     "",
     response_model=ZaehlerResponse,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(csrf_protect)],
 )
 async def create_zaehler_route(
     request: Request,
