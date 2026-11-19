@@ -115,8 +115,21 @@ async def delete_einheit(
     einheit: Einheit,
     ip: str | None = None,
 ) -> None:
-    """Markiert eine Einheit als gelöscht (Soft-Delete)."""
+    """Markiert eine Einheit als gelöscht (Soft-Delete), sofern kein aktiver Mietvertrag besteht."""
     from datetime import UTC, datetime
+
+    # Harte Regel: Einheiten mit aktivem Mietvertrag dürfen nicht gelöscht werden.
+    active_contract = await db.execute(
+        select(Mietvertrag).where(
+            Mietvertrag.einheit_id == einheit.id,
+            Mietvertrag.status == "aktiv",
+            Mietvertrag.deleted_at.is_(None),
+        ).limit(1)
+    )
+    if active_contract.scalar_one_or_none() is not None:
+        raise ValueError(
+            "Einheit kann nicht gelöscht werden, da noch ein aktiver Mietvertrag besteht."
+        )
 
     einheit.deleted_at = datetime.now(UTC)
 

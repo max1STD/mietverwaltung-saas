@@ -4,6 +4,8 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.einheit import Einheit
+from app.models.mietvertraege import Mietvertrag
 from app.models.objekt import Objekt
 from app.schemas.objekt import ObjektCreate, ObjektUpdate
 from app.services.audit_log import audit_log
@@ -113,8 +115,24 @@ async def delete_objekt(
     objekt: Objekt,
     ip: str | None = None,
 ) -> None:
-    """Markiert ein Objekt als gelöscht (Soft-Delete)."""
+    """Markiert ein Objekt als gelöscht (Soft-Delete), sofern keine aktiven Mietverträge bestehen."""
     from datetime import UTC, datetime
+
+    # Harte Regel: Objekte mit aktiven Mietverträgen dürfen nicht gelöscht werden.
+    active_contracts = await db.execute(
+        select(Mietvertrag)
+        .join(Einheit, Mietvertrag.einheit_id == Einheit.id)
+        .where(
+            Einheit.objekt_id == objekt.id,
+            Mietvertrag.status == "aktiv",
+            Mietvertrag.deleted_at.is_(None),
+        )
+        .limit(1)
+    )
+    if active_contracts.scalar_one_or_none() is not None:
+        raise ValueError(
+            "Objekt kann nicht gelöscht werden, da noch aktive Mietverträge angebunden sind."
+        )
 
     objekt.deleted_at = datetime.now(UTC)
 

@@ -127,7 +127,17 @@ async def test_objekt_einheit_mieter_mietvertrag_flow(auth_client: AsyncClient) 
     )
     assert blocked.status_code in {400, 409}, blocked.text
 
-    # 9. Vertrag kündigen / beenden
+    # 11. Objekt-Löschung mit aktivem Vertrag wird verhindert
+    response = await auth_client.delete(f"/api/v1/objekte/{objekt_id}")
+    assert response.status_code == 409
+    assert "aktive Mietverträge" in response.json()["detail"]
+
+    # 12. Einheit-Löschung mit aktivem Vertrag wird verhindert
+    response = await auth_client.delete(f"/api/v1/einheiten/{einheit_id}")
+    assert response.status_code == 409
+    assert "aktiver Mietvertrag" in response.json()["detail"]
+
+    # 13. Vertrag kündigen / beenden
     response = await auth_client.patch(
         f"/api/v1/mietvertraege/{vertrag_id}",
         json={
@@ -139,29 +149,31 @@ async def test_objekt_einheit_mieter_mietvertrag_flow(auth_client: AsyncClient) 
     data = response.json()
     assert data["status"] == "gekuendigt"
 
-    # 10. Einheit ist danach wieder frei
+    # 14. Einheit ist danach wieder frei
     response = await auth_client.get(f"/api/v1/einheiten/{einheit_id}")
     assert response.status_code == 200
     einheit = response.json()
     assert einheit["vermietungsstatus"] == "frei"
     assert einheit.get("aktueller_mieter") is None
 
+    # 15. Erst nach Vertragsende kann Einheit und dann Objekt gelöscht werden
+    response = await auth_client.delete(f"/api/v1/einheiten/{einheit_id}")
+    assert response.status_code == 204
+
+    response = await auth_client.delete(f"/api/v1/objekte/{objekt_id}")
+    assert response.status_code == 204
+
 
 async def test_objekt_delete_cascade_respects_einheit_with_contract(auth_client: AsyncClient) -> None:
-    """Objekt-Löschung mit aktivem Mietvertrag muss abgelehnt oder aufgelöst werden."""
+    """Objekt-Löschung mit aktivem Mietvertrag wird mit 409 abgelehnt."""
     objekt_id = await _create_objekt(auth_client, "Zu-löschendes-Haus")
     einheit_id = await _create_einheit(auth_client, objekt_id)
     mieter_id = await _create_mieter(auth_client, "geschuetzt@example.de")
     await _create_mietvertrag(auth_client, mieter_id, einheit_id)
 
-    # Versuch, Objekt mit aktivem Vertrag zu löschen
     response = await auth_client.delete(f"/api/v1/objekte/{objekt_id}")
-    # Akzeptiert wird 400 (Business-Regel) oder 204/409 je nach Implementierung
-    assert response.status_code in {204, 400, 409}, response.text
+    assert response.status_code == 409, response.text
+    assert "aktive Mietverträge" in response.json()["detail"]
 
-    if response.status_code == 204:
-        # Falls Cascade-Löschung erlaubt: Vertrag und Einheit ebenfalls weg
-        assert (await auth_client.get(f"/api/v1/objekte/{objekt_id}")).status_code == 404
-    else:
-        # Falls geschützt: Objekt noch da
-        assert (await auth_client.get(f"/api/v1/objekte/{objekt_id}")).status_code == 200
+    # Objekt ist weiterhin lesbar
+    assert (await auth_client.get(f"/api/v1/objekte/{objekt_id}")).status_code == 200

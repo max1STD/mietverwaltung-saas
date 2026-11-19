@@ -124,11 +124,17 @@ async def delete_einheit_route(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Einheit nicht gefunden",
         )
-    await delete_einheit(
-        db,
-        vermieter_id=user.id,
-        user_id=user.id,
-        einheit=einheit,
-        ip=_get_client_ip(request),
-    )
+    try:
+        await delete_einheit(
+            db,
+            vermieter_id=user.id,
+            user_id=user.id,
+            einheit=einheit,
+            ip=_get_client_ip(request),
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
     return None

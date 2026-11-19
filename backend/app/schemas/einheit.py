@@ -47,7 +47,7 @@ EinheitEnergieausweisArt = Literal[
 class EinheitBase(BaseModel):
     """Gemeinsame Felder fuer Einheit-Schemas."""
 
-    objekt_id: int | None = None
+    objekt_id: int
     name: str = Field(..., min_length=1, max_length=100)
 
     # Kern-Flaechen / Miete
