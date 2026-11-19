@@ -14,6 +14,7 @@ export type ZaehlerTyp = 'strom' | 'gas' | 'wasser' | 'waerme' | 'kaltwasser' | 
 
 export interface Zaehler {
   id: string
+  public_id?: string | null
   vermieter_id: string
   einheit_id: string
   einheit_name?: string | null

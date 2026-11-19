@@ -51,6 +51,7 @@ class ZaehlerResponse(ZaehlerBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    public_id: int | None = None
     vermieter_id: int
     einheit_id: int
     einheit_name: str | None = None

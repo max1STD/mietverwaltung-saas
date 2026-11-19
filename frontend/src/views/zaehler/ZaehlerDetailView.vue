@@ -10,7 +10,7 @@
               {{ zaehlerStore.currentZaehler?.bezeichnung || 'Zähler' }}
             </h1>
             <p v-if="zaehlerStore.currentZaehler" class="text-gray-500 mt-1">
-              {{ formatTyp(zaehlerStore.currentZaehler.typ) }} · {{ formatEinheit(zaehlerStore.currentZaehler.einheit) }}
+              Nr. {{ zaehlerStore.currentZaehler.public_id || '–' }} · {{ formatTyp(zaehlerStore.currentZaehler.typ) }} · {{ formatEinheit(zaehlerStore.currentZaehler.einheit) }}
             </p>
           </div>
         </div>

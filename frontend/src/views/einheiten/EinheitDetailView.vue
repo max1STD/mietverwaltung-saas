@@ -21,7 +21,7 @@
                 {{ einheit.name }}
               </h1>
               <p class="text-gray-500">
-                Objekt {{ objektName }} · {{ einheit.wohnflaeche_qm }} m² · {{ formatCurrency(einheit.kaltmiete) }}
+                Nr. {{ einheit.public_id || '–' }} · Objekt {{ objektName }} · {{ einheit.wohnflaeche_qm }} m² · {{ formatCurrency(einheit.kaltmiete) }}
               </p>
             </div>
           </div>

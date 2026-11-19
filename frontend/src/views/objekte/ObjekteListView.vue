@@ -49,6 +49,9 @@
           :columns="columns"
         >
           <template #row="{ item }">
+            <td class="py-3 px-4 text-sm text-gray-500">
+              {{ item.public_id || '–' }}
+            </td>
             <td class="py-3 px-4">
               <RouterLink
                 :to="`/objekte/${item.public_id || item.id}`"
@@ -129,6 +132,7 @@ const showDeleteModal = ref(false)
 const objektToDelete = ref<string | null>(null)
 
 const columns = [
+  { key: 'public_id', label: 'Nr.' },
   { key: 'name', label: 'Bezeichnung' },
   { key: 'address', label: 'Adresse' },
   { key: 'typ', label: 'Typ' },

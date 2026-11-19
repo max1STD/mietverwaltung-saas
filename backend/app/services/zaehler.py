@@ -69,6 +69,7 @@ def zaehler_response_data(zaehler: Zaehler) -> dict[str, Any]:
 
     return {
         "id": zaehler.id,
+        "public_id": zaehler.public_id,
         "vermieter_id": zaehler.vermieter_id,
         "einheit_id": zaehler.einheit_id,
         "bezeichnung": zaehler.bezeichnung,

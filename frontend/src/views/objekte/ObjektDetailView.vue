@@ -20,7 +20,9 @@
               <h1 class="text-2xl sm:text-3xl font-bold text-[#0D3B70]">
                 {{ objekteStore.currentObjekt.name }}
               </h1>
-              <p class="text-gray-500">{{ formatAddress(objekteStore.currentObjekt) }}</p>
+              <p class="text-gray-500">
+                Nr. {{ objekteStore.currentObjekt.public_id || '–' }} · {{ formatAddress(objekteStore.currentObjekt) }}
+              </p>
             </div>
           </div>
           <AppButton
@@ -119,6 +121,9 @@
 
             <AppTable v-else :items="objekteStore.einheiten" :columns="einheitColumns">
               <template #row="{ item }">
+                <td class="py-3 px-4 text-sm text-gray-500 cursor-pointer" @click="$router.push(`/einheiten/${item.public_id || item.id}`)">
+                  {{ item.public_id || '–' }}
+                </td>
                 <td class="py-3 px-4 font-medium text-gray-900 cursor-pointer hover:text-[#0D3B70]" @click="$router.push(`/einheiten/${item.public_id || item.id}`)">
                   {{ item.name }}
                 </td>
@@ -253,6 +258,7 @@ const einheitForm = reactive({
 })
 
 const einheitColumns = [
+  { key: 'public_id', label: 'Nr.' },
   { key: 'name', label: 'Bezeichnung' },
   { key: 'etage', label: 'Etage' },
   { key: 'wohnflaeche_qm', label: 'Fläche' },

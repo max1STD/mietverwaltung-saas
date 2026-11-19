@@ -121,7 +121,7 @@ async def test_alembic_version_is_expected(db_session: AsyncSession) -> None:
         "0008_dokumente_neue_struktur", "0009_public_ids_mieter_mv", "0010_einheit_stammdaten",
         "0011_objekt_stammdaten", "0012_dokumente_ocr",
         "f715d10be63c", "b30dda0e71ec", "c3a9f8e21b4d", "d2c4a7e89b1f", "e5b1c2d3a4f6",
-        "f2f81c52b352",
+        "f2f81c52b352", "1a2b3c4d5e6f",
     }, f"Unerwartete Alembic-Version: {version}"
 
 

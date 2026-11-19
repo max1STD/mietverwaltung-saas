@@ -42,6 +42,9 @@
           initial-sort="bezeichnung"
         >
           <template #row="{ item }">
+            <td class="py-3 px-4 text-sm text-gray-500">
+              {{ item.public_id || '–' }}
+            </td>
             <td class="py-3 px-4">
               <RouterLink
                 :to="`/zaehler/${item.id}`"
@@ -115,6 +118,7 @@ const router = useRouter()
 const { showToast } = useToast()
 
 const columns = [
+  { key: 'public_id', label: 'Nr.', sortable: true },
   { key: 'bezeichnung', label: 'Bezeichnung', sortable: true },
   { key: 'objekt_name', label: 'Objekt', sortable: true },
   { key: 'einheit_name', label: 'Wohnung', sortable: true },

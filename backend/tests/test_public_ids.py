@@ -155,3 +155,50 @@ async def test_mieter_route_akzeptiert_public_id(auth_client: AsyncClient) -> No
     get_by_public = await auth_client.get(f"/api/v1/mieter/{public_id}")
     assert get_by_public.status_code == 200
     assert get_by_public.json()["id"] == internal_id
+
+
+
+@pytest.mark.asyncio
+async def test_zaehler_bekommt_public_id(auth_client: AsyncClient) -> None:
+    """Beim Anlegen eines Zaehlers wird eine fortlaufende public_id vergeben."""
+    # Objekt + Einheit anlegen
+    obj_resp = await auth_client.post(
+        "/api/v1/objekte",
+        json={
+            "name": "Zaehler Public-ID Objekt",
+            "address": "Zaehlerstr. 1",
+            "plz": "12345",
+            "ort": "Teststadt",
+        },
+    )
+    assert obj_resp.status_code == 201
+    obj_id = obj_resp.json()["id"]
+
+    ein_resp = await auth_client.post(
+        "/api/v1/einheiten",
+        json={
+            "objekt_id": obj_id,
+            "name": "WE Zaehler",
+            "wohnflaeche_qm": "45.00",
+            "kaltmiete": "500.00",
+        },
+    )
+    assert ein_resp.status_code == 201
+    einheit_id = ein_resp.json()["id"]
+
+    zaehler_resp = await auth_client.post(
+        "/api/v1/zaehler",
+        json={
+            "einheit_id": einheit_id,
+            "bezeichnung": "Hauptzaehler Wasser",
+            "zaehlernummer": "W123456",
+            "typ": "wasser",
+            "einheit": "m3",
+            "ist_hauptzaehler": False,
+        },
+    )
+    assert zaehler_resp.status_code == 201
+    data = zaehler_resp.json()
+    assert "public_id" in data
+    assert isinstance(data["public_id"], int)
+    assert data["public_id"] >= 1001

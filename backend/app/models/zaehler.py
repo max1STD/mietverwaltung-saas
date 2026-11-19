@@ -5,7 +5,9 @@ from datetime import date
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
+import sqlalchemy as sa
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     Date,
     DateTime,
@@ -29,6 +31,12 @@ class Zaehler(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "zaehler"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    public_id: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        unique=True,
+        server_default=sa.text("nextval('zaehler_public_id_seq')"),
+    )
     vermieter_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
