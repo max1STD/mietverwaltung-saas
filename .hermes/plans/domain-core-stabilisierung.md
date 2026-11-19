@@ -24,16 +24,24 @@ Die live nutzbaren Kern-Features stabilisieren, bevor komplexere Module (KI, Mah
 - Domain-Core-Flow-Test und Isolationstest hinzugefügt
 - Bankverbindungen + Kostenkategorien CRUD-Tests grün
 
-### Paket 2: Öffentliche IDs (Issue #39)
+### Paket 2: Öffentliche IDs (Issue #39) ✅ ABGESCHLOSSEN
 **Scope:** Globale, fortlaufende, eindeutige Nummern für Objekte, Einheiten, Zähler.
 
-- [ ] PostgreSQL-Sequences anlegen
-- [ ] DB-Migration für `objekt_nummer`, `einheit_nummer`, `zaehler_nummer`
-- [ ] Modelle und Schemas erweitern
-- [ ] API-Response Mapping anpassen
-- [ ] Frontend zeigt neue Nummern anstelle interner ID
-- [ ] Bestehende Datensätze nachträglich nummerieren
-- [ ] Commit + Push, Issue #39 kommentieren
+- [x] PostgreSQL-Sequences anlegen
+- [x] DB-Migration für `objekt_nummer`, `einheit_nummer`, `zaehler_nummer`
+- [x] Modelle und Schemas erweitern
+- [x] API-Response Mapping anpassen
+- [x] Frontend zeigt neue Nummern anstelle interner ID
+- [x] Bestehende Datensätze nachträglich nummerieren
+- [x] Commit + Push, Issue #39 kommentieren
+
+**Erledigt:**
+- Migration `1a2b3c4d5e6f`: `public_id` für Zähler mit Sequence + Backfill
+- `Zaehler`-Modell und `-Response` um `public_id` erweitert
+- API liefert `public_id` für Zähler
+- Frontend: Spalte/Nr.-Anzeige in Objekt-, Einheit- und Zähler-Listen/-Details
+- Test-Whitelist um neue Alembic-Version erweitert
+- `test_public_ids.py` um Zähler-Public-ID erweitert (6/6 grün)
 
 ### Paket 3: Dokumente an Objekte/Einheiten (Phase 6)
 **Scope:** PDFs/Fotos/Videos dauerhaft zu Objekten/Einheiten speichern.
