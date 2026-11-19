@@ -23,6 +23,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.models.dokument import Dokument
+from app.models.einheit import Einheit
+from app.models.objekt import Objekt
 from app.models.user import User
 from app.services.crypto import decrypt_value, encrypt_value
 from app.services.dokument_ocr import run_ocr_for_dokument
@@ -65,6 +67,38 @@ class DokumentService:
     async def _get_vermieter(self, vermieter_id: int) -> User | None:
         result = await self.db.execute(select(User).where(User.id == vermieter_id))
         return result.scalar_one_or_none()
+
+    async def _validate_entity_ownership(
+        self,
+        vermieter_id: int,
+        entity_type: str,
+        entity_id: int,
+    ) -> None:
+        """Stellt sicher, dass die Zielentität dem Vermieter gehört."""
+        if entity_type == "objekt":
+            result = await self.db.execute(
+                select(Objekt).where(
+                    Objekt.id == entity_id,
+                    Objekt.vermieter_id == vermieter_id,
+                    Objekt.deleted_at.is_(None),
+                )
+            )
+            if result.scalar_one_or_none() is None:
+                raise DokumentValidationError(
+                    "entity_id", "Objekt nicht gefunden oder nicht berechtigt"
+                )
+        elif entity_type == "einheit":
+            result = await self.db.execute(
+                select(Einheit).where(
+                    Einheit.id == entity_id,
+                    Einheit.vermieter_id == vermieter_id,
+                    Einheit.deleted_at.is_(None),
+                )
+            )
+            if result.scalar_one_or_none() is None:
+                raise DokumentValidationError(
+                    "entity_id", "Einheit nicht gefunden oder nicht berechtigt"
+                )
 
     async def _get_or_create_paperless_user(self, user: User) -> tuple[int, str]:
         if user.paperless_user_id and user.paperless_token_enc:
@@ -116,6 +150,8 @@ class DokumentService:
             raise DokumentValidationError("file", "Datei zu groß (max. 10 MB)")
         if upload.content_type not in ALLOWED_CONTENT_TYPES:
             raise DokumentValidationError("file", "Dateityp nicht erlaubt")
+
+        await self._validate_entity_ownership(vermieter_id, entity_type, entity_id)
 
         user = await self._get_vermieter(vermieter_id)
         if not user:
