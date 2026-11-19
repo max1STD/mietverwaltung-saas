@@ -43,15 +43,22 @@ Die live nutzbaren Kern-Features stabilisieren, bevor komplexere Module (KI, Mah
 - Test-Whitelist um neue Alembic-Version erweitert
 - `test_public_ids.py` um Zähler-Public-ID erweitert (6/6 grün)
 
-### Paket 3: Dokumente an Objekte/Einheiten (Phase 6)
+### Paket 3: Dokumente an Objekte/Einheiten (Phase 6) ✅ ABGESCHLOSSEN
 **Scope:** PDFs/Fotos/Videos dauerhaft zu Objekten/Einheiten speichern.
 
-- [ ] Upload-Endpunkt für Objekt-/Einheit-Dokumente prüfen/ergänzen
-- [ ] Speicherpfad `uploads/{vermieter_id}/{jahr}/{monat}/{uuid}.{ext}` verifizieren
-- [ ] Verknüpfung `entity_type` / `entity_id` für Objekt/Einheit nutzen
-- [ ] Galerie/Komponente in Objekt-Detail und Einheit-Detail einbauen
-- [ ] Löschen + Download testen
-- [ ] Commit + Push
+- [x] Upload-Endpunkt für Objekt-/Einheit-Dokumente prüfen/ergänzen
+- [x] Speicherpfad verifizert (`vermieter_{id}/{entity_type}/{entity_id}/{uuid}_{filename}`)
+- [x] Verknüpfung `entity_type` / `entity_id` für Objekt/Einheit nutzen
+- [x] Galerie/Komponente in Objekt-Detail und Einheit-Detail einbauen (bereits vorhanden, funktionsfähig)
+- [x] Löschen + Download testen
+- [x] Commit + Push
+
+**Erledigt:**
+- `DokumenteListe`-Komponente in Objekt-Detail und Einheit-Detail integriert
+- Upload/Download/Löschen/OCR funktionsfähig
+- Ownership-Prüfung im `DokumentService`: Upload nur an eigene Objekte/Einheiten
+- Test `test_upload_to_fremdes_objekt_scheitert` hinzugefügt
+- 217/217 Backend-Tests grün, Frontend-Build grün
 
 ### Paket 4: Stripe-Billing Grundgerüst (Phase 2)
 **Scope:** Trial-Checkout, Webhooks, Abo-Widget.
