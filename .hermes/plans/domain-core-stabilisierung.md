@@ -60,16 +60,23 @@ Die live nutzbaren Kern-Features stabilisieren, bevor komplexere Module (KI, Mah
 - Test `test_upload_to_fremdes_objekt_scheitert` hinzugefügt
 - 217/217 Backend-Tests grün, Frontend-Build grün
 
-### Paket 4: Stripe-Billing Grundgerüst (Phase 2)
+### Paket 4: Stripe-Billing Grundgerüst (Phase 2) ✅ ABGESCHLOSSEN
 **Scope:** Trial-Checkout, Webhooks, Abo-Widget.
 
-- [ ] Stripe-Test-Keys in `.env` hinterlegen
-- [ ] `POST /api/v1/stripe/checkout-session` implementieren
-- [ ] Webhook-Handler für `checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`
-- [ ] `GET /api/v1/subscriptions/me` + Dashboard-Widget
-- [ ] Trial-Ablauf → Account-Sperre im Login prüfen
-- [ ] Tests mit Stripe-Mock-Events
-- [ ] Commit + Push
+- [x] Stripe-Test-Keys in `.env` hinterlegen
+- [x] `POST /api/v1/stripe/checkout-session` implementieren
+- [x] Webhook-Handler für `checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`
+- [x] `GET /api/v1/subscriptions/me` + Dashboard-Widget
+- [x] Trial-Ablauf → Account-Sperre im Login prüfen
+- [x] Tests mit Stripe-Mock-Events
+- [x] Commit + Push
+
+**Erledigt:**
+- Trial-Ablauf blockiert Login und geschützte Routen für Vermieter
+- `customer.subscription.updated` Webhook-Handler + Route
+- `STRIPE_PUBLISHABLE_KEY` in `.env.example` und `config.py`
+- SettingsView mit Abo-Tab (Konto / Abo / Sicherheit)
+- 221/221 Backend-Tests grün, Frontend-Build grün
 
 ## Reihenfolge
 Paket 1 ✅ → Paket 2 → Paket 3 → Paket 4
