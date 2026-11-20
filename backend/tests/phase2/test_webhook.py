@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import pytest
+from datetime import UTC, datetime
 from httpx import AsyncClient
 
 from app.models.subscription import Subscription
@@ -167,3 +168,50 @@ async def test_stripe_webhook_ignores_unknown_events(auth_client: AsyncClient) -
     data = response.json()
     assert data["handled"] is False
     assert data["received"] is True
+
+
+
+@pytest.mark.phase2
+@pytest.mark.asyncio
+async def test_stripe_webhook_subscription_updated(
+    auth_client: AsyncClient,
+    vermieter_user,
+) -> None:
+    """customer.subscription.updated synchronisiert Status und Perioden."""
+    await auth_client.get("/api/v1/billing/subscription/me")
+    assert vermieter_user.subscription is not None
+
+    session = auth_client.db_session
+    sub = await session.get(Subscription, vermieter_user.subscription.id)
+    sub.stripe_subscription_id = "sub_updated_123"
+    sub.status = "trial"
+    await session.flush()
+
+    now = int(datetime.now(UTC).timestamp())
+    payload = {
+        "id": "evt_test_subscription_updated",
+        "type": "customer.subscription.updated",
+        "data": {
+            "object": {
+                "id": "sub_updated_123",
+                "status": "active",
+                "trial_end": now + 86400,
+                "current_period_start": now,
+                "current_period_end": now + 30 * 86400,
+            }
+        },
+    }
+    response = await auth_client.post(
+        "/api/v1/webhooks/stripe",
+        json=payload,
+        headers={"stripe-signature": "test_sig"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["handled"] is True
+    assert data["type"] == "customer.subscription.updated"
+
+    updated = await session.get(Subscription, sub.id)
+    assert updated.status == "active"
+    assert updated.current_period_start is not None
+    assert updated.current_period_end is not None

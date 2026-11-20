@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     FROM_EMAIL: str = "noreply@mietverwaltung.de"
 
     # ── Stripe ──
+    STRIPE_PUBLISHABLE_KEY: str = ""
     STRIPE_SECRET_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
 

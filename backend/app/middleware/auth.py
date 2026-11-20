@@ -4,8 +4,9 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import Depends, HTTPException, Request, status
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models.user import User
@@ -83,6 +84,8 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """Lädt den aktuellen User aus dem JWT-Access-Cookie."""
+    from app.services.billing import is_subscription_active_or_trialing
+
     payload = decode_access_cookie(request)
     if not payload:
         raise HTTPException(
@@ -91,11 +94,22 @@ async def get_current_user(
         )
 
     user_id = int(payload.get("sub"))
-    user = await db.get(User, user_id)
+    result = await db.execute(
+        select(User)
+        .options(selectinload(User.subscription))
+        .where(User.id == user_id)
+    )
+    user = result.scalar_one_or_none()
     if user is None or not user.is_active or user.deleted_at is not None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Ungültiger Account",
+        )
+
+    if user.role == "vermieter" and not is_subscription_active_or_trialing(user.subscription):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Abonnement abgelaufen. Bitte erneuere dein Abo.",
         )
 
     # RLS-Kontext für alle folgenden DB-Operationen im Request setzen.

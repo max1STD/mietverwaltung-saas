@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import pytest
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from httpx import AsyncClient
 
 from app.models.user import User
-from app.services.billing import calculate_we_price, get_price_preview
+from app.services.billing import calculate_we_price, get_or_create_subscription, get_price_preview
+from app.services.jwt import create_access_token
 
 
 @pytest.mark.phase2
@@ -123,3 +125,69 @@ async def test_portal_stub(auth_client: AsyncClient) -> None:
     assert response.status_code == 200
     data = response.json()
     assert data["url"] is None or isinstance(data["url"], str)
+
+
+
+@pytest.mark.phase2
+@pytest.mark.asyncio
+async def test_trial_expired_login_rejected(
+    async_client: AsyncClient,
+    vermieter_user: User,
+) -> None:
+    """Vermieter mit abgelaufenem Trial kann sich nicht einloggen."""
+    from app.services.billing import get_or_create_subscription
+
+    session = async_client.db_session
+    subscription = await get_or_create_subscription(session, vermieter_user)
+    subscription.status = "trial"
+    subscription.trial_ends_at = datetime.now(UTC) - timedelta(days=1)
+    await session.flush()
+
+    resp = await async_client.post(
+        "/api/v1/auth/login",
+        json={"email": vermieter_user.email, "password": "TestPasswort123!"},
+    )
+    assert resp.status_code == 401
+    assert "Abonnement" in resp.json()["detail"]
+
+
+@pytest.mark.phase2
+@pytest.mark.asyncio
+async def test_trial_expired_auth_guard_rejects(
+    async_client: AsyncClient,
+    vermieter_user: User,
+) -> None:
+    """Authentifizierter Vermieter mit abgelaufenem Trial wird auf geschützten Routen blockiert."""
+    from app.services.billing import get_or_create_subscription
+    from app.services.jwt import create_access_token
+
+    session = async_client.db_session
+    subscription = await get_or_create_subscription(session, vermieter_user)
+    subscription.status = "trial"
+    subscription.trial_ends_at = datetime.now(UTC) - timedelta(days=1)
+    await session.flush()
+
+    token = create_access_token(
+        vermieter_user.id,
+        vermieter_user.role,
+        vermieter_user.id,
+    )
+    async_client.cookies.set("access_token", token)
+
+    resp = await async_client.get("/api/v1/objekte")
+    assert resp.status_code == 403
+    assert "Abonnement" in resp.json()["detail"]
+
+
+@pytest.mark.phase2
+@pytest.mark.asyncio
+async def test_admin_without_subscription_can_login(
+    async_client: AsyncClient,
+    admin_user: User,
+) -> None:
+    """Admins ohne Abonnement können sich weiterhin einloggen."""
+    resp = await async_client.post(
+        "/api/v1/auth/login",
+        json={"email": admin_user.email, "password": "TestPasswort123!"},
+    )
+    assert resp.status_code in (200, 202)  # 202 falls 2FA aktiv

@@ -97,6 +97,30 @@ def is_individual_price(we_count: int) -> bool:
     return we_count > MAX_WE_SELF_SERVICE
 
 
+def is_subscription_active_or_trialing(subscription: Subscription | None) -> bool:
+    """Prüft, ob das Abonnement aktiv ist oder in einem gültigen Trial läuft."""
+    if subscription is None:
+        return True  # Admin/Mieter ohne eigenes Abo sind immer erlaubt.
+    if subscription.status in ("active", "paid"):
+        return True
+    if subscription.status == "trial":
+        if subscription.trial_ends_at is None:
+            return True
+        return subscription.trial_ends_at >= datetime.now(UTC)
+    return False
+
+
+def is_subscription_expired(subscription: Subscription | None) -> bool:
+    """Gibt True zurück, wenn ein Trial abgelaufen ist oder Status 'past_due'/'cancelled'."""
+    if subscription is None:
+        return False
+    if subscription.status in ("past_due", "cancelled", "unpaid"):
+        return True
+    if subscription.status == "trial" and subscription.trial_ends_at is not None:
+        return subscription.trial_ends_at < datetime.now(UTC)
+    return False
+
+
 def _to_decimal(value: Decimal | float | int | str | None) -> Decimal:
     if value is None:
         return Decimal("0")
@@ -700,5 +724,56 @@ async def handle_subscription_deleted(
         entity_id=subscription.id,
         details={"stripe_subscription_id": subscription_id},
         risk_level="mittel",
+    )
+    await db.flush()
+
+
+async def handle_subscription_updated(
+    db: AsyncSession,
+    stripe_subscription: dict[str, Any],
+) -> None:
+    """Verarbeitet customer.subscription.updated Webhook.
+
+    Synchronisiert Status, Trial-Ende, Perioden und Kündigungsflag.
+    """
+    subscription_id = stripe_subscription.get("id")
+    if not subscription_id:
+        return
+    result = await db.execute(
+        select(Subscription).where(Subscription.stripe_subscription_id == subscription_id)
+    )
+    subscription = result.scalar_one_or_none()
+    if not subscription:
+        return
+
+    new_status = stripe_subscription.get("status")
+    if new_status and new_status != subscription.status:
+        subscription.status = new_status
+
+    trial_end = stripe_subscription.get("trial_end")
+    if trial_end is not None:
+        subscription.trial_ends_at = datetime.fromtimestamp(trial_end, tz=UTC)
+
+    current_period_start = stripe_subscription.get("current_period_start")
+    if current_period_start is not None:
+        subscription.current_period_start = datetime.fromtimestamp(current_period_start, tz=UTC)
+
+    current_period_end = stripe_subscription.get("current_period_end")
+    if current_period_end is not None:
+        subscription.current_period_end = datetime.fromtimestamp(current_period_end, tz=UTC)
+
+    await audit_log(
+        db,
+        user_id=subscription.user_id,
+        vermieter_id=subscription.user_id,
+        action="subscription_updated",
+        entity="subscriptions",
+        entity_id=subscription.id,
+        details={
+            "stripe_subscription_id": subscription_id,
+            "status": subscription.status,
+            "cancel_at_period_end": stripe_subscription.get("cancel_at_period_end"),
+        },
+        risk_level="niedrig",
     )
     await db.flush()

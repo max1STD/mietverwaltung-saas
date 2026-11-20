@@ -11,6 +11,7 @@ from argon2 import PasswordHasher, Type
 from argon2.exceptions import VerifyMismatchError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.config import settings
 from app.middleware.auth import set_rls_context
@@ -18,6 +19,7 @@ from app.models.audit import AuditLog
 from app.models.einwilligung import Einwilligung
 from app.models.session import UserSession
 from app.models.user import User
+from app.services.billing import is_subscription_expired
 from app.services.crypto import encrypt_value
 from app.services.rate_limit import check_rate_limit, record_failed_attempt
 
@@ -88,7 +90,9 @@ def get_totp_uri(secret: str, email: str, issuer: str = "MietVerwaltung") -> str
 
 async def _get_user_by_email(db: AsyncSession, email: str) -> User | None:
     result = await db.execute(
-        select(User).where(
+        select(User)
+        .options(selectinload(User.subscription))
+        .where(
             User.email.ilike(email),
             User.deleted_at.is_(None),
         )
@@ -214,6 +218,9 @@ async def login_step(
 
     if await _is_account_locked(user):
         raise AuthError("Account vorübergehend gesperrt")
+
+    if user.role == "vermieter" and is_subscription_expired(user.subscription):
+        raise AuthError("Abonnement abgelaufen. Bitte erneuere dein Abo, um fortzufahren.")
 
     # RLS-Kontext setzen, bevor User-Zeile verändert oder Audit geschrieben wird.
     await set_rls_context(db, user)

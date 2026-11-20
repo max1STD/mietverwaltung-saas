@@ -14,6 +14,7 @@ from app.services.billing import (
     handle_invoice_paid,
     handle_invoice_payment_failed,
     handle_subscription_deleted,
+    handle_subscription_updated,
     stripe_lib,
 )
 
@@ -74,6 +75,8 @@ async def stripe_webhook(
         await handle_invoice_paid(db, data)
     elif event_type == "invoice.payment_failed":
         await handle_invoice_payment_failed(db, data)
+    elif event_type == "customer.subscription.updated":
+        await handle_subscription_updated(db, data)
     elif event_type == "customer.subscription.deleted":
         await handle_subscription_deleted(db, data)
     else:
