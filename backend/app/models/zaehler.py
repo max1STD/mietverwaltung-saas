@@ -18,14 +18,14 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, SoftDeleteMixin, TimestampMixin
+from app.models.base import Base, RetentionMixin, SoftDeleteMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.einheit import Einheit
     from app.models.user import User
 
 
-class Zaehler(Base, TimestampMixin, SoftDeleteMixin):
+class Zaehler(Base, TimestampMixin, SoftDeleteMixin, RetentionMixin):
     """Ein Zähler (Strom, Gas, Wasser, etc.) der einer Einheit zugeordnet ist."""
 
     __tablename__ = "zaehler"
@@ -40,6 +40,11 @@ class Zaehler(Base, TimestampMixin, SoftDeleteMixin):
     vermieter_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
+    )
+    org_id: Mapped[int | None] = mapped_column(
+        ForeignKey("organisationen.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
     )
     einheit_id: Mapped[int] = mapped_column(
         ForeignKey("einheiten.id", ondelete="CASCADE"),
@@ -87,7 +92,7 @@ class Zaehler(Base, TimestampMixin, SoftDeleteMixin):
     )
 
 
-class Zaehlerablesung(Base, TimestampMixin, SoftDeleteMixin):
+class Zaehlerablesung(Base, TimestampMixin, SoftDeleteMixin, RetentionMixin):
     """Eine Ablesung eines Zählers mit Verbrauchsberechnung."""
 
     __tablename__ = "zaehlerablesungen"

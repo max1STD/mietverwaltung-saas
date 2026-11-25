@@ -9,7 +9,8 @@
         </div>
         <AppButton
           class="w-full sm:w-auto"
-          @click="$router.push(\'/tickets/neu\')"
+          @click="$router.push('/tickets/neu')"
+        >
           + Ticket erstellen
         </AppButton>
       </div>

@@ -32,6 +32,11 @@ class Ticket(Base, TimestampMixin):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
+    org_id: Mapped[int | None] = mapped_column(
+        ForeignKey("organisationen.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     mieter_id: Mapped[int | None] = mapped_column(
         ForeignKey("mieter.id"),
         nullable=True,

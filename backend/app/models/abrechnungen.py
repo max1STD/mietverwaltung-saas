@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Date, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, SoftDeleteMixin, TimestampMixin
+from app.models.base import Base, RetentionMixin, SoftDeleteMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.abrechnung_positionen import AbrechnungPosition
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 
-class Abrechnung(Base, TimestampMixin, SoftDeleteMixin):
+class Abrechnung(Base, TimestampMixin, SoftDeleteMixin, RetentionMixin):
     """Nebenkostenabrechnung pro Einheit und Abrechnungsjahr."""
 
     __tablename__ = "abrechnungen"
@@ -26,6 +26,11 @@ class Abrechnung(Base, TimestampMixin, SoftDeleteMixin):
     vermieter_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
+    )
+    org_id: Mapped[int | None] = mapped_column(
+        ForeignKey("organisationen.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
     )
     einheit_id: Mapped[int] = mapped_column(
         ForeignKey("einheiten.id"),

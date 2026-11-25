@@ -9,7 +9,8 @@
         </div>
         <AppButton
           class="w-full sm:w-auto"
-          @click="$router.push(\'/kosten/neu\')"
+          @click="$router.push('/kosten/neu')"
+        >
           + Kosten erfassen
         </AppButton>
       </div>

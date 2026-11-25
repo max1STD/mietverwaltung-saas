@@ -8,7 +8,7 @@ import sqlalchemy as sa
 from sqlalchemy import BigInteger, DECIMAL, Boolean, Date, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, SoftDeleteMixin, TimestampMixin
+from app.models.base import Base, RetentionMixin, SoftDeleteMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.einheit import Einheit
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 
-class Mietvertrag(Base, TimestampMixin, SoftDeleteMixin):
+class Mietvertrag(Base, TimestampMixin, SoftDeleteMixin, RetentionMixin):
     """Mietvertrag zwischen Vermieter und Mieter für eine bestimmte Einheit."""
 
     __tablename__ = "mietvertraege"
@@ -31,6 +31,11 @@ class Mietvertrag(Base, TimestampMixin, SoftDeleteMixin):
     vermieter_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
+    )
+    org_id: Mapped[int | None] = mapped_column(
+        ForeignKey("organisationen.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
     )
     mieter_id: Mapped[int] = mapped_column(
         ForeignKey("mieter.id", ondelete="CASCADE"),

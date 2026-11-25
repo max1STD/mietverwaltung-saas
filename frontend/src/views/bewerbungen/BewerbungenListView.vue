@@ -9,7 +9,8 @@
         </div>
         <AppButton
           class="w-full sm:w-auto"
-          @click="$router.push(\'/bewerbungen/neu\')"
+          @click="$router.push('/bewerbungen/neu')"
+        >
           + Bewerbung erfassen
         </AppButton>
       </div>

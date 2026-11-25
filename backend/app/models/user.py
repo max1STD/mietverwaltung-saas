@@ -9,7 +9,7 @@ from sqlalchemy.dialects.postgresql import BYTEA, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.audit import AuditLog
-from app.models.base import Base, SoftDeleteMixin, TimestampMixin
+from app.models.base import Base, RetentionMixin, SoftDeleteMixin, TimestampMixin
 from app.models.einwilligung import Einwilligung
 from app.models.plan_usage import PlanUsage
 from app.models.session import UserSession
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from app.models.bankverbindung import Bankverbindung
 
 
-class User(Base, TimestampMixin, SoftDeleteMixin):
+class User(Base, TimestampMixin, SoftDeleteMixin, RetentionMixin):
     """Ein Login-Account. Rolle bestimmt Berechtigungen und Sichtbarkeit."""
 
     __tablename__ = "users"

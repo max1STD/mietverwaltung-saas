@@ -6,14 +6,14 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Boolean, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, SoftDeleteMixin, TimestampMixin
+from app.models.base import Base, RetentionMixin, SoftDeleteMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.mieter import Mieter
     from app.models.user import User
 
 
-class Bankverbindung(Base, TimestampMixin, SoftDeleteMixin):
+class Bankverbindung(Base, TimestampMixin, SoftDeleteMixin, RetentionMixin):
     """Bankverbindung eines Vermieters oder zugeordnetem Mieter."""
 
     __tablename__ = "bankverbindungen"
@@ -22,6 +22,11 @@ class Bankverbindung(Base, TimestampMixin, SoftDeleteMixin):
     vermieter_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
+    )
+    org_id: Mapped[int | None] = mapped_column(
+        ForeignKey("organisationen.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
     )
     mieter_id: Mapped[int | None] = mapped_column(
         ForeignKey("mieter.id", ondelete="SET NULL"),

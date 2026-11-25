@@ -9,7 +9,7 @@ from sqlalchemy import BigInteger, Date, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import BYTEA
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, SoftDeleteMixin, TimestampMixin
+from app.models.base import Base, RetentionMixin, SoftDeleteMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.adresse import Adresse
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 
-class Mieter(Base, TimestampMixin, SoftDeleteMixin):
+class Mieter(Base, TimestampMixin, SoftDeleteMixin, RetentionMixin):
     """Eine Mieter-Person mit Kontaktdaten und optionalem verschlüsseltem Geburtsdatum."""
 
     __tablename__ = "mieter"
@@ -34,6 +34,11 @@ class Mieter(Base, TimestampMixin, SoftDeleteMixin):
     vermieter_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
+    )
+    org_id: Mapped[int | None] = mapped_column(
+        ForeignKey("organisationen.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
     )
     first_name: Mapped[str] = mapped_column(String(50), nullable=False)
     last_name: Mapped[str] = mapped_column(String(50), nullable=False)

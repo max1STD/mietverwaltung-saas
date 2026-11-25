@@ -9,7 +9,8 @@
         </div>
         <AppButton
           class="w-full sm:w-auto"
-          @click="$router.push(\'/mietvertraege/neu\')"
+          @click="$router.push('/mietvertraege/neu')"
+        >
           + Mietvertrag anlegen
         </AppButton>
       </div>

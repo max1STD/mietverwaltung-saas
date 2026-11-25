@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, SoftDeleteMixin
+from app.models.base import Base, RetentionMixin, SoftDeleteMixin
 
 if TYPE_CHECKING:
     from app.models.abrechnungen import Abrechnung
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 
-class Kosten(Base, SoftDeleteMixin):
+class Kosten(Base, SoftDeleteMixin, RetentionMixin):
     """Eine einzelne Kostenposition mit optionaler Umlagefähigkeit."""
 
     __tablename__ = "kosten"
@@ -27,6 +27,11 @@ class Kosten(Base, SoftDeleteMixin):
     vermieter_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
+    )
+    org_id: Mapped[int | None] = mapped_column(
+        ForeignKey("organisationen.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
     )
     objekt_id: Mapped[int | None] = mapped_column(
         ForeignKey("objekte.id"),

@@ -31,6 +31,11 @@ class Objekt(Base, TimestampMixin, SoftDeleteMixin):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
+    org_id: Mapped[int | None] = mapped_column(
+        ForeignKey("organisationen.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     address: Mapped[str | None] = mapped_column(String(255), nullable=True)
     plz: Mapped[str | None] = mapped_column(String(10), nullable=True)

@@ -32,6 +32,11 @@ class Einheit(Base, TimestampMixin, SoftDeleteMixin):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
+    org_id: Mapped[int | None] = mapped_column(
+        ForeignKey("organisationen.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     objekt_id: Mapped[int] = mapped_column(
         ForeignKey("objekte.id", ondelete="CASCADE"),
         nullable=False,

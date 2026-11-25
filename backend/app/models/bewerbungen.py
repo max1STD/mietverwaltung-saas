@@ -8,14 +8,14 @@ from sqlalchemy import DECIMAL, DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, SoftDeleteMixin
+from app.models.base import Base, RetentionMixin, SoftDeleteMixin
 
 if TYPE_CHECKING:
     from app.models.einheit import Einheit
     from app.models.user import User
 
 
-class Bewerbung(Base, SoftDeleteMixin):
+class Bewerbung(Base, SoftDeleteMixin, RetentionMixin):
     """Bewerbung eines Interessenten auf eine vermietete Wohneinheit."""
 
     __tablename__ = "bewerbungen"
@@ -24,6 +24,11 @@ class Bewerbung(Base, SoftDeleteMixin):
     vermieter_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
+    )
+    org_id: Mapped[int | None] = mapped_column(
+        ForeignKey("organisationen.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
     )
     einheit_id: Mapped[int] = mapped_column(
         ForeignKey("einheiten.id", ondelete="CASCADE"),
