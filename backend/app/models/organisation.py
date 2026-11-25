@@ -326,6 +326,30 @@ class OrgRichtlinie(Base, TimestampMixin):
         Boolean, nullable=False, default=True
     )
     ip_freigabe: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    sso_erlaubt: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    sso_idp_metadata_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    zwei_fa_erforderlich: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    erweiterte_berichte: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    compliance_center_aktiv: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+
+class OrgRolle(Base, TimestampMixin):
+    """Benutzerdefinierte Rolle innerhalb einer Organisation (Phase A2)."""
+
+    __tablename__ = "org_rollen"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    org_id: Mapped[int] = mapped_column(
+        ForeignKey("organisationen.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String(50), nullable=False)
+    berechtigungen: Mapped[str | None] = mapped_column(
+        String(2000),
+        nullable=True,
+        default="",
+    )  # comma-separated permission list
 
 
 class Vertretung(Base, TimestampMixin):
@@ -348,6 +372,9 @@ class Vertretung(Base, TimestampMixin):
         nullable=False,
     )
     rolle: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    objekt_ids: Mapped[str | None] = mapped_column(
+        String(500), nullable=True
+    )  # comma-separated object ids
     von: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     bis: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
@@ -368,10 +395,44 @@ class SicherheitsEreignis(Base, TimestampMixin):
         nullable=True,
         index=True,
     )
+    admin_id: Mapped[int | None] = mapped_column(
+        ForeignKey("plattform_admins.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     art: Mapped[str] = mapped_column(String(50), nullable=False)
     details: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    ernst: Mapped[str | None] = mapped_column(
+        String(20), nullable=True, default="mittel"
+    )  # niedrig | mittel | hoch
+    gelesen_am: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     zeitpunkt: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         default=lambda: datetime.now(UTC),
+    )
+
+
+class BetroffenenAnfrage(Base, TimestampMixin):
+    """DSGVO-Betroffenenanfragen (Löschen, Auskunft, Berichtigung)."""
+
+    __tablename__ = "betroffenen_anfragen"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    org_id: Mapped[int] = mapped_column(
+        ForeignKey("organisationen.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    art: Mapped[str] = mapped_column(String(30), nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="offen",
+    )  # offen | in_bearbeitung | erledigt | abgelehnt
+    frist_bis: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    beschreibung: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    antwort: Mapped[str | None] = mapped_column(String(4000), nullable=True)
+    bearbeitet_von_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )

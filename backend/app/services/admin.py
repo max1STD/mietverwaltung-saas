@@ -8,14 +8,19 @@ import sqlalchemy as sa
 from sqlalchemy import func, select
 
 from app.models.organisation import (
+    BetroffenenAnfrage,
     Einladung,
     FreigabeAnfrage,
     Organisation,
     OrganisationsMitglied,
+    OrgRichtlinie,
+    OrgRolle,
     PlattformAdmin,
     PlattformAuditLog,
+    SicherheitsEreignis,
     SupportFreigabe,
     SupportZugriff,
+    Vertretung,
 )
 from app.models.user import User
 
@@ -375,3 +380,287 @@ class OrgMitgliedService:
                 MitgliedObjektScope(mitglied_id=mitglied_id, objekt_id=objekt_id)
             )
         await self.session.flush()
+
+
+class OrgRichtlinienService:
+    """Verwaltet Sicherheitsrichtlinien, 2FA- und Session-Regeln pro Organisation (A1/A3)."""
+
+    def __init__(self, session: AsyncSession, org_id: int):
+        self.session = session
+        self.org_id = org_id
+
+    async def get_or_create(self) -> OrgRichtlinie:
+        richtlinie = await self.session.get(OrgRichtlinie, self.org_id)
+        if richtlinie is None:
+            richtlinie = OrgRichtlinie(org_id=self.org_id)
+            self.session.add(richtlinie)
+            await self.session.flush()
+        return richtlinie
+
+    async def update(
+        self,
+        mfa_pflicht: bool | None = None,
+        mfa_pflicht_rollen: str | None = None,
+        session_dauer_stunden: int | None = None,
+        inaktivitaet_minuten: int | None = None,
+        vier_augen_aktionen: str | None = None,
+        massenexport_benachrichtigt: bool | None = None,
+        ip_freigabe: str | None = None,
+        sso_erlaubt: bool | None = None,
+        sso_idp_metadata_url: str | None = None,
+        zwei_fa_erforderlich: bool | None = None,
+        erweiterte_berichte: bool | None = None,
+        compliance_center_aktiv: bool | None = None,
+    ) -> OrgRichtlinie:
+        richtlinie = await self.get_or_create()
+        for attr, value in locals().items():
+            if attr in {"self", "session"} or value is None:
+                continue
+            setattr(richtlinie, attr, value)
+        await self.session.flush()
+        await self.session.refresh(richtlinie)
+        return richtlinie
+
+
+class VertretungsService:
+    """Zeitlich begrenzte Vertretungen (A1)."""
+
+    def __init__(self, session: AsyncSession, org_id: int):
+        self.session = session
+        self.org_id = org_id
+
+    async def create(
+        self,
+        von_mitglied_id: int,
+        an_mitglied_id: int,
+        rolle: str | None,
+        objekt_ids: list[int] | None,
+        von: datetime,
+        bis: datetime,
+    ) -> Vertretung:
+        v = Vertretung(
+            org_id=self.org_id,
+            von_mitglied_id=von_mitglied_id,
+            an_mitglied_id=an_mitglied_id,
+            rolle=rolle,
+            objekt_ids=",".join(str(x) for x in (objekt_ids or [])) if objekt_ids else None,
+            von=von,
+            bis=bis,
+        )
+        self.session.add(v)
+        await self.session.flush()
+        await self.session.refresh(v)
+        return v
+
+    async def list_active(self, now: datetime | None = None) -> list[Vertretung]:
+        if now is None:
+            now = datetime.now(UTC)
+        result = await self.session.execute(
+            select(Vertretung).where(
+                Vertretung.org_id == self.org_id,
+                Vertretung.von <= now,
+                Vertretung.bis >= now,
+            )
+        )
+        return list(result.scalars().all())
+
+    async def revoke(self, vertretung_id: int) -> Vertretung | None:
+        v = await self.session.get(Vertretung, vertretung_id)
+        if v is None or v.org_id != self.org_id:
+            return None
+        v.bis = datetime.now(UTC)
+        await self.session.flush()
+        return v
+
+
+class SicherheitsService:
+    """Sicherheitsmeldungen und Auffaelligkeiten (A1/A2)."""
+
+    def __init__(self, session: AsyncSession, org_id: int | None = None):
+        self.session = session
+        self.org_id = org_id
+
+    async def log(
+        self,
+        art: str,
+        details: str | None = None,
+        user_id: int | None = None,
+        admin_id: int | None = None,
+        ernst: str = "mittel",
+    ) -> SicherheitsEreignis:
+        e = SicherheitsEreignis(
+            org_id=self.org_id,
+            art=art,
+            details=details,
+            user_id=user_id,
+            admin_id=admin_id,
+            ernst=ernst,
+            zeitpunkt=datetime.now(UTC),
+        )
+        self.session.add(e)
+        await self.session.flush()
+        await self.session.refresh(e)
+        return e
+
+    async def list_unread(self) -> list[SicherheitsEreignis]:
+        stmt = select(SicherheitsEreignis).where(SicherheitsEreignis.gelesen_am.is_(None))
+        if self.org_id is not None:
+            stmt = stmt.where(SicherheitsEreignis.org_id == self.org_id)
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def mark_read(self, ereignis_id: int) -> SicherheitsEreignis | None:
+        e = await self.session.get(SicherheitsEreignis, ereignis_id)
+        if e is None:
+            return None
+        if self.org_id is not None and e.org_id != self.org_id:
+            return None
+        e.gelesen_am = datetime.now(UTC)
+        await self.session.flush()
+        return e
+
+
+class OrgRolleService:
+    """Benutzerdefinierte Organisationsrollen (A2)."""
+
+    def __init__(self, session: AsyncSession, org_id: int):
+        self.session = session
+        self.org_id = org_id
+
+    async def create(self, name: str, berechtigungen: list[str]) -> OrgRolle:
+        rolle = OrgRolle(
+            org_id=self.org_id,
+            name=name,
+            berechtigungen=",".join(berechtigungen),
+        )
+        self.session.add(rolle)
+        await self.session.flush()
+        await self.session.refresh(rolle)
+        return rolle
+
+    async def list(self) -> list[OrgRolle]:
+        result = await self.session.execute(
+            select(OrgRolle).where(OrgRolle.org_id == self.org_id)
+        )
+        return list(result.scalars().all())
+
+    async def get(self, rolle_id: int) -> OrgRolle | None:
+        rolle = await self.session.get(OrgRolle, rolle_id)
+        if rolle is None or rolle.org_id != self.org_id:
+            return None
+        return rolle
+
+
+class BetroffenenAnfragenService:
+    """DSGVO-Betroffenenanfragen mit Fristzaehler (A1/A2 Compliance-Center)."""
+
+    def __init__(self, session: AsyncSession, org_id: int):
+        self.session = session
+        self.org_id = org_id
+
+    async def create(
+        self,
+        art: str,
+        frist_bis: datetime,
+        beschreibung: str | None = None,
+    ) -> BetroffenenAnfrage:
+        anfrage = BetroffenenAnfrage(
+            org_id=self.org_id,
+            art=art,
+            frist_bis=frist_bis,
+            beschreibung=beschreibung,
+        )
+        self.session.add(anfrage)
+        await self.session.flush()
+        await self.session.refresh(anfrage)
+        return anfrage
+
+    async def list_open(self) -> list[BetroffenenAnfrage]:
+        result = await self.session.execute(
+            select(BetroffenenAnfrage).where(
+                BetroffenenAnfrage.org_id == self.org_id,
+                BetroffenenAnfrage.status.in_(["offen", "in_bearbeitung"]),
+            ).order_by(BetroffenenAnfrage.frist_bis)
+        )
+        return list(result.scalars().all())
+
+    async def update_status(
+        self,
+        anfrage_id: int,
+        status: str,
+        antwort: str | None = None,
+        bearbeitet_von_id: int | None = None,
+    ) -> BetroffenenAnfrage | None:
+        anfrage = await self.session.get(BetroffenenAnfrage, anfrage_id)
+        if anfrage is None or anfrage.org_id != self.org_id:
+            return None
+        anfrage.status = status
+        if antwort is not None:
+            anfrage.antwort = antwort
+        if bearbeitet_von_id is not None:
+            anfrage.bearbeitet_von_id = bearbeitet_von_id
+        await self.session.flush()
+        return anfrage
+
+
+class VierAugenService:
+    """Vier-Augen-Pruefung und Zeitsperre fuer kritische Aktionen (A2)."""
+
+    def __init__(self, session: AsyncSession, admin_id: int | None = None):
+        self.session = session
+        self.admin_id = admin_id
+
+    async def request(
+        self,
+        aktion: str,
+        org_id: int | None,
+        ausfuehren_ab: datetime,
+        ablauf: datetime,
+    ) -> FreigabeAnfrage:
+        if self.admin_id is None:
+            raise ValueError("Admin-Id erforderlich")
+        fa = FreigabeAnfrage(
+            org_id=org_id,
+            aktion=aktion,
+            angefordert_von_admin_id=self.admin_id,
+            status="ausstehend",
+            ausfuehren_ab=ausfuehren_ab,
+            ablauf=ablauf,
+        )
+        self.session.add(fa)
+        await self.session.flush()
+        await self.session.refresh(fa)
+        return fa
+
+    async def confirm(self, anfrage_id: int, bestaetigender_admin_id: int) -> FreigabeAnfrage | None:
+        fa = await self.session.get(FreigabeAnfrage, anfrage_id)
+        if fa is None or fa.status != "ausstehend":
+            return None
+        if fa.angefordert_von_admin_id == bestaetigender_admin_id:
+            raise ValueError("Selbstbestaetigung nicht erlaubt")
+        fa.bestaetigt_von_admin_id = bestaetigender_admin_id
+        fa.status = "bestaetigt"
+        await self.session.flush()
+        return fa
+
+    async def reject(self, anfrage_id: int) -> FreigabeAnfrage | None:
+        fa = await self.session.get(FreigabeAnfrage, anfrage_id)
+        if fa is None or fa.status != "ausstehend":
+            return None
+        fa.status = "abgelehnt"
+        await self.session.flush()
+        return fa
+
+    async def is_executable(self, anfrage_id: int, now: datetime | None = None) -> FreigabeAnfrage | None:
+        if now is None:
+            now = datetime.now(UTC)
+        fa = await self.session.get(FreigabeAnfrage, anfrage_id)
+        if fa is None or fa.status != "bestaetigt":
+            return None
+        if now < fa.ausfuehren_ab:
+            return None
+        if now > fa.ablauf:
+            fa.status = "abgelaufen"
+            await self.session.flush()
+            return None
+        return fa

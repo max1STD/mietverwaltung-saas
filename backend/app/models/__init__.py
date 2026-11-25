@@ -21,12 +21,14 @@ from app.models.mietzahlungen import Mietzahlung
 from app.models.objekt import Objekt
 from app.models.onboarding import OnboardingProgress
 from app.models.organisation import (
+    BetroffenenAnfrage,
     Eigentuemer,
     Einladung,
     FreigabeAnfrage,
     MitgliedObjektScope,
     OrgFeature,
     OrgRichtlinie,
+    OrgRolle,
     Organisation,
     OrganisationsMitglied,
     PlattformAdmin,
@@ -91,3 +93,5 @@ __all__ = [
     "Zaehlerablesung",
     "Bankverbindung",
 ]
+from app.models.organisation import OrgRolle
+from app.models.organisation import BetroffenenAnfrage

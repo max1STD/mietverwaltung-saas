@@ -1,6 +1,7 @@
 """Admin-Routen — zentrale Verwaltung fuer Vermieter, Mieter, Objekte, Einheiten."""
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from typing import Annotated
 
@@ -35,8 +36,12 @@ from app.services.admin import (
     AdminPermission,
     OrgAdminService,
     OrgMitgliedService,
+    OrgRichtlinienService,
+    OrgRolleService,
     PlattformAdminService,
     SupportFreigabeService,
+    VertretungsService,
+    VierAugenService,
 )
 
 router = APIRouter()
@@ -74,6 +79,40 @@ class MemberInviteRequest(BaseModel):
 
 class MemberRoleUpdateRequest(BaseModel):
     rolle: str
+
+
+class RichtlinieUpdateRequest(BaseModel):
+    mfa_pflicht: bool | None = None
+    mfa_pflicht_rollen: str | None = None
+    session_dauer_stunden: int | None = None
+    inaktivitaet_minuten: int | None = None
+    vier_augen_aktionen: str | None = None
+    massenexport_benachrichtigt: bool | None = None
+    ip_freigabe: str | None = None
+    sso_erlaubt: bool | None = None
+    sso_idp_metadata_url: str | None = None
+    zwei_fa_erforderlich: bool | None = None
+    erweiterte_berichte: bool | None = None
+    compliance_center_aktiv: bool | None = None
+
+
+class VertretungCreateRequest(BaseModel):
+    von_mitglied_id: int
+    an_mitglied_id: int
+    rolle: str | None = None
+    objekt_ids: list[int] | None = None
+    von: datetime
+    bis: datetime
+
+
+class VierAugenRequest(BaseModel):
+    aktion: str
+    ausfuehren_ab: datetime
+    ablauf: datetime
+
+
+class VierAugenConfirmRequest(BaseModel):
+    bestaetigt_von_admin_id: int
 
 
 async def require_admin(
@@ -284,6 +323,140 @@ async def create_support_freigabe(
     service = SupportFreigabeService(db, admin_id=ctx.admin_id)
     sf = await service.create(org_id, None, grund, umfang, stunden, ctx.admin_id)
     return {"id": sf.id, "gueltig_bis": sf.gueltig_bis}
+
+
+
+
+@platform_router.get("/orgs/{org_id}/richtlinien", response_model=dict)
+async def get_org_richtlinien(
+    org_id: int,
+    ctx: AdminAuthContext = Depends(require_permission(AdminPermission.ORG_READ)),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    service = OrgRichtlinienService(db, org_id)
+    r = await service.get_or_create()
+    return {
+        "org_id": r.org_id,
+        "mfa_pflicht": r.mfa_pflicht,
+        "mfa_pflicht_rollen": r.mfa_pflicht_rollen,
+        "session_dauer_stunden": r.session_dauer_stunden,
+        "inaktivitaet_minuten": r.inaktivitaet_minuten,
+        "vier_augen_aktionen": r.vier_augen_aktionen,
+        "massenexport_benachrichtigt": r.massenexport_benachrichtigt,
+        "ip_freigabe": r.ip_freigabe,
+        "sso_erlaubt": r.sso_erlaubt,
+        "sso_idp_metadata_url": r.sso_idp_metadata_url,
+        "zwei_fa_erforderlich": r.zwei_fa_erforderlich,
+        "erweiterte_berichte": r.erweiterte_berichte,
+        "compliance_center_aktiv": r.compliance_center_aktiv,
+    }
+
+
+@platform_router.patch("/orgs/{org_id}/richtlinien", response_model=dict)
+async def update_org_richtlinien(
+    org_id: int,
+    req: RichtlinieUpdateRequest,
+    ctx: AdminAuthContext = Depends(require_permission(AdminPermission.ORG_SUSPEND)),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    service = OrgRichtlinienService(db, org_id)
+    r = await service.update(**req.model_dump(exclude_unset=True))
+    return {"org_id": r.org_id, "updated": True}
+
+
+@platform_router.post("/orgs/{org_id}/vertretungen", response_model=dict)
+async def create_vertretung(
+    org_id: int,
+    req: VertretungCreateRequest,
+    ctx: AdminAuthContext = Depends(require_permission(AdminPermission.ORG_SUSPEND)),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    service = VertretungsService(db, org_id)
+    v = await service.create(
+        req.von_mitglied_id,
+        req.an_mitglied_id,
+        req.rolle,
+        req.objekt_ids,
+        req.von,
+        req.bis,
+    )
+    return {"id": v.id, "von": v.von, "bis": v.bis}
+
+
+@platform_router.get("/orgs/{org_id}/vertretungen", response_model=list[dict])
+async def list_vertretungen(
+    org_id: int,
+    ctx: AdminAuthContext = Depends(require_permission(AdminPermission.ORG_READ)),
+    db: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    service = VertretungsService(db, org_id)
+    rows = await service.list_active()
+    return [{"id": r.id, "von_mitglied_id": r.von_mitglied_id, "an_mitglied_id": r.an_mitglied_id, "bis": r.bis} for r in rows]
+
+
+@platform_router.post("/freigabe-anfragen", response_model=dict, status_code=status.HTTP_201_CREATED)
+async def create_vier_augen_anfrage(
+    req: VierAugenRequest,
+    ctx: AdminAuthContext = Depends(require_permission(AdminPermission.ORG_SUSPEND)),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    service = VierAugenService(db, admin_id=ctx.admin_id)
+    fa = await service.create(req.aktion, None, req.ausfuehren_ab, req.ablauf)
+    return {"id": fa.id, "status": fa.status, "ausfuehren_ab": fa.ausfuehren_ab}
+
+
+@platform_router.post("/freigabe-anfragen/{anfrage_id}/confirm", response_model=dict)
+async def confirm_vier_augen_anfrage(
+    anfrage_id: int,
+    req: VierAugenConfirmRequest,
+    ctx: AdminAuthContext = Depends(require_permission(AdminPermission.ORG_SUSPEND)),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    service = VierAugenService(db)
+    fa = await service.confirm(anfrage_id, req.bestaetigt_von_admin_id)
+    if fa is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bestaetigung nicht moeglich.")
+    return {"id": fa.id, "status": fa.status}
+
+
+
+
+
+@platform_router.post("/orgs/{org_id}/rollen", response_model=dict, status_code=status.HTTP_201_CREATED)
+async def create_org_rolle(
+    org_id: int,
+    name: str,
+    berechtigungen: list[str],
+    ctx: AdminAuthContext = Depends(require_permission(AdminPermission.ORG_SUSPEND)),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    service = OrgRolleService(db, org_id)
+    rolle = await service.create(name, berechtigungen)
+    return {"id": rolle.id, "name": rolle.name, "berechtigungen": rolle.berechtigungen}
+
+
+@platform_router.get("/orgs/{org_id}/rollen", response_model=list[dict])
+async def list_org_rollen(
+    org_id: int,
+    ctx: AdminAuthContext = Depends(require_permission(AdminPermission.ORG_READ)),
+    db: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    service = OrgRolleService(db, org_id)
+    rows = await service.list()
+    return [{"id": r.id, "name": r.name, "berechtigungen": r.berechtigungen} for r in rows]
+
+
+@platform_router.get("/sicherheits-ereignisse", response_model=list[dict])
+async def list_sicherheits_ereignisse(
+    ctx: AdminAuthContext = Depends(require_permission(AdminPermission.AUDIT_READ)),
+    db: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    from app.models.organisation import SicherheitsEreignis
+    stmt = sa_select(SicherheitsEreignis).order_by(SicherheitsEreignis.zeitpunkt.desc()).limit(50)
+    result = await db.execute(stmt)
+    rows = result.scalars().all()
+    return [{"id": r.id, "art": r.art, "ernst": r.ernst, "details": r.details, "zeitpunkt": r.zeitpunkt} for r in rows]
+
 
 
 router.include_router(platform_router)
