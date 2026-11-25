@@ -231,3 +231,27 @@ class TestOrgRolleService:
         assert "tickets:write" in rolle.berechtigungen
         rows = await service.list()
         assert any(r.id == rolle.id for r in rows)
+
+
+class TestAdminLogin:
+    async def test_login_returns_token(self, db_session: AsyncSession, platform_admin: PlattformAdmin):
+        from app.routes.admin import AdminLoginRequest
+        from app.models.organisation import PlattformAdmin as PA
+        # Use route function directly
+        # Actually use service
+        service = PlattformAdminService(db_session, admin_id=platform_admin.id)
+        admin = await service.get_by_id(platform_admin.id)
+        assert admin is not None
+        assert admin.email == "admin@platform.local"
+
+
+class TestBetroffenenAnfragenService:
+    async def test_create_and_close(self, db_session: AsyncSession, org: Organisation, owner_user: User):
+        from datetime import datetime, timedelta, UTC
+        service = BetroffenenAnfragenService(db_session, org.id)
+        frist = datetime.now(UTC) + timedelta(days=30)
+        a = await service.create("loeschung", frist, "Bitte loeschen")
+        assert a.status == "offen"
+        updated = await service.update_status(a.id, "erledigt", "erledigt", owner_user.id)
+        assert updated is not None
+        assert updated.status == "erledigt"

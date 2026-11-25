@@ -76,6 +76,9 @@ class PlattformAdminService:
         self.session = session
         self.admin_id = admin_id
 
+    async def get_by_id(self, admin_id: int) -> PlattformAdmin | None:
+        return await self.session.get(PlattformAdmin, admin_id)
+
     def _can(self, permission: str) -> bool:
         if not self.admin_id:
             return False
