@@ -1,6 +1,6 @@
 # Offene Punkte / Fehlerliste — Mietverwaltung-SaaS
 
-**Letzte Aktualisierung:** 17. November 2026  
+**Letzte Aktualisierung:** 25. November 2026  
 **Verantwortlich:** Hermes Agent / Max Karthoff
 
 Diese Datei dient als zentrale Fehler- und Todo-Liste für UX-Fixes, Bugs und kleine Verbesserungen, die während der Entwicklung auftauchen.
@@ -14,7 +14,7 @@ Diese Datei dient als zentrale Fehler- und Todo-Liste für UX-Fixes, Bugs und kl
 | 1 | Lösch-Bestätigung | ✅ Erledigt | Native `window.confirm` durch zentriertes `AppModal` im App-Design ersetzen. | `frontend/src/views/objekte/ObjekteListView.vue` |
 | 2 | Cache invalidieren | ✅ Erledigt | index.html no-cache, Assets 1y via Vite-Fingerprint. Nginx-Config als Symlink. → GitHub #51 | `infra/nginx/mietverwaltung.conf` |
 | 3 | Favicon fehlt | ✅ Erledigt | `/favicon.svg` hinzugefügt, liefert 200. → GitHub #52 | `frontend/public/favicon.svg`, `frontend/index.html` |
-| 4 | Mobile Layouts prüfen | 🔲 Offen | Einige Tabellen/Formulare auf kleinen Bildschirmen noch nicht optimiert. | Alle `*View.vue` |
+|| 4 | Mobile Layouts prüfen | ✅ Erledigt | Listen- und Formularansichten für kleine Screens optimiert. | `frontend/src/views/*/*View.vue` |
 | 5 | Klickbare KPI-/Detail-Verknüpfungen | ✅ Erledigt | Dashboard-KPIs verlinken auf Listenansichten. → GitHub #47 | `frontend/src/views/dashboard/DashboardView.vue`, `frontend/src/components/dashboard/KPICard.vue` |
 | 9 | Ticket: Dateianhänge | ✅ Erledigt | Upload + Liste + Download + Löschen via Dokumenten-Service. → GitHub #48 | `frontend/src/views/tickets/TicketFormView.vue`, `backend/app/routes/dokumente.py` |
 | 10 | Ticket: Mieter-Autofill | ✅ Erledigt | Bei Einheit-Auswahl wird Mieter automatisch gesetzt. → GitHub #48 | `frontend/src/views/tickets/TicketFormView.vue`, `backend/app/routes/_helpers.py` |
@@ -52,9 +52,11 @@ Diese Datei dient als zentrale Fehler- und Todo-Liste für UX-Fixes, Bugs und kl
 
 ## Nächste große Arbeitspakete
 
-1. **Domain-Core-Erweiterungen** (in Arbeit)
-   - Objekt-Stammdaten erweitern → GitHub #49
-   - Zähler / NK-Abrechnung
+1. **Sicherheitsfundament + Organisationen + Löschkonzept** (in Arbeit)
+   - Phase 0: RLS, app_user, `require()`, `get_scoped()`
+   - Phase 1: Organisationen + Backfill + `org_id`
+   - Löschkonzept: `loeschregeln`, `RetentionMixin`, `loeschprotokoll`, Löschlauf
+   - Phase 2: Permission-Katalog + Rollen-Matrix
 
 2. **Paperless-ngx DMS-Integration** (aktuell TODO)
    - Echte Paperless-Instanz via Docker auf anderem Server
