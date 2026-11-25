@@ -40,6 +40,22 @@ REQUIRED_TABLES = {
     "onboarding_progress",
     "ai_stored_results",
     "referrals",
+    "organisationen",
+    "organisations_mitglieder",
+    "eigentuemer",
+    "mitglied_objekt_scope",
+    "org_features",
+    "einladungen",
+    "loeschregeln",
+    "loeschprotokoll",
+    "plattform_admins",
+    "plattform_audit_log",
+    "support_freigaben",
+    "support_zugriffe",
+    "freigabe_anfragen",
+    "org_richtlinien",
+    "vertretungen",
+    "sicherheits_ereignisse",
 }
 
 USERS_KEY_COLUMNS = {
@@ -121,7 +137,7 @@ async def test_alembic_version_is_expected(db_session: AsyncSession) -> None:
         "0008_dokumente_neue_struktur", "0009_public_ids_mieter_mv", "0010_einheit_stammdaten",
         "0011_objekt_stammdaten", "0012_dokumente_ocr",
         "f715d10be63c", "b30dda0e71ec", "c3a9f8e21b4d", "d2c4a7e89b1f", "e5b1c2d3a4f6",
-        "f2f81c52b352", "1a2b3c4d5e6f", "8c632bf83b75",
+        "f2f81c52b352", "1a2b3c4d5e6f", "8c632bf83b75", "a1b2c3d4e5f6",
     }, f"Unerwartete Alembic-Version: {version}"
 
 

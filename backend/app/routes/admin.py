@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 from typing import Any
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from pydantic import BaseModel, EmailStr
 from sqlalchemy import func, select
+from sqlalchemy import select as sa_select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -28,7 +31,262 @@ from app.services.auth import AuthError, _get_user_by_email, hash_password, regi
 from app.services.einheiten import list_einheiten
 from app.services.objekte import list_objekte
 
+from app.services.admin import (
+    AdminPermission,
+    OrgAdminService,
+    OrgMitgliedService,
+    PlattformAdminService,
+    SupportFreigabeService,
+)
+
 router = APIRouter()
+platform_router = APIRouter(prefix="/platform", tags=["platform-admin"])
+
+
+class AdminAuthContext(BaseModel):
+    admin_id: int
+    rolle: str
+
+
+class AdminCreateRequest(BaseModel):
+    email: EmailStr
+    rolle: str
+
+
+class OrgStatusUpdateRequest(BaseModel):
+    status: str  # aktiv | gesperrt | geloescht
+
+
+class OrgListItem(BaseModel):
+    id: int
+    public_id: int
+    name: str
+    status: str
+    plan: str
+    einheiten_count: int
+    mitglieder_count: int
+
+
+class MemberInviteRequest(BaseModel):
+    email: EmailStr
+    rolle: str
+
+
+class MemberRoleUpdateRequest(BaseModel):
+    rolle: str
+
+
+async def require_admin(
+    x_admin_token: Annotated[str | None, Header()] = None,
+    db: AsyncSession = Depends(get_db),
+) -> AdminAuthContext:
+    """Platzhalter-Auth fuer den Start. Ersetzt spaeter Passkey-Login."""
+    if not x_admin_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Admin-Token fehlt.")
+    try:
+        admin_id_str, rolle = x_admin_token.split(":", 1)
+        admin_id = int(admin_id_str)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Ungueltiger Token.") from exc
+    service = PlattformAdminService(db)
+    admin = await service.get_by_id(admin_id)
+    if admin is None or not admin.aktiv or admin.rolle != rolle:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Ungueltiger Admin.")
+    return AdminAuthContext(admin_id=admin.id, rolle=admin.rolle)
+
+
+def require_permission(permission: str):
+    async def _check(
+        ctx: AdminAuthContext = Depends(require_admin),
+    ) -> AdminAuthContext:
+        perms = ROLE_PERMISSIONS.get(ctx.rolle, set())
+        if permission not in perms:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Berechtigung {permission} erforderlich.",
+            )
+        return ctx
+    return _check
+
+
+ROLE_PERMISSIONS: dict[str, set[str]] = {
+    "owner": {
+        AdminPermission.ORG_READ,
+        AdminPermission.ORG_SUSPEND,
+        AdminPermission.BILLING_READ,
+        AdminPermission.BILLING_WRITE,
+        AdminPermission.SUPPORT_VIEW,
+        AdminPermission.AUDIT_READ,
+    },
+    "support": {
+        AdminPermission.ORG_READ,
+        AdminPermission.BILLING_READ,
+        AdminPermission.SUPPORT_VIEW,
+    },
+    "billing": {
+        AdminPermission.ORG_READ,
+        AdminPermission.BILLING_READ,
+        AdminPermission.BILLING_WRITE,
+    },
+    "compliance": {
+        AdminPermission.ORG_READ,
+        AdminPermission.AUDIT_READ,
+    },
+    "ops": {
+        AdminPermission.ORG_READ,
+        AdminPermission.AUDIT_READ,
+    },
+}
+
+
+@platform_router.post("/admins", response_model=dict, status_code=status.HTTP_201_CREATED)
+async def create_admin(
+    req: AdminCreateRequest,
+    ctx: AdminAuthContext = Depends(require_permission({})),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    service = PlattformAdminService(db, admin_id=ctx.admin_id)
+    admin = await service.create_admin(req.email, req.rolle, ctx.admin_id)
+    return {"id": admin.id, "email": admin.email, "rolle": admin.rolle}
+
+
+@platform_router.get("/orgs", response_model=list[OrgListItem])
+async def list_organisations(
+    ctx: AdminAuthContext = Depends(require_permission(AdminPermission.ORG_READ)),
+    db: AsyncSession = Depends(get_db),
+) -> list[OrgListItem]:
+    service = OrgAdminService(db)
+    rows = await service.list_organisations(limit=50)
+    return [
+        OrgListItem(
+            id=r["id"],
+            public_id=r["public_id"],
+            name=r["name"],
+            status=r["status"],
+            plan=r["plan"],
+            einheiten_count=r.get("mitglieder_anzahl", 0),
+            mitglieder_count=r.get("mitglieder_anzahl", 0),
+        )
+        for r in rows
+    ]
+
+
+@platform_router.patch("/orgs/{org_id}/status", response_model=dict)
+async def update_org_status(
+    org_id: int,
+    req: OrgStatusUpdateRequest,
+    ctx: AdminAuthContext = Depends(require_permission(AdminPermission.ORG_SUSPEND)),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    service = OrgAdminService(db, actor_id=ctx.admin_id)
+    if req.status == "aktiv":
+        org = await service.reactivate_organisation(org_id)
+    elif req.status == "gesperrt":
+        org = await service.suspend_organisation(org_id, "")
+    else:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ungueltiger Status.")
+    if org is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organisation nicht gefunden.")
+    return {"id": org.id, "status": org.status}
+
+
+@platform_router.get("/orgs/{org_id}/members")
+async def list_org_members(
+    org_id: int,
+    ctx: AdminAuthContext = Depends(require_permission(AdminPermission.ORG_READ)),
+    db: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    service = OrgMitgliedService(db, org_id)
+    members = await service.list_members()
+    return [
+        {
+            "id": m.id,
+            "user_id": m.user_id,
+            "rolle": m.rolle,
+            "aktiv": m.aktiv,
+        }
+        for m in members
+    ]
+
+
+@platform_router.post("/orgs/{org_id}/members/invite", response_model=dict)
+async def invite_org_member(
+    org_id: int,
+    req: MemberInviteRequest,
+    ctx: AdminAuthContext = Depends(require_permission({})),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    service = OrgMitgliedService(db, org_id)
+    einladung = await service.invite_member(req.email, req.rolle, ctx.admin_id)
+    return {"id": einladung.id, "token": "per-email", "gueltig_bis": einladung.gueltig_bis}
+
+
+@platform_router.patch("/orgs/{org_id}/members/{mitglied_id}/role", response_model=dict)
+async def set_member_role(
+    org_id: int,
+    mitglied_id: int,
+    req: MemberRoleUpdateRequest,
+    ctx: AdminAuthContext = Depends(require_permission({})),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    service = OrgMitgliedService(db, org_id)
+    Mitglied = await service.set_role(mitglied_id, req.rolle)
+    if Mitglied is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Rolle konnte nicht geaendert werden.")
+    return {"id": Mitglied.id, "rolle": Mitglied.rolle}
+
+
+@platform_router.post("/orgs/{org_id}/members/{mitglied_id}/deactivate", response_model=dict)
+async def deactivate_member(
+    org_id: int,
+    mitglied_id: int,
+    ctx: AdminAuthContext = Depends(require_permission({})),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    service = OrgMitgliedService(db, org_id)
+    Mitglied = await service.deactivate_member(mitglied_id)
+    if Mitglied is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Mitarbeiter konnte nicht deaktiviert werden.")
+    return {"id": Mitglied.id, "aktiv": Mitglied.aktiv}
+
+
+@platform_router.get("/audit", response_model=list[dict])
+async def list_audit_log(
+    ctx: AdminAuthContext = Depends(require_permission({})),
+    db: AsyncSession = Depends(get_db),
+    limit: int = 50,
+) -> list[dict]:
+    stmt = select(PlattformAuditLog).order_by(PlattformAuditLog.zeitpunkt.desc()).limit(limit)
+    result = await db.execute(stmt)
+    rows = result.scalars().all()
+    return [
+        {
+            "id": r.id,
+            "admin_id": r.admin_id,
+            "aktion": r.aktion,
+            "ziel_typ": r.ziel_typ,
+            "ziel_id": r.ziel_id,
+            "zeitpunkt": r.zeitpunkt,
+        }
+        for r in rows
+    ]
+
+
+@platform_router.post("/support-freigaben", response_model=dict)
+async def create_support_freigabe(
+    org_id: int,
+    grund: str,
+    umfang: str,
+    stunden: int = 24,
+    ctx: AdminAuthContext = Depends(require_permission({})),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    service = SupportFreigabeService(db, admin_id=ctx.admin_id)
+    sf = await service.create(org_id, None, grund, umfang, stunden, ctx.admin_id)
+    return {"id": sf.id, "gueltig_bis": sf.gueltig_bis}
+
+
+router.include_router(platform_router)
 
 
 async def _set_admin_rls(db: AsyncSession, admin: User) -> None:

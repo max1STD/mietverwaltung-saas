@@ -23,10 +23,18 @@ from app.models.onboarding import OnboardingProgress
 from app.models.organisation import (
     Eigentuemer,
     Einladung,
+    FreigabeAnfrage,
     MitgliedObjektScope,
     OrgFeature,
+    OrgRichtlinie,
     Organisation,
     OrganisationsMitglied,
+    PlattformAdmin,
+    PlattformAuditLog,
+    SicherheitsEreignis,
+    SupportFreigabe,
+    SupportZugriff,
+    Vertretung,
 )
 from app.models.plan_usage import PlanUsage
 from app.models.session import UserSession
@@ -66,6 +74,14 @@ __all__ = [
     "MitgliedObjektScope",
     "OrgFeature",
     "Einladung",
+    "PlattformAdmin",
+    "PlattformAuditLog",
+    "SupportFreigabe",
+    "SupportZugriff",
+    "FreigabeAnfrage",
+    "OrgRichtlinie",
+    "Vertretung",
+    "SicherheitsEreignis",
     "OnboardingProgress",
     "Ticket",
     "TicketComment",

@@ -9,8 +9,11 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
 
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
 if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import AsyncSession
+    pass
 
 
 class DbContext:
@@ -48,9 +51,9 @@ async def set_db_context(
     ]
     for name, value in values:
         if value is None:
-            await session.execute(f"SET LOCAL {name} = ''")
+            await session.execute(text(f"SET LOCAL {name} = ''"))
         else:
-            await session.execute(f"SET LOCAL {name} = :value", {"value": str(value)})
+            await session.execute(text(f"SET LOCAL {name} = '{str(value).replace(chr(39), chr(39)+chr(39))}'"))
 
 
 @asynccontextmanager
@@ -63,9 +66,9 @@ async def db_context_scope(
     try:
         yield session
     finally:
-        await session.execute("SET LOCAL app.org_id = ''")
-        await session.execute("SET LOCAL app.user_id = ''")
-        await session.execute("SET LOCAL app.rolle = ''")
-        await session.execute("SET LOCAL app.mitglied_id = ''")
-        await session.execute("SET LOCAL app.mieter_id = ''")
-        await session.execute("SET LOCAL app.handwerker_firma_id = ''")
+        await session.execute(text("SET LOCAL app.org_id = ''"))
+        await session.execute(text("SET LOCAL app.user_id = ''"))
+        await session.execute(text("SET LOCAL app.rolle = ''"))
+        await session.execute(text("SET LOCAL app.mitglied_id = ''"))
+        await session.execute(text("SET LOCAL app.mieter_id = ''"))
+        await session.execute(text("SET LOCAL app.handwerker_firma_id = ''"))
