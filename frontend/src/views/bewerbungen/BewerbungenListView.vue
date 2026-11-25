@@ -7,7 +7,9 @@
           <h1 class="text-2xl sm:text-3xl font-bold text-[#0D3B70]">Mieter-Bewerbungen</h1>
           <p class="text-gray-500 mt-1">Alle eingehenden Bewerbungen auf einen Blick.</p>
         </div>
-        <AppButton @click="$router.push('/bewerbungen/neu')">
+        <AppButton
+          class="w-full sm:w-auto"
+          @click="$router.push(\'/bewerbungen/neu\')"
           + Bewerbung erfassen
         </AppButton>
       </div>

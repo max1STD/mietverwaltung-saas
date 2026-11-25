@@ -105,7 +105,7 @@
 
           <div class="pt-4 flex items-center justify-end gap-3">
             <AppButton variant="ghost" type="button" @click="goBack">Abbrechen</AppButton>
-            <AppButton type="submit" :loading="zaehlerStore.saving">
+            <AppButton class="w-full sm:w-auto" type="submit" :loading="zaehlerStore.saving">
               {{ isEdit ? 'Speichern' : 'Anlegen' }}
             </AppButton>
           </div>

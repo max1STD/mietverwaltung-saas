@@ -126,11 +126,11 @@
               />
             </div>
 
-            <div class="flex items-center justify-end gap-3 pt-4">
-              <AppButton type="button" variant="ghost" @click="goBack">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4">
+            <AppButton class="w-full sm:w-auto" type="button" variant="ghost" @click="goBack">
                 Abbrechen
               </AppButton>
-              <AppButton type="submit" :loading="kostenStore.saving">
+              <AppButton class="w-full sm:w-auto" type="submit" :loading="kostenStore.saving">
                 {{ isEdit ? 'Änderungen speichern' : 'Kosten speichern' }}
               </AppButton>
             </div>

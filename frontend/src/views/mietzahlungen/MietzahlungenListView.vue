@@ -122,7 +122,7 @@
           </template>
 
           <template #actions="{ item }">
-            <div class="flex items-center justify-end gap-2">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
               <AppButton
                 v-if="mietzahlungenStore.statusFor(item) !== 'bezahlt'"
                 size="sm"
@@ -141,6 +141,7 @@
                 Mahnen
               </AppButton>
               <AppButton
+                class="w-full sm:w-auto"
                 variant="danger"
                 size="sm"
                 :loading="mietzahlungenStore.saving"

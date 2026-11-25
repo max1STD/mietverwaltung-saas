@@ -136,11 +136,11 @@
             </ul>
           </div>
 
-          <div class="flex items-center justify-end gap-3 pt-4">
-            <AppButton type="button" variant="ghost" @click="$router.push('/tickets')">
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4">
+            <AppButton class="w-full sm:w-auto" type="button" variant="ghost" @click="$router.push('/tickets')">
               Abbrechen
             </AppButton>
-            <AppButton type="submit" :loading="ticketsStore.saving">
+            <AppButton class="w-full sm:w-auto" type="submit" :loading="ticketsStore.saving">
               Ticket erstellen
             </AppButton>
           </div>

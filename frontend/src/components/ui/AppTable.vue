@@ -1,12 +1,12 @@
 <template>
-  <div class="overflow-x-auto -mx-6">
-    <table class="w-full text-left border-collapse">
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-left border-collapse">
       <thead>
         <tr class="border-b border-gray-200">
           <th
             v-for="column in columns"
             :key="String(column.key)"
-            class="py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:text-[#0D3B70] transition-colors"
+            class="py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:text-[#0D3B70] transition-colors whitespace-nowrap"
             @click="sortBy(column.key)"
           >
             {{ column.label }}
@@ -16,7 +16,7 @@
           </th>
           <th
             v-if="$slots.actions"
-            class="py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right"
+            class="py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right whitespace-nowrap"
           >
             Aktionen
           </th>

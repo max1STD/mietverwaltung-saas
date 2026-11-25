@@ -7,7 +7,9 @@
           <h1 class="text-2xl sm:text-3xl font-bold text-[#0D3B70]">Tickets</h1>
           <p class="text-gray-500 mt-1">Übersicht über alle Mieteranliegen und Instandhaltungsaufträge.</p>
         </div>
-        <AppButton @click="$router.push('/tickets/neu')">
+        <AppButton
+          class="w-full sm:w-auto"
+          @click="$router.push(\'/tickets/neu\')"
           + Ticket erstellen
         </AppButton>
       </div>

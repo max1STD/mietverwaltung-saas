@@ -67,8 +67,9 @@
           </template>
 
           <template #actions="{ item }">
-            <div class="flex items-center justify-end gap-2">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
               <AppButton
+                class="w-full sm:w-auto"
                 variant="ghost"
                 size="sm"
                 @click="$router.push(`/zaehler/${item.id}`)"
@@ -77,6 +78,7 @@
               </AppButton>
               <AppButton
                 v-if="authStore.isVermieter"
+                class="w-full sm:w-auto"
                 variant="ghost"
                 size="sm"
                 @click="$router.push(`/zaehler/${item.id}/bearbeiten`)"
@@ -85,6 +87,7 @@
               </AppButton>
               <AppButton
                 v-if="authStore.isVermieter"
+                class="w-full sm:w-auto"
                 variant="danger"
                 size="sm"
                 :loading="zaehlerStore.saving"

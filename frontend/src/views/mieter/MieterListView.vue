@@ -7,7 +7,10 @@
           <h1 class="text-2xl sm:text-3xl font-bold text-[#0D3B70]">Mieter</h1>
           <p class="text-gray-500 mt-1">Verwalte alle Mieter-Stammdaten.</p>
         </div>
-        <AppButton @click="$router.push('/mieter/neu')">
+        <AppButton
+          class="w-full sm:w-auto"
+          @click="$router.push('/mieter/neu')"
+        >
           + Mieter hinzufügen
         </AppButton>
       </div>
@@ -55,8 +58,9 @@
           </template>
 
           <template #actions="{ item }">
-            <div class="flex items-center justify-end gap-2">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
               <AppButton
+                class="w-full sm:w-auto"
                 variant="ghost"
                 size="sm"
                 @click="$router.push(`/mieter/${item.public_id || item.id}/bearbeiten`)"
@@ -64,6 +68,7 @@
                 Bearbeiten
               </AppButton>
               <AppButton
+                class="w-full sm:w-auto"
                 variant="danger"
                 size="sm"
                 :loading="mieterStore.saving"

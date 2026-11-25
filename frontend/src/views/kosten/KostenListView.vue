@@ -7,7 +7,9 @@
           <h1 class="text-2xl sm:text-3xl font-bold text-[#0D3B70]">Kosten</h1>
           <p class="text-gray-500 mt-1">Erfasse und verwalte alle Betriebskosten.</p>
         </div>
-        <AppButton @click="$router.push('/kosten/neu')">
+        <AppButton
+          class="w-full sm:w-auto"
+          @click="$router.push(\'/kosten/neu\')"
           + Kosten erfassen
         </AppButton>
       </div>
@@ -95,8 +97,9 @@
           </template>
 
           <template #actions="{ item }">
-            <div class="flex items-center justify-end gap-2">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
               <AppButton
+                class="w-full sm:w-auto"
                 variant="ghost"
                 size="sm"
                 @click="$router.push(`/kosten/${item.id}/bearbeiten`)"
@@ -104,6 +107,7 @@
                 Bearbeiten
               </AppButton>
               <AppButton
+                class="w-full sm:w-auto"
                 variant="danger"
                 size="sm"
                 :loading="kostenStore.saving"

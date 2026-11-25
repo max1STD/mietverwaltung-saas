@@ -72,7 +72,7 @@
                 <span class="text-sm font-medium text-gray-700">Adresse {{ index + 1 }}</span>
                 <button type="button" class="text-red-500 text-sm hover:underline" @click="removeAdresse(index)">Entfernen</button>
               </div>
-              <div class="grid grid-cols-2 gap-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <AppInput :id="`adresse-typ-${index}`" v-model="adresse.typ" label="Typ" :error="errors.adressen[index]?.typ" />
                 <AppInput :id="`adresse-strasse-${index}`" v-model="adresse.strasse" label="Straße" :error="errors.adressen[index]?.strasse" />
                 <AppInput :id="`adresse-hausnummer-${index}`" v-model="adresse.hausnummer" label="Hausnummer" />
@@ -101,7 +101,7 @@
                 <span class="text-sm font-medium text-gray-700">Bürge {{ index + 1 }}</span>
                 <button type="button" class="text-red-500 text-sm hover:underline" @click="removeBuergschaft(index)">Entfernen</button>
               </div>
-              <div class="grid grid-cols-2 gap-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <AppInput :id="`bg-vorname-${index}`" v-model="bg.buerge_first_name" label="Vorname" />
                 <AppInput :id="`bg-nachname-${index}`" v-model="bg.buerge_last_name" label="Nachname" />
                 <AppInput :id="`bg-geburtsdatum-${index}`" v-model="bg.buerge_geburtsdatum" label="Geburtsdatum" type="date" />
@@ -112,7 +112,7 @@
                 <AppInput :id="`bg-status-${index}`" v-model="bg.status" label="Status" />
               </div>
 
-              <div class="grid grid-cols-2 gap-3 mt-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                 <AppInput :id="`bg-strasse-${index}`" v-model="bg.buerge_adresse.strasse" label="Straße" />
                 <AppInput :id="`bg-hausnummer-${index}`" v-model="bg.buerge_adresse.hausnummer" label="Hausnummer" />
                 <AppInput :id="`bg-plz-${index}`" v-model="bg.buerge_adresse.plz" label="PLZ" />
@@ -143,11 +143,11 @@
             />
           </div>
 
-          <div class="flex items-center justify-end gap-3 pt-4">
-            <AppButton type="button" variant="ghost" @click="goBack">
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4">
+            <AppButton class="w-full sm:w-auto" type="button" variant="ghost" @click="goBack">
               Abbrechen
             </AppButton>
-            <AppButton type="submit" :loading="mieterStore.saving">
+            <AppButton class="w-full sm:w-auto" type="submit" :loading="mieterStore.saving">
               {{ isEdit ? 'Änderungen speichern' : 'Mieter anlegen' }}
             </AppButton>
           </div>

@@ -57,7 +57,7 @@
                 :error="errors.adresszusatz"
               />
 
-              <div class="grid grid-cols-3 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <AppInput
                   id="plz"
                   v-model="form.plz"
@@ -90,7 +90,7 @@
           <!-- Allgemein -->
           <section>
             <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Allgemein</h2>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label for="typ" class="block text-sm font-medium text-gray-700 mb-1">Typ</label>
                 <select
@@ -169,7 +169,7 @@
           <!-- Flächen -->
           <section>
             <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Flächen (m²)</h2>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <AppInput
                 id="grundstuecksflaeche_qm"
                 v-model="form.grundstuecksflaeche_qm"
@@ -212,7 +212,7 @@
           <!-- Energie -->
           <section>
             <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Energie & Heizung</h2>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label for="energieausweis_art" class="block text-sm font-medium text-gray-700 mb-1">Energieausweis</label>
                 <select
@@ -285,7 +285,7 @@
           <!-- Finanzierung -->
           <section>
             <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Finanzierung & Mieten</h2>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <AppCurrencyInput
                 id="kaufpreis"
                 v-model="form.kaufpreis"
@@ -359,7 +359,7 @@
           <!-- Ausstattung -->
           <section>
             <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Ausstattung & Sonstiges</h2>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <BoolSelect id="denkmalschutz" v-model="form.denkmalschutz" label="Denkmalschutz" />
               <AppInput
                 id="denkmalschutz_bis"
