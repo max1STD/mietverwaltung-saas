@@ -27,6 +27,7 @@ class DbContext:
         mitglied_id: int | None = None,
         mieter_id: int | None = None,
         handwerker_firma_id: int | None = None,
+        support_freigabe_id: int | None = None,
     ):
         self.org_id = org_id
         self.user_id = user_id
@@ -34,6 +35,7 @@ class DbContext:
         self.mitglied_id = mitglied_id
         self.mieter_id = mieter_id
         self.handwerker_firma_id = handwerker_firma_id
+        self.support_freigabe_id = support_freigabe_id
 
 
 async def set_db_context(
@@ -48,6 +50,7 @@ async def set_db_context(
         ("app.mitglied_id", context.mitglied_id),
         ("app.mieter_id", context.mieter_id),
         ("app.handwerker_firma_id", context.handwerker_firma_id),
+        ("app.support_freigabe_id", context.support_freigabe_id),
     ]
     for name, value in values:
         if value is None:
@@ -72,3 +75,4 @@ async def db_context_scope(
         await session.execute(text("SET LOCAL app.mitglied_id = ''"))
         await session.execute(text("SET LOCAL app.mieter_id = ''"))
         await session.execute(text("SET LOCAL app.handwerker_firma_id = ''"))
+        await session.execute(text("SET LOCAL app.support_freigabe_id = ''"))

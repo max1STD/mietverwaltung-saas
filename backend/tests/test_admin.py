@@ -19,6 +19,8 @@ from app.models.organisation import (
 )
 from app.models.user import User
 from app.services.admin import (
+    OffboardingService,
+    BillingStatusService,
     AdminPermission,
     BetroffenenAnfragenService,
     OrgAdminService,
@@ -255,3 +257,22 @@ class TestBetroffenenAnfragenService:
         updated = await service.update_status(a.id, "erledigt", "erledigt", owner_user.id)
         assert updated is not None
         assert updated.status == "erledigt"
+
+class TestBillingStatusService:
+    async def test_get_billing_status(self, db_session: AsyncSession, org: Organisation):
+        service = BillingStatusService(db_session, org.id)
+        status = await service.get()
+        assert status["org_id"] == org.id
+        assert status["plan"] in ("basis", "free")
+        assert status["active_users"] >= 0
+
+
+class TestOffboardingService:
+    async def test_offboarding_clean_member(self, db_session: AsyncSession, org: Organisation, owner_user: User):
+        from app.models.organisation import OrganisationsMitglied
+        mitglied = await db_session.scalar(select(OrganisationsMitglied).where(OrganisationsMitglied.user_id == owner_user.id))
+        assert mitglied is not None
+        service = OffboardingService(db_session, org.id)
+        result = await service.check(mitglied.id)
+        assert result["open_tickets"] == 0
+        assert result["can_remove"] is True

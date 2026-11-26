@@ -35,6 +35,8 @@ from app.services.objekte import list_objekte
 from app.services.admin import (
     AdminPermission,
     BetroffenenAnfragenService,
+    BillingStatusService,
+    OffboardingService,
     OrgAdminService,
     OrgMitgliedService,
     OrgRichtlinienService,
@@ -555,6 +557,69 @@ async def mark_sicherheits_ereignis_gelesen(
     if e is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ereignis nicht gefunden.")
     return {"id": e.id, "gelesen_am": e.gelesen_am}
+
+
+
+
+
+@platform_router.get("/orgs/{org_id}/billing-status", response_model=dict)
+async def get_org_billing_status(
+    org_id: int,
+    ctx: AdminAuthContext = Depends(require_permission(AdminPermission.BILLING_READ)),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    service = BillingStatusService(db, org_id)
+    return await service.get()
+
+
+@platform_router.get("/orgs/{org_id}/mitglieder/{mitglied_id}/offboarding", response_model=dict)
+async def get_offboarding_check(
+    org_id: int,
+    mitglied_id: int,
+    ctx: AdminAuthContext = Depends(require_permission(AdminPermission.ORG_SUSPEND)),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    service = OffboardingService(db, org_id)
+    return await service.check(mitglied_id)
+
+
+@platform_router.get("/support-freigaben", response_model=list[dict])
+async def list_support_freigaben(
+    org_id: int,
+    ctx: AdminAuthContext = Depends(require_permission(AdminPermission.SUPPORT_VIEW)),
+    db: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    service = SupportFreigabeService(db, admin_id=ctx.admin_id)
+    rows = await service.list_for_org(org_id)
+    return [
+        {
+            "id": r.id,
+            "org_id": r.org_id,
+            "ticket_ref": r.ticket_ref,
+            "grund": r.grund,
+            "umfang": r.umfang,
+            "gueltig_bis": r.gueltig_bis,
+            "widerrufen_am": r.widerrufen_am,
+        }
+        for r in rows
+    ]
+
+
+@platform_router.post("/support-freigaben/{freigabe_id}/scope", response_model=dict)
+async def get_support_scope(
+    freigabe_id: int,
+    org_id: int,
+    ctx: AdminAuthContext = Depends(require_permission(AdminPermission.SUPPORT_VIEW)),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    service = SupportFreigabeService(db, admin_id=ctx.admin_id)
+    scope = await service.get_read_scope(freigabe_id, org_id, ctx.admin_id)
+    return {
+        "org_id": scope.org_id,
+        "support_freigabe_id": scope.support_freigabe_id,
+        "role": scope.role,
+        "read_only": True,
+    }
 
 
 

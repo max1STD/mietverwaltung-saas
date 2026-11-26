@@ -257,6 +257,36 @@ class SupportFreigabeService:
         await self.session.flush()
         return freigabe
 
+    async def get(self, freigabe_id: int) -> SupportFreigabe | None:
+        return await self.session.get(SupportFreigabe, freigabe_id)
+
+    async def list_for_org(self, org_id: int) -> list[SupportFreigabe]:
+        result = await self.session.execute(
+            select(SupportFreigabe).where(SupportFreigabe.org_id == org_id).order_by(SupportFreigabe.created_at.desc())
+        )
+        return list(result.scalars().all())
+
+    async def get_read_scope(
+        self,
+        freigabe_id: int,
+        org_id: int,
+        admin_id: int,
+    ) -> "DbContext":
+        """Liefert einen read-only RLS-Kontext fuer gueltige Support-Freigaben."""
+        from app.core.db_context import DbContext
+        freigabe = await self.session.get(SupportFreigabe, freigabe_id)
+        if freigabe is None or freigabe.org_id != org_id:
+            raise ValueError("Freigabe nicht gefunden")
+        if freigabe.widerrufen_am or freigabe.gueltig_bis <= datetime.now(UTC):
+            raise ValueError("Freigabe ist nicht mehr gueltig")
+        await self.log_access(freigabe_id, "read_scope", ziel=f"org:{org_id}")
+        return DbContext(
+            org_id=org_id,
+            user_id=admin_id,
+            role="support",
+            support_freigabe_id=freigabe_id,
+        )
+
     async def log_access(
         self,
         freigabe_id: int,
@@ -667,3 +697,60 @@ class VierAugenService:
             await self.session.flush()
             return None
         return fa
+
+class BillingStatusService:
+    """Aggregiert Abrechnungsstatus fuer Plattform-Admin-Uebersicht (A0)."""
+
+    def __init__(self, session: AsyncSession, org_id: int):
+        self.session = session
+        self.org_id = org_id
+
+    async def get(self) -> dict:
+        org = await self.session.get(Organisation, self.org_id)
+        if org is None:
+            raise ValueError("Organisation nicht gefunden")
+        active_users = await self.session.scalar(
+            select(func.count(OrganisationsMitglied.id)).where(
+                OrganisationsMitglied.org_id == self.org_id,
+                OrganisationsMitglied.aktiv.is_(True),
+            )
+        )
+        return {
+            "org_id": org.id,
+            "public_id": org.public_id,
+            "name": org.name,
+            "status": org.status,
+            "plan": org.plan,
+            "stripe_customer_id": org.stripe_customer_id,
+            "active_users": active_users,
+        }
+
+
+class OffboardingService:
+    """Prueft offene Posten vor dem Entfernen eines Mitarbeiters (A1)."""
+
+    def __init__(self, session: AsyncSession, org_id: int):
+        self.session = session
+        self.org_id = org_id
+
+    async def check(self, mitglied_id: int) -> dict:
+        mitglied = await self.session.get(OrganisationsMitglied, mitglied_id)
+        if mitglied is None or mitglied.org_id != self.org_id:
+            raise ValueError("Mitglied nicht gefunden")
+        from app.models.tickets import Ticket
+        open_tickets = await self.session.scalar(
+            select(func.count(Ticket.id)).where(
+                Ticket.org_id == self.org_id,
+                Ticket.assigned_to == mitglied.user_id,
+                Ticket.status != "geschlossen",
+            )
+        )
+        is_owner = mitglied.rolle == "org_admin"
+        return {
+            "mitglied_id": mitglied.id,
+            "user_id": mitglied.user_id,
+            "rolle": mitglied.rolle,
+            "open_tickets": open_tickets,
+            "is_owner": is_owner,
+            "can_remove": open_tickets == 0 and not is_owner,
+        }
